@@ -9,6 +9,7 @@ struct ActiveTripDashboard: View {
 
     @State private var isExpanded: Bool = true
     @State private var showingAddStop: Bool = false
+    @State private var showingQuickAdd: Bool = false
 
     private let calendar = Calendar.current
 
@@ -70,6 +71,9 @@ struct ActiveTripDashboard: View {
         .animation(.easeInOut(duration: 0.3), value: isExpanded)
         .sheet(isPresented: $showingAddStop) {
             addStopSheet
+        }
+        .sheet(isPresented: $showingQuickAdd) {
+            quickAddSheet
         }
     }
 
@@ -214,30 +218,64 @@ struct ActiveTripDashboard: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Add Stop Button
+    // MARK: - Add Stop Buttons
 
     private var addStopButton: some View {
-        Button {
-            showingAddStop = true
-        } label: {
-            addStopLabel
+        HStack(spacing: 10) {
+            quickAddButton
+            planStopButton
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
     }
 
-    private var addStopLabel: some View {
-        HStack(spacing: 8) {
+    private var quickAddButton: some View {
+        Button {
+            showingQuickAdd = true
+        } label: {
+            quickAddLabel
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var quickAddLabel: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "location.fill")
+                .font(.caption)
+                .foregroundColor(.green)
+            Text("I'm Here")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.green)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(Color.green.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var planStopButton: some View {
+        Button {
+            showingAddStop = true
+        } label: {
+            planStopLabel
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var planStopLabel: some View {
+        HStack(spacing: 6) {
             Image(systemName: "plus.circle.fill")
+                .font(.caption)
                 .foregroundColor(.blue)
-            Text("Add a stop")
+            Text("Plan a Stop")
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(.blue)
-            Spacer()
         }
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
         .padding(.horizontal, 12)
         .background(Color.blue.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -247,6 +285,13 @@ struct ActiveTripDashboard: View {
     private var addStopSheet: some View {
         if let day = todayDay {
             AddStopSheet(day: day)
+        }
+    }
+
+    @ViewBuilder
+    private var quickAddSheet: some View {
+        if let day = todayDay {
+            QuickAddStopSheet(day: day)
         }
     }
 

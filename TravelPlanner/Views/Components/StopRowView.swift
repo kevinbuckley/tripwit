@@ -22,31 +22,50 @@ struct StopRowView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: iconName(for: stop.category))
-                .font(.body)
-                .foregroundStyle(color(for: stop.category))
-                .frame(width: 28, height: 28)
-                .background(color(for: stop.category).opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(stop.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                if let timeText = timeRangeText {
-                    Text(timeText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
+            stopIcon
+            stopLabels
             Spacer()
-
+            visitedIndicator
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(.quaternary)
         }
         .padding(.vertical, 2)
+        .opacity(stop.isVisited ? 0.6 : 1.0)
+    }
+
+    private var stopIcon: some View {
+        Image(systemName: iconName(for: stop.category))
+            .font(.body)
+            .foregroundStyle(color(for: stop.category))
+            .frame(width: 28, height: 28)
+            .background(color(for: stop.category).opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var stopLabels: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Text(stop.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                if stop.isVisited {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                }
+            }
+            if let timeText = timeRangeText {
+                Text(timeText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var visitedIndicator: some View {
+        EmptyView()
     }
 
     private func iconName(for category: StopCategory) -> String {

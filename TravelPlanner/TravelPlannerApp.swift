@@ -5,6 +5,7 @@ import SwiftData
 struct TravelPlannerApp: App {
 
     let modelContainer: ModelContainer
+    @State private var locationManager = LocationManager()
 
     init() {
         do {
@@ -19,6 +20,7 @@ struct TravelPlannerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(locationManager)
                 .onAppear {
                     let context = modelContainer.mainContext
                     let manager = DataManager(modelContext: context)

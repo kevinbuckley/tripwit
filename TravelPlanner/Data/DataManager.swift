@@ -114,6 +114,12 @@ final class DataManager {
         try? modelContext.save()
     }
 
+    func toggleVisited(_ stop: StopEntity) {
+        stop.isVisited.toggle()
+        stop.visitedAt = stop.isVisited ? Date() : nil
+        try? modelContext.save()
+    }
+
     func reorderStops(in day: DayEntity, from source: IndexSet, to destination: Int) {
         var stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
         stops.move(fromOffsets: source, toOffset: destination)

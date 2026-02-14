@@ -24,6 +24,7 @@
 		6F8268604F4047C3CDB66955 /* TripListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56ADA02E68B54BC5041160E /* TripListView.swift */; };
 		7106A8CAC582FE714E085574 /* ActiveTripDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F2849479DB63FD37596436 /* ActiveTripDashboard.swift */; };
 		802571B419A58FC9BE392719 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 999956BD7EB805D88C04DCC4 /* Assets.xcassets */; };
+		81227E53CF6CC519C6F7DAB4 /* QuickAddStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33599FA2BA90D34A7790666F /* QuickAddStopSheet.swift */; };
 		A164409B7376015E3E324755 /* StopEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6C1E4350AB19588CC1E3C49 /* StopEntity.swift */; };
 		B641325CF3FAB88A994EAF54 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CB8ED03D8D00AAF086C1F /* StatusBadge.swift */; };
 		C2EBF318ED366F9035C01C62 /* TripMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9187D01CC9CAFBC36BA23F5 /* TripMapView.swift */; };
@@ -33,6 +34,7 @@
 		EB725655B3E37B237F119E3F /* LocationSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A823A874CC64BD0CFCBC95 /* LocationSearchView.swift */; };
 		EE908EB564515B9843770A5A /* TripCore in Frameworks */ = {isa = PBXBuildFile; productRef = 372D538F3E49A295636019DF /* TripCore */; };
 		F1031E74318D99FA8B0AF043 /* EditStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D459EA563BD530DA9AB7F379 /* EditStopSheet.swift */; };
+		F2A5DB79846A72FF7D73E85E /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B746D89D9F64B66F230DFC75 /* LocationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +50,7 @@
 /* Begin PBXFileReference section */
 		216E31A0833F49B143037B54 /* TravelPlanner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TravelPlanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		23DEBB8E9A15261BD87963A7 /* TravelPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelPlannerTests.swift; sourceTree = "<group>"; };
+		33599FA2BA90D34A7790666F /* QuickAddStopSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddStopSheet.swift; sourceTree = "<group>"; };
 		384781C8DEEB3A75BA3C53EB /* TravelPlannerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TravelPlannerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C657E3039B5D556EB074A2C /* TripEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripEntity.swift; sourceTree = "<group>"; };
 		3F5C9ACBDBEA55CB86383E06 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -59,6 +62,7 @@
 		999956BD7EB805D88C04DCC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9A69981A8AC7FA0B97F39219 /* TravelPlannerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelPlannerApp.swift; sourceTree = "<group>"; };
 		A1A823A874CC64BD0CFCBC95 /* LocationSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationSearchView.swift; sourceTree = "<group>"; };
+		B746D89D9F64B66F230DFC75 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		B9187D01CC9CAFBC36BA23F5 /* TripMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripMapView.swift; sourceTree = "<group>"; };
 		C64FEC3C5B11920AB5EE6D7E /* CategoryPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPicker.swift; sourceTree = "<group>"; };
 		CC66224FEF6FBD6F349E3513 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -113,6 +117,14 @@
 			path = TravelPlannerTests;
 			sourceTree = "<group>";
 		};
+		43CE70E4857F77D6ADBFBBA7 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B746D89D9F64B66F230DFC75 /* LocationManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		5B4530A221EF8FE7034462AF /* TravelPlanner */ = {
 			isa = PBXGroup;
 			children = (
@@ -120,6 +132,7 @@
 				CC66224FEF6FBD6F349E3513 /* ContentView.swift */,
 				9A69981A8AC7FA0B97F39219 /* TravelPlannerApp.swift */,
 				A73336239FEE60EF6DA47FB1 /* Data */,
+				43CE70E4857F77D6ADBFBBA7 /* Services */,
 				9664226FD1F080FE38941E6D /* Views */,
 			);
 			path = TravelPlanner;
@@ -133,6 +146,7 @@
 				929AA85012BFDF196233BCE5 /* AddTripSheet.swift */,
 				D459EA563BD530DA9AB7F379 /* EditStopSheet.swift */,
 				D426D1DC6E212A8B6785A9BF /* EditTripSheet.swift */,
+				33599FA2BA90D34A7790666F /* QuickAddStopSheet.swift */,
 				3F5C9ACBDBEA55CB86383E06 /* SettingsView.swift */,
 				FD502E2EC224340FDBDF8A5D /* StopDetailView.swift */,
 				59F24FCC148570A217B37FAD /* TripDetailView.swift */,
@@ -292,7 +306,9 @@
 				3E9541E627528F595F1CF1AE /* DayEntity.swift in Sources */,
 				F1031E74318D99FA8B0AF043 /* EditStopSheet.swift in Sources */,
 				52FC1EFCD0D9A03A74B61A24 /* EditTripSheet.swift in Sources */,
+				F2A5DB79846A72FF7D73E85E /* LocationManager.swift in Sources */,
 				EB725655B3E37B237F119E3F /* LocationSearchView.swift in Sources */,
+				81227E53CF6CC519C6F7DAB4 /* QuickAddStopSheet.swift in Sources */,
 				C58418283CD22F4E5C8B1993 /* SettingsView.swift in Sources */,
 				B641325CF3FAB88A994EAF54 /* StatusBadge.swift in Sources */,
 				D6DDDECA124711B3F1943131 /* StopDetailView.swift in Sources */,
@@ -398,6 +414,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TravelPlanner uses your location to quickly add stops near you and track your trip.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -499,6 +516,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TravelPlanner uses your location to quickly add stops near you and track your trip.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

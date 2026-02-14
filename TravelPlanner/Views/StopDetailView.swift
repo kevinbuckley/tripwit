@@ -40,6 +40,13 @@ struct StopDetailView: View {
                 .listRowInsets(EdgeInsets())
             }
 
+            // Visited section
+            Section {
+                visitedContent
+            } header: {
+                Text("Status")
+            }
+
             // Info section
             Section {
                 HStack {
@@ -116,6 +123,61 @@ struct StopDetailView: View {
         .sheet(isPresented: $showingEditStop) {
             EditStopSheet(stop: stop)
         }
+    }
+
+    // MARK: - Visited Content
+
+    @ViewBuilder
+    private var visitedContent: some View {
+        if stop.isVisited {
+            visitedStatusRow
+        } else {
+            markAsVisitedButton
+        }
+    }
+
+    private var visitedStatusRow: some View {
+        HStack {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.green)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Visited")
+                    .fontWeight(.medium)
+                if let visitedAt = stop.visitedAt {
+                    Text(visitedAt, style: .date)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(visitedAt, style: .time)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+            Button("Undo") {
+                toggleVisitedStatus()
+            }
+            .font(.subheadline)
+            .foregroundColor(.red)
+        }
+    }
+
+    private var markAsVisitedButton: some View {
+        Button {
+            toggleVisitedStatus()
+        } label: {
+            HStack {
+                Image(systemName: "checkmark.circle")
+                Text("Mark as Visited")
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(.green)
+        }
+    }
+
+    private func toggleVisitedStatus() {
+        stop.isVisited.toggle()
+        stop.visitedAt = stop.isVisited ? Date() : nil
+        try? modelContext.save()
     }
 
     private var directionsButtonLabel: some View {

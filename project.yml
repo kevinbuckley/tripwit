@@ -24,6 +24,7 @@ targets:
         SWIFT_STRICT_CONCURRENCY: complete
         PRODUCT_BUNDLE_IDENTIFIER: com.travelplanner.app
         GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "TravelPlanner uses your location to quickly add stops near you and track your trip."
   TravelPlannerTests:
     type: bundle.unit-test
     platform: iOS

@@ -16,6 +16,8 @@ final class StopEntity {
     var categoryRaw: String
     var notes: String
     var sortOrder: Int
+    var isVisited: Bool
+    var visitedAt: Date?
 
     var day: DayEntity?
 
@@ -36,7 +38,9 @@ final class StopEntity {
         arrivalTime: Date? = nil,
         departureTime: Date? = nil,
         sortOrder: Int = 0,
-        notes: String = ""
+        notes: String = "",
+        isVisited: Bool = false,
+        visitedAt: Date? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -47,5 +51,7 @@ final class StopEntity {
         self.categoryRaw = category.rawValue
         self.sortOrder = sortOrder
         self.notes = notes
+        self.isVisited = isVisited
+        self.visitedAt = visitedAt
     }
 }

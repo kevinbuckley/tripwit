@@ -1,8 +1,11 @@
 import SwiftUI
+import SwiftData
 import MapKit
 import TripCore
 
 struct TimelineStopRow: View {
+
+    @Environment(\.modelContext) private var modelContext
 
     let stop: StopEntity
     let isFirst: Bool
@@ -60,6 +63,7 @@ struct TimelineStopRow: View {
             timelineColumn
             stopInfoColumn
             Spacer(minLength: 4)
+            visitedToggleButton
             directionsButton
         }
         .padding(.vertical, 6)
@@ -154,6 +158,44 @@ struct TimelineStopRow: View {
         }
         .buttonStyle(.plain)
         .padding(.top, 14)
+    }
+
+    // MARK: - Visited Toggle
+
+    private var visitedToggleButton: some View {
+        Button {
+            toggleVisited()
+        } label: {
+            visitedToggleIcon
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 14)
+    }
+
+    private var visitedToggleIcon: some View {
+        Group {
+            if stop.isVisited {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundColor(.green)
+                    .padding(6)
+                    .background(Color.green.opacity(0.1))
+                    .clipShape(Circle())
+            } else {
+                Image(systemName: "circle")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(6)
+                    .background(Color.secondary.opacity(0.1))
+                    .clipShape(Circle())
+            }
+        }
+    }
+
+    private func toggleVisited() {
+        stop.isVisited.toggle()
+        stop.visitedAt = stop.isVisited ? Date() : nil
+        try? modelContext.save()
     }
 
     // MARK: - Actions

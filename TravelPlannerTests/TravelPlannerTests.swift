@@ -57,6 +57,52 @@ import SwiftData
     #expect(day.dayNumber == 1)
 }
 
+@Test func stopEntityVisitedDefaults() {
+    let stop = StopEntity(
+        name: "Visit Test",
+        latitude: 40.7128,
+        longitude: -74.0060,
+        category: .attraction,
+        sortOrder: 0
+    )
+    #expect(stop.isVisited == false)
+    #expect(stop.visitedAt == nil)
+}
+
+@Test func stopEntityVisitedToggle() {
+    let stop = StopEntity(
+        name: "Toggle Test",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        category: .restaurant,
+        sortOrder: 0
+    )
+    stop.isVisited = true
+    stop.visitedAt = Date()
+    #expect(stop.isVisited == true)
+    #expect(stop.visitedAt != nil)
+
+    stop.isVisited = false
+    stop.visitedAt = nil
+    #expect(stop.isVisited == false)
+    #expect(stop.visitedAt == nil)
+}
+
+@Test func stopEntityVisitedInit() {
+    let now = Date()
+    let stop = StopEntity(
+        name: "Pre-visited",
+        latitude: 51.5074,
+        longitude: -0.1278,
+        category: .accommodation,
+        sortOrder: 0,
+        isVisited: true,
+        visitedAt: now
+    )
+    #expect(stop.isVisited == true)
+    #expect(stop.visitedAt == now)
+}
+
 @Test func tripStatusConversion() {
     let trip = TripEntity(
         name: "Status Test",
