@@ -172,6 +172,73 @@ final class AITripPlanner {
         isGenerating = false
     }
 
+    /// Plan an entire day based on a vibe/mood description.
+    func planDayByVibe(
+        vibe: String,
+        destination: String,
+        dayNumber: Int,
+        totalDays: Int,
+        existingStops: [String]
+    ) async {
+        guard isAvailable else {
+            errorMessage = "Apple Intelligence is not available on this device."
+            return
+        }
+
+        isGenerating = true
+        suggestions = []
+        errorMessage = nil
+
+        let existingList = existingStops.isEmpty
+            ? "None yet"
+            : existingStops.joined(separator: ", ")
+
+        let prompt = """
+        Plan a full day in \(destination) for Day \(dayNumber) of a \
+        \(totalDays)-day trip. The traveler wants this vibe:
+
+        "\(vibe)"
+
+        Create a complete day itinerary with 6-8 stops in chronological \
+        order from morning to evening. Include:
+        - A breakfast/coffee spot to start the day
+        - Morning activities matching the vibe
+        - A lunch spot that fits the mood
+        - Afternoon activities matching the vibe
+        - A dinner spot to wrap up the day
+        - Optionally an evening activity if it fits
+
+        Already planned stops (do NOT duplicate): \(existingList)
+
+        Order the stops as a realistic day — morning first, evening last. \
+        Set duration estimates that make sense for each type of stop. \
+        Suggest real, specific places in \(destination).
+        """
+
+        do {
+            let vibeSession = LanguageModelSession {
+                """
+                You are a creative travel planner who designs full-day itineraries \
+                based on a mood or vibe. You suggest specific, real places with \
+                accurate categories. You order stops chronologically for a realistic \
+                day flow: breakfast → morning → lunch → afternoon → dinner → evening. \
+                Every place must actually exist in the destination city.
+                """
+            }
+            session = vibeSession
+
+            let result = try await vibeSession.respond(
+                to: prompt,
+                generating: StopSuggestions.self
+            )
+            suggestions = result.content.stops
+        } catch {
+            errorMessage = "Could not plan your day. Please try again."
+        }
+
+        isGenerating = false
+    }
+
     /// Map a category string from the AI to a StopCategory enum.
     static func mapCategory(_ raw: String) -> StopCategory {
         switch raw.lowercased() {

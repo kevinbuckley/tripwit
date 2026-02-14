@@ -12,6 +12,7 @@ struct TripDetailView: View {
     @State private var showingAddStop = false
     @State private var selectedDayForStop: DayEntity?
     @State private var selectedDayForAI: DayEntity?
+    @State private var selectedDayForVibe: DayEntity?
     @State private var showingStartConfirmation = false
     @State private var showingCompleteConfirmation = false
 
@@ -61,6 +62,9 @@ struct TripDetailView: View {
         }
         .sheet(item: $selectedDayForAI) { day in
             aiSuggestSheet(day: day)
+        }
+        .sheet(item: $selectedDayForVibe) { day in
+            vibeSheet(day: day)
         }
         .alert("Start Trip?", isPresented: $showingStartConfirmation) {
             Button("Start", role: .none) {
@@ -200,6 +204,7 @@ struct TripDetailView: View {
 
                 Spacer()
 
+                aiVibeButton(day: day)
                 aiSuggestButton(day: day)
             }
         } header: {
@@ -241,6 +246,34 @@ struct TripDetailView: View {
                     .foregroundStyle(.purple)
             }
         }
+    }
+
+    @ViewBuilder
+    private func aiVibeButton(day: DayEntity) -> some View {
+        if #available(iOS 26, *) {
+            Button {
+                selectedDayForVibe = day
+            } label: {
+                Label("Vibe", systemImage: "wand.and.stars")
+                    .font(.subheadline)
+                    .foregroundStyle(.purple)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func vibeSheet(day: DayEntity) -> some View {
+        #if canImport(FoundationModels)
+        if #available(iOS 26, *) {
+            PlanDayVibeSheet(
+                day: day,
+                destination: trip.destination,
+                totalDays: trip.durationInDays
+            )
+        }
+        #else
+        Text("Apple Intelligence requires iOS 26")
+        #endif
     }
 
     @ViewBuilder

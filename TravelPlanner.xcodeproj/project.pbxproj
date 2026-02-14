@@ -28,6 +28,7 @@
 		7106A8CAC582FE714E085574 /* ActiveTripDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F2849479DB63FD37596436 /* ActiveTripDashboard.swift */; };
 		802571B419A58FC9BE392719 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 999956BD7EB805D88C04DCC4 /* Assets.xcassets */; };
 		81227E53CF6CC519C6F7DAB4 /* QuickAddStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33599FA2BA90D34A7790666F /* QuickAddStopSheet.swift */; };
+		84EF3F89E274C976EB1CAE41 /* PlanDayVibeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111C87BE6AF2E9082D49832A /* PlanDayVibeSheet.swift */; };
 		A164409B7376015E3E324755 /* StopEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6C1E4350AB19588CC1E3C49 /* StopEntity.swift */; };
 		B641325CF3FAB88A994EAF54 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CB8ED03D8D00AAF086C1F /* StatusBadge.swift */; };
 		C2EBF318ED366F9035C01C62 /* TripMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9187D01CC9CAFBC36BA23F5 /* TripMapView.swift */; };
@@ -52,6 +53,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		111C87BE6AF2E9082D49832A /* PlanDayVibeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanDayVibeSheet.swift; sourceTree = "<group>"; };
 		216E31A0833F49B143037B54 /* TravelPlanner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TravelPlanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		23DEBB8E9A15261BD87963A7 /* TravelPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelPlannerTests.swift; sourceTree = "<group>"; };
 		297F8BE08BF8B37312FBA0B7 /* SuggestStopsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestStopsSheet.swift; sourceTree = "<group>"; };
@@ -156,6 +158,7 @@
 				D459EA563BD530DA9AB7F379 /* EditStopSheet.swift */,
 				D426D1DC6E212A8B6785A9BF /* EditTripSheet.swift */,
 				72BE2AB36D39D3AC9E199FDC /* NearbyAISuggestSheet.swift */,
+				111C87BE6AF2E9082D49832A /* PlanDayVibeSheet.swift */,
 				33599FA2BA90D34A7790666F /* QuickAddStopSheet.swift */,
 				3F5C9ACBDBEA55CB86383E06 /* SettingsView.swift */,
 				FD502E2EC224340FDBDF8A5D /* StopDetailView.swift */,
@@ -323,6 +326,7 @@
 				F2A5DB79846A72FF7D73E85E /* LocationManager.swift in Sources */,
 				EB725655B3E37B237F119E3F /* LocationSearchView.swift in Sources */,
 				3E47E593AA72C188086BFA07 /* NearbyAISuggestSheet.swift in Sources */,
+				84EF3F89E274C976EB1CAE41 /* PlanDayVibeSheet.swift in Sources */,
 				81227E53CF6CC519C6F7DAB4 /* QuickAddStopSheet.swift in Sources */,
 				C58418283CD22F4E5C8B1993 /* SettingsView.swift in Sources */,
 				B641325CF3FAB88A994EAF54 /* StatusBadge.swift in Sources */,
