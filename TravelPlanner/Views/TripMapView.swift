@@ -9,6 +9,7 @@ struct TripMapView: View {
 
     @State private var selectedTripID: UUID?
     @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var navigateToTripID: UUID?
 
     private var activeTrip: TripEntity? {
         allTrips.first { $0.status == .active }
@@ -36,6 +37,11 @@ struct TripMapView: View {
         }
         .navigationTitle("Map")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $navigateToTripID) { tripID in
+            if let trip = allTrips.first(where: { $0.id == tripID }) {
+                TripDetailView(trip: trip)
+            }
+        }
         .onAppear {
             if selectedTripID == nil {
                 selectedTripID = activeTrip?.id ?? allTrips.first?.id
@@ -151,6 +157,10 @@ struct TripMapView: View {
             tripCardDestination(trip: trip, isSelected: isSelected)
 
             tripCardStats(trip: trip, isSelected: isSelected, stopCount: stopCount)
+
+            if isSelected {
+                viewTripButton(trip: trip)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -160,6 +170,28 @@ struct TripMapView: View {
                 .fill(isSelected ? Color.blue : Color(.systemGray6))
         )
         .foregroundStyle(isSelected ? .white : .primary)
+    }
+
+    private func viewTripButton(trip: TripEntity) -> some View {
+        Button {
+            navigateToTripID = trip.id
+        } label: {
+            HStack(spacing: 4) {
+                Text("View Trip")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.white.opacity(0.25))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     private func tripCardDestination(trip: TripEntity, isSelected: Bool) -> some View {
