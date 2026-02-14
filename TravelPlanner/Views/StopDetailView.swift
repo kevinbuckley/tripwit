@@ -75,6 +75,15 @@ struct StopDetailView: View {
                 }
             }
 
+            // Get Directions
+            Section {
+                Button {
+                    openDirections()
+                } label: {
+                    directionsButtonLabel
+                }
+            }
+
             // Photos placeholder
             Section {
                 HStack {
@@ -107,6 +116,29 @@ struct StopDetailView: View {
         .sheet(isPresented: $showingEditStop) {
             EditStopSheet(stop: stop)
         }
+    }
+
+    private var directionsButtonLabel: some View {
+        HStack {
+            Spacer()
+            Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
+                .font(.body)
+            Text("Get Directions")
+                .font(.headline)
+            Spacer()
+        }
+        .padding(.vertical, 8)
+        .foregroundColor(.white)
+        .listRowBackground(Color.blue)
+    }
+
+    private func openDirections() {
+        let placemark = MKPlacemark(coordinate: coordinate)
+        let mapItem = MKMapItem(placemark: placemark)
+        mapItem.name = stop.name
+        mapItem.openInMaps(launchOptions: [
+            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeWalking
+        ])
     }
 
     private var categoryLabel: String {

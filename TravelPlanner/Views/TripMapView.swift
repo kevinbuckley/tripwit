@@ -10,6 +10,10 @@ struct TripMapView: View {
     @State private var selectedTripID: UUID?
     @State private var cameraPosition: MapCameraPosition = .automatic
 
+    private var activeTrip: TripEntity? {
+        allTrips.first { $0.status == .active }
+    }
+
     private var selectedTrip: TripEntity? {
         if let id = selectedTripID {
             return allTrips.first { $0.id == id }
@@ -27,24 +31,34 @@ struct TripMapView: View {
             if allTrips.isEmpty {
                 emptyMapState
             } else {
-                // Trip picker
-                if allTrips.count > 1 {
-                    tripPicker
-                }
-
-                // Map
-                mapContent
+                mainContent
             }
         }
         .navigationTitle("Map")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if selectedTripID == nil {
-                selectedTripID = allTrips.first?.id
+                selectedTripID = activeTrip?.id ?? allTrips.first?.id
             }
         }
         .onChange(of: selectedTripID) { _, _ in
             fitAllStops()
+        }
+    }
+
+    // MARK: - Main Content
+
+    private var mainContent: some View {
+        VStack(spacing: 0) {
+            if let active = activeTrip {
+                ActiveTripDashboard(trip: active)
+            }
+
+            if allTrips.count > 1 {
+                tripPicker
+            }
+
+            mapContent
         }
     }
 
@@ -72,34 +86,39 @@ struct TripMapView: View {
 
     private var tripPicker: some View {
         VStack(spacing: 0) {
-            // Section label
-            HStack {
-                Text("SELECT A TRIP")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.secondary)
-                    .tracking(0.5)
-                Spacer()
-                Text("\(allTrips.count) trips")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 6)
-
-            // Trip cards
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(allTrips) { trip in
-                        tripCard(trip)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
-            }
+            pickerHeader
+            pickerScrollView
         }
         .background(.ultraThinMaterial)
+    }
+
+    private var pickerHeader: some View {
+        HStack {
+            Text("SELECT A TRIP")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(.secondary)
+                .tracking(0.5)
+            Spacer()
+            Text("\(allTrips.count) trips")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 6)
+    }
+
+    private var pickerScrollView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(allTrips) { trip in
+                    tripCard(trip)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+        }
     }
 
     // MARK: - Trip Card
@@ -184,22 +203,25 @@ struct TripMapView: View {
                 fitAllStops()
             }
 
-            // Fit all button
             if !allStops.isEmpty {
-                Button {
-                    fitAllStops()
-                } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .padding(10)
-                        .background(.ultraThickMaterial)
-                        .clipShape(Circle())
-                        .shadow(radius: 2)
-                }
-                .padding()
+                fitButton
             }
         }
+    }
+
+    private var fitButton: some View {
+        Button {
+            fitAllStops()
+        } label: {
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .font(.body)
+                .fontWeight(.medium)
+                .padding(10)
+                .background(.ultraThickMaterial)
+                .clipShape(Circle())
+                .shadow(radius: 2)
+        }
+        .padding()
     }
 
     // MARK: - Helpers
