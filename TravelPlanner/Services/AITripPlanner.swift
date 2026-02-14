@@ -131,11 +131,16 @@ final class AITripPlanner {
         I am currently at \(stopName) (a \(stopCategory)) located at \
         coordinates \(latitude), \(longitude).
 
-        Suggest 5 highly-rated places nearby that I could walk to or \
-        reach in a short ride. Focus on:
+        Suggest 5 highly-rated places that are within 1 mile (1.6 km) of \
+        my current location. Everything must be walkable — no driving. \
+        Focus on:
         - Great restaurants and cafés for a meal or snack
         - Notable attractions, landmarks, or hidden gems nearby
         - Fun activities in the immediate area
+
+        IMPORTANT: Only suggest places that are within 1 mile / 1.6 km \
+        walking distance from coordinates \(latitude), \(longitude). \
+        Do NOT suggest anything farther away.
 
         Already planned stops (do NOT duplicate these): \(existingList)
 
@@ -147,9 +152,10 @@ final class AITripPlanner {
             let nearbySession = LanguageModelSession {
                 """
                 You are a local expert guide. You recommend specific, real nearby \
-                places with accurate category classifications. Focus on walkable \
-                distance from the user's current location. Suggest real place names \
-                that actually exist near the given coordinates.
+                places with accurate category classifications. Every suggestion \
+                MUST be within 1 mile (1.6 km) walking distance of the user's \
+                location. Suggest real place names that actually exist near the \
+                given coordinates. Never suggest places farther than 1 mile away.
                 """
             }
             session = nearbySession
