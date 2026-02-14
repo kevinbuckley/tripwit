@@ -12,6 +12,7 @@
 		1736A441DE0ED766793702A6 /* TravelPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23DEBB8E9A15261BD87963A7 /* TravelPlannerTests.swift */; };
 		17BD5E09932D36452048DAE6 /* CategoryPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C64FEC3C5B11920AB5EE6D7E /* CategoryPicker.swift */; };
 		33CB1167C384D8E63FB53D29 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58949B7BC97E2244DC3CF26 /* DataManager.swift */; };
+		3E47E593AA72C188086BFA07 /* NearbyAISuggestSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72BE2AB36D39D3AC9E199FDC /* NearbyAISuggestSheet.swift */; };
 		3E9541E627528F595F1CF1AE /* DayEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9F787BEAC69AAD8B9F777B6 /* DayEntity.swift */; };
 		407F7616D083E4C110EF71EE /* TripEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C657E3039B5D556EB074A2C /* TripEntity.swift */; };
 		41544777BBA083F8202FFF60 /* TravelPlannerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A69981A8AC7FA0B97F39219 /* TravelPlannerApp.swift */; };
@@ -61,6 +62,7 @@
 		3F5C9ACBDBEA55CB86383E06 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		59F24FCC148570A217B37FAD /* TripDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripDetailView.swift; sourceTree = "<group>"; };
 		6886F112469D1D5C71F54B15 /* TripCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TripCore; path = Packages/TripCore; sourceTree = SOURCE_ROOT; };
+		72BE2AB36D39D3AC9E199FDC /* NearbyAISuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyAISuggestSheet.swift; sourceTree = "<group>"; };
 		92719B6698BB8E170451D3D7 /* TimelineStopRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineStopRow.swift; sourceTree = "<group>"; };
 		929AA85012BFDF196233BCE5 /* AddTripSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTripSheet.swift; sourceTree = "<group>"; };
 		94CA7715DC1DB2186016B507 /* StopRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopRowView.swift; sourceTree = "<group>"; };
@@ -153,6 +155,7 @@
 				929AA85012BFDF196233BCE5 /* AddTripSheet.swift */,
 				D459EA563BD530DA9AB7F379 /* EditStopSheet.swift */,
 				D426D1DC6E212A8B6785A9BF /* EditTripSheet.swift */,
+				72BE2AB36D39D3AC9E199FDC /* NearbyAISuggestSheet.swift */,
 				33599FA2BA90D34A7790666F /* QuickAddStopSheet.swift */,
 				3F5C9ACBDBEA55CB86383E06 /* SettingsView.swift */,
 				FD502E2EC224340FDBDF8A5D /* StopDetailView.swift */,
@@ -319,6 +322,7 @@
 				52FC1EFCD0D9A03A74B61A24 /* EditTripSheet.swift in Sources */,
 				F2A5DB79846A72FF7D73E85E /* LocationManager.swift in Sources */,
 				EB725655B3E37B237F119E3F /* LocationSearchView.swift in Sources */,
+				3E47E593AA72C188086BFA07 /* NearbyAISuggestSheet.swift in Sources */,
 				81227E53CF6CC519C6F7DAB4 /* QuickAddStopSheet.swift in Sources */,
 				C58418283CD22F4E5C8B1993 /* SettingsView.swift in Sources */,
 				B641325CF3FAB88A994EAF54 /* StatusBadge.swift in Sources */,
@@ -413,7 +417,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.travelplanner.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TravelPlanner.app/TravelPlanner";
@@ -435,7 +439,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.travelplanner.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -452,7 +456,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.travelplanner.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TravelPlanner.app/TravelPlanner";
@@ -537,7 +541,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.travelplanner.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";

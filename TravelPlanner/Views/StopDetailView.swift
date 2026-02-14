@@ -9,6 +9,7 @@ struct StopDetailView: View {
     let stop: StopEntity
 
     @State private var showingEditStop = false
+    @State private var showingNearbyAI = false
     @State private var newCommentText = ""
 
     private var coordinate: CLLocationCoordinate2D {
@@ -95,6 +96,9 @@ struct StopDetailView: View {
                 }
             }
 
+            // AI Nearby Suggestions
+            nearbyAISection
+
             // Photos placeholder
             Section {
                 HStack {
@@ -126,6 +130,9 @@ struct StopDetailView: View {
         }
         .sheet(isPresented: $showingEditStop) {
             EditStopSheet(stop: stop)
+        }
+        .sheet(isPresented: $showingNearbyAI) {
+            nearbyAISheet
         }
     }
 
@@ -258,6 +265,50 @@ struct StopDetailView: View {
             modelContext.delete(comment)
         }
         try? modelContext.save()
+    }
+
+    // MARK: - Nearby AI
+
+    private var hasLocation: Bool {
+        stop.latitude != 0 || stop.longitude != 0
+    }
+
+    @ViewBuilder
+    private var nearbyAISection: some View {
+        if #available(iOS 26, *), hasLocation, stop.day != nil {
+            Section {
+                Button {
+                    showingNearbyAI = true
+                } label: {
+                    nearbyButtonLabel
+                }
+            }
+        }
+    }
+
+    private var nearbyButtonLabel: some View {
+        HStack {
+            Spacer()
+            Image(systemName: "sparkles")
+                .font(.body)
+            Text("Explore Nearby")
+                .font(.headline)
+            Spacer()
+        }
+        .padding(.vertical, 8)
+        .foregroundColor(.white)
+        .listRowBackground(Color.purple)
+    }
+
+    @ViewBuilder
+    private var nearbyAISheet: some View {
+        #if canImport(FoundationModels)
+        if #available(iOS 26, *), let day = stop.day {
+            NearbyAISuggestSheet(stop: stop, day: day)
+        }
+        #else
+        Text("Apple Intelligence requires iOS 26")
+        #endif
     }
 
     private var directionsButtonLabel: some View {

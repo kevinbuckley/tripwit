@@ -106,6 +106,66 @@ final class AITripPlanner {
         isGenerating = false
     }
 
+    /// Generate nearby suggestions based on a specific stop's location.
+    func suggestNearby(
+        stopName: String,
+        stopCategory: String,
+        latitude: Double,
+        longitude: Double,
+        existingStops: [String]
+    ) async {
+        guard isAvailable else {
+            errorMessage = "Apple Intelligence is not available on this device."
+            return
+        }
+
+        isGenerating = true
+        suggestions = []
+        errorMessage = nil
+
+        let existingList = existingStops.isEmpty
+            ? "None"
+            : existingStops.joined(separator: ", ")
+
+        let prompt = """
+        I am currently at \(stopName) (a \(stopCategory)) located at \
+        coordinates \(latitude), \(longitude).
+
+        Suggest 5 highly-rated places nearby that I could walk to or \
+        reach in a short ride. Focus on:
+        - Great restaurants and cafés for a meal or snack
+        - Notable attractions, landmarks, or hidden gems nearby
+        - Fun activities in the immediate area
+
+        Already planned stops (do NOT duplicate these): \(existingList)
+
+        Prioritize places that are popular with locals, not just tourists. \
+        Include a mix of food and things to see/do.
+        """
+
+        do {
+            let nearbySession = LanguageModelSession {
+                """
+                You are a local expert guide. You recommend specific, real nearby \
+                places with accurate category classifications. Focus on walkable \
+                distance from the user's current location. Suggest real place names \
+                that actually exist near the given coordinates.
+                """
+            }
+            session = nearbySession
+
+            let result = try await nearbySession.respond(
+                to: prompt,
+                generating: StopSuggestions.self
+            )
+            suggestions = result.content.stops
+        } catch {
+            errorMessage = "Could not generate nearby suggestions. Please try again."
+        }
+
+        isGenerating = false
+    }
+
     /// Map a category string from the AI to a StopCategory enum.
     static func mapCategory(_ raw: String) -> StopCategory {
         switch raw.lowercased() {
