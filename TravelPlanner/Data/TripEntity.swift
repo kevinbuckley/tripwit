@@ -21,6 +21,9 @@ final class TripEntity {
     @Relationship(deleteRule: .cascade, inverse: \DayEntity.trip)
     var days: [DayEntity]
 
+    @Relationship(deleteRule: .cascade, inverse: \BookingEntity.trip)
+    var bookings: [BookingEntity]
+
     // MARK: Computed Properties
 
     var status: TripStatus {
@@ -86,5 +89,6 @@ final class TripEntity {
         self.createdAt = Date()
         self.updatedAt = Date()
         self.days = []
+        self.bookings = []
     }
 }

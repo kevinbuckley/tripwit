@@ -1,6 +1,6 @@
 name: TravelPlanner
 options:
-  bundleIdPrefix: com.travelplanner
+  bundleIdPrefix: com.kevinbuckley.travelplanner
   deploymentTarget:
     iOS: "17.0"
   xcodeVersion: "26.2"
@@ -22,7 +22,7 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         SWIFT_STRICT_CONCURRENCY: complete
-        PRODUCT_BUNDLE_IDENTIFIER: com.travelplanner.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.kevinbuckley.travelplanner
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "TravelPlanner uses your location to quickly add stops near you and track your trip."
   TravelPlannerTests:
@@ -35,5 +35,5 @@ targets:
       - package: TripCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.travelplanner.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.kevinbuckley.travelplanner.tests
         GENERATE_INFOPLIST_FILE: YES

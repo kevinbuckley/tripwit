@@ -94,8 +94,17 @@ struct StopDetailView: View {
                 Button {
                     openDirections()
                 } label: {
-                    directionsButtonLabel
+                    HStack {
+                        Spacer()
+                        Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
+                            .font(.headline)
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
+                .listRowBackground(Color.clear)
             }
 
             // AI Nearby Suggestions
@@ -331,6 +340,9 @@ struct StopDetailView: View {
                 } label: {
                     nearbyButtonLabel
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(.purple)
+                .listRowBackground(Color.clear)
             }
         }
     }
@@ -338,15 +350,11 @@ struct StopDetailView: View {
     private var nearbyButtonLabel: some View {
         HStack {
             Spacer()
-            Image(systemName: "sparkles")
-                .font(.body)
-            Text("Explore Nearby")
+            Label("Explore Nearby", systemImage: "sparkles")
                 .font(.headline)
             Spacer()
         }
-        .padding(.vertical, 8)
-        .foregroundColor(.white)
-        .listRowBackground(Color.purple)
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
@@ -358,20 +366,6 @@ struct StopDetailView: View {
         #else
         Text("Apple Intelligence requires iOS 26")
         #endif
-    }
-
-    private var directionsButtonLabel: some View {
-        HStack {
-            Spacer()
-            Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
-                .font(.body)
-            Text("Get Directions")
-                .font(.headline)
-            Spacer()
-        }
-        .padding(.vertical, 8)
-        .foregroundColor(.white)
-        .listRowBackground(Color.blue)
     }
 
     private func openDirections() {

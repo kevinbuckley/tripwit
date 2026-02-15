@@ -9,7 +9,7 @@ struct TravelPlannerApp: App {
 
     init() {
         do {
-            let schema = Schema([TripEntity.self, DayEntity.self, StopEntity.self, CommentEntity.self])
+            let schema = Schema([TripEntity.self, DayEntity.self, StopEntity.self, CommentEntity.self, BookingEntity.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             modelContainer = try ModelContainer(for: schema, configurations: [config])
         } catch {

@@ -14,6 +14,10 @@ struct TripDetailView: View {
     @State private var selectedDayForAI: DayEntity?
     @State private var showingStartConfirmation = false
     @State private var showingCompleteConfirmation = false
+    @State private var showingAddBooking = false
+    @State private var travelTimeService = TravelTimeService()
+    @State private var showingShareSheet = false
+    @State private var pdfData: Data?
 
     private var sortedDays: [DayEntity] {
         trip.days.sorted { $0.dayNumber < $1.dayNumber }
@@ -34,6 +38,14 @@ struct TripDetailView: View {
             // MARK: - Status Actions
             statusActionSection
 
+            // MARK: - Weather
+            if !trip.isPast {
+                WeatherSection(trip: trip)
+            }
+
+            // MARK: - Bookings
+            bookingsSection
+
             // MARK: - Itinerary
             if !sortedDays.isEmpty {
                 ForEach(sortedDays) { day in
@@ -46,10 +58,17 @@ struct TripDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showingEditTrip = true
-                } label: {
-                    Text("Edit")
+                HStack(spacing: 16) {
+                    Button {
+                        shareTripPDF()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    Button {
+                        showingEditTrip = true
+                    } label: {
+                        Text("Edit")
+                    }
                 }
             }
         }
@@ -61,6 +80,14 @@ struct TripDetailView: View {
         }
         .sheet(item: $selectedDayForAI) { day in
             aiSuggestSheet(day: day)
+        }
+        .sheet(isPresented: $showingAddBooking) {
+            AddBookingSheet(trip: trip)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let pdfData {
+                ShareSheetView(items: [pdfData], filename: "\(trip.name) Itinerary.pdf")
+            }
         }
         .alert("Start Trip?", isPresented: $showingStartConfirmation) {
             Button("Start", role: .none) {
@@ -164,6 +191,132 @@ struct TripDetailView: View {
         }
     }
 
+    // MARK: - Bookings Section
+
+    private var sortedBookings: [BookingEntity] {
+        trip.bookings.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    private var bookingsSection: some View {
+        Section {
+            if sortedBookings.isEmpty {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 6) {
+                        Image(systemName: "suitcase")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                        Text("No bookings yet")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                    Spacer()
+                }
+            } else {
+                ForEach(sortedBookings) { booking in
+                    NavigationLink(destination: BookingDetailView(booking: booking)) {
+                        bookingRow(booking)
+                    }
+                }
+                .onDelete { offsets in
+                    deleteBookings(at: offsets)
+                }
+            }
+
+            Button {
+                showingAddBooking = true
+            } label: {
+                Label("Add Booking", systemImage: "plus.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+            }
+        } header: {
+            HStack {
+                Text("Flights & Hotels")
+                Spacer()
+                Text("\(trip.bookings.count)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func bookingRow(_ booking: BookingEntity) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: booking.bookingType.icon)
+                .font(.body)
+                .foregroundStyle(bookingIconColor(booking))
+                .frame(width: 32, height: 32)
+                .background(bookingIconColor(booking).opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(booking.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                bookingSubtitle(booking)
+            }
+
+            Spacer()
+
+            if !booking.confirmationCode.isEmpty {
+                Text(booking.confirmationCode)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private func bookingSubtitle(_ booking: BookingEntity) -> some View {
+        switch booking.bookingType {
+        case .flight:
+            if let dep = booking.departureAirport, let arr = booking.arrivalAirport {
+                Text("\(dep) → \(arr)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if let airline = booking.airline {
+                Text(airline)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .hotel:
+            if let checkIn = booking.checkInDate, let checkOut = booking.checkOutDate {
+                let nights = Calendar.current.dateComponents([.day], from: checkIn, to: checkOut).day ?? 0
+                Text("\(nights) night\(nights == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .carRental:
+            if let pickup = booking.departureTime {
+                Text("Pickup: \(pickup, style: .date)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .other:
+            EmptyView()
+        }
+    }
+
+    private func bookingIconColor(_ booking: BookingEntity) -> Color {
+        switch booking.bookingType {
+        case .flight: .blue
+        case .hotel: .purple
+        case .carRental: .orange
+        case .other: .gray
+        }
+    }
+
+    private func deleteBookings(at offsets: IndexSet) {
+        let bookings = sortedBookings
+        for index in offsets {
+            modelContext.delete(bookings[index])
+        }
+        try? modelContext.save()
+    }
+
     // MARK: - Day Section
 
     private func daySection(_ day: DayEntity) -> some View {
@@ -177,13 +330,29 @@ struct TripDetailView: View {
                     .italic()
             }
 
-            ForEach(sortedStops) { stop in
+            ForEach(Array(sortedStops.enumerated()), id: \.element.id) { index, stop in
                 NavigationLink(destination: StopDetailView(stop: stop)) {
                     StopRowView(stop: stop)
                 }
+
+                // Show travel time between consecutive stops
+                if index < sortedStops.count - 1 {
+                    let nextStop = sortedStops[index + 1]
+                    let hasFrom = stop.latitude != 0 || stop.longitude != 0
+                    let hasTo = nextStop.latitude != 0 || nextStop.longitude != 0
+                    if hasFrom && hasTo {
+                        TravelTimeRow(
+                            estimate: travelTimeService.estimate(from: stop.id, to: nextStop.id)
+                        )
+                        .task {
+                            await travelTimeService.calculateTravelTime(from: stop, to: nextStop)
+                        }
+                    }
+                }
             }
             .onDelete { offsets in
-                deleteStops(from: sortedStops, at: offsets)
+                let stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
+                deleteStops(from: stops, at: offsets)
             }
             .onMove { source, destination in
                 moveStops(in: day, from: source, to: destination)
@@ -222,6 +391,13 @@ struct TripDetailView: View {
     private func moveStops(in day: DayEntity, from source: IndexSet, to destination: Int) {
         let manager = DataManager(modelContext: modelContext)
         manager.reorderStops(in: day, from: source, to: destination)
+    }
+
+    // MARK: - Share
+
+    private func shareTripPDF() {
+        pdfData = TripPDFGenerator.generatePDF(for: trip)
+        showingShareSheet = true
     }
 
     // MARK: - AI Suggestions
