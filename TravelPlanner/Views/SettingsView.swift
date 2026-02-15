@@ -18,7 +18,7 @@ struct SettingsView: View {
                         .font(.system(size: 44))
                         .foregroundStyle(.blue)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("TravelPlanner")
+                        Text("Trav")
                             .font(.headline)
                         Text("Version 1.0")
                             .font(.caption)

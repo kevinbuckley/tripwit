@@ -22,7 +22,7 @@ struct WelcomeView: View {
                         .foregroundStyle(.blue)
                 }
 
-                Text("TravelPlanner")
+                Text("Trav")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 

@@ -26,8 +26,9 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         DEVELOPMENT_TEAM: A6VYGLF4DB
         CODE_SIGN_STYLE: Automatic
-        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "TravelPlanner uses your location to quickly add stops near you and track your trip."
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "TravelPlanner matches your photos to trip stops based on location and time."
+        INFOPLIST_KEY_CFBundleDisplayName: "Trav"
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Trav uses your location to quickly add stops near you and track your trip."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Trav matches your photos to trip stops based on location and time."
         INFOPLIST_KEY_CFBundleShortVersionString: "1.0"
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
