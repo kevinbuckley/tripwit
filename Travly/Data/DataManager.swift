@@ -132,75 +132,27 @@ final class DataManager {
     // MARK: - Sample Data
 
     /// If no trips exist, create sample trips for demo purposes.
+    /// Dates are relative to today so sample data always looks fresh.
     func loadSampleDataIfEmpty() {
         let descriptor = FetchDescriptor<TripEntity>()
         let count = (try? modelContext.fetchCount(descriptor)) ?? 0
         guard count == 0 else { return }
 
         let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
 
-        func date(year: Int, month: Int, day: Int) -> Date {
-            calendar.date(from: DateComponents(year: year, month: month, day: day))!
+        func daysFromNow(_ offset: Int) -> Date {
+            calendar.date(byAdding: .day, value: offset, to: today)!
         }
 
-        // Tokyo Adventure
-        let tokyo = TripEntity(
-            name: "Tokyo Adventure",
-            destination: "Tokyo, Japan",
-            startDate: date(year: 2026, month: 4, day: 10),
-            endDate: date(year: 2026, month: 4, day: 17),
-            status: .planning,
-            notes: "Cherry blossom season trip"
-        )
-        modelContext.insert(tokyo)
-        generateDays(for: tokyo)
-
-        // Add stops to Tokyo Day 1
-        if let tokyoDay1 = tokyo.days.first(where: { $0.dayNumber == 1 }) {
-            tokyoDay1.notes = "Arrival day"
-            addStop(
-                to: tokyoDay1,
-                name: "Narita Airport",
-                latitude: 35.7720,
-                longitude: 140.3929,
-                category: .transport
-            )
-            addStop(
-                to: tokyoDay1,
-                name: "Shinjuku Hotel",
-                latitude: 35.6938,
-                longitude: 139.7034,
-                category: .accommodation
-            )
-        }
-
-        // Add stops to Tokyo Day 2
-        if let tokyoDay2 = tokyo.days.first(where: { $0.dayNumber == 2 }) {
-            tokyoDay2.notes = "Temple and garden visits"
-            addStop(
-                to: tokyoDay2,
-                name: "Senso-ji Temple",
-                latitude: 35.7148,
-                longitude: 139.7967,
-                category: .attraction
-            )
-            addStop(
-                to: tokyoDay2,
-                name: "Tsukiji Outer Market",
-                latitude: 35.6654,
-                longitude: 139.7707,
-                category: .restaurant
-            )
-        }
-
-        // Paris Getaway
+        // Paris Getaway — active trip (started yesterday, ends in 3 days)
         let paris = TripEntity(
             name: "Paris Getaway",
             destination: "Paris, France",
-            startDate: date(year: 2026, month: 2, day: 10),
-            endDate: date(year: 2026, month: 2, day: 14),
+            startDate: daysFromNow(-1),
+            endDate: daysFromNow(3),
             status: .active,
-            notes: "Valentine's week in Paris"
+            notes: "A romantic few days exploring the City of Light"
         )
         modelContext.insert(paris)
         generateDays(for: paris)
@@ -223,12 +175,93 @@ final class DataManager {
             )
         }
 
-        // NYC Weekend
+        if let parisDay2 = paris.days.first(where: { $0.dayNumber == 2 }) {
+            parisDay2.notes = "Art and culture"
+            addStop(
+                to: parisDay2,
+                name: "Louvre Museum",
+                latitude: 48.8606,
+                longitude: 2.3376,
+                category: .attraction
+            )
+            addStop(
+                to: parisDay2,
+                name: "Café de Flore",
+                latitude: 48.8540,
+                longitude: 2.3325,
+                category: .restaurant
+            )
+        }
+
+        // Add a sample booking to Paris
+        let parisHotel = BookingEntity(
+            type: .hotel,
+            title: "Hôtel Le Marais",
+            confirmationCode: "HLM-28491",
+            sortOrder: 0
+        )
+        parisHotel.hotelName = "Hôtel Le Marais"
+        parisHotel.hotelAddress = "12 Rue des Archives, 75004 Paris"
+        parisHotel.checkInDate = daysFromNow(-1)
+        parisHotel.checkOutDate = daysFromNow(3)
+        parisHotel.trip = paris
+        paris.bookings.append(parisHotel)
+        modelContext.insert(parisHotel)
+
+        // Tokyo Adventure — upcoming trip (starts in 30 days)
+        let tokyo = TripEntity(
+            name: "Tokyo Adventure",
+            destination: "Tokyo, Japan",
+            startDate: daysFromNow(30),
+            endDate: daysFromNow(37),
+            status: .planning,
+            notes: "Cherry blossom season trip"
+        )
+        modelContext.insert(tokyo)
+        generateDays(for: tokyo)
+
+        if let tokyoDay1 = tokyo.days.first(where: { $0.dayNumber == 1 }) {
+            tokyoDay1.notes = "Arrival day"
+            addStop(
+                to: tokyoDay1,
+                name: "Narita Airport",
+                latitude: 35.7720,
+                longitude: 140.3929,
+                category: .transport
+            )
+            addStop(
+                to: tokyoDay1,
+                name: "Shinjuku Hotel",
+                latitude: 35.6938,
+                longitude: 139.7034,
+                category: .accommodation
+            )
+        }
+
+        if let tokyoDay2 = tokyo.days.first(where: { $0.dayNumber == 2 }) {
+            tokyoDay2.notes = "Temple and garden visits"
+            addStop(
+                to: tokyoDay2,
+                name: "Senso-ji Temple",
+                latitude: 35.7148,
+                longitude: 139.7967,
+                category: .attraction
+            )
+            addStop(
+                to: tokyoDay2,
+                name: "Tsukiji Outer Market",
+                latitude: 35.6654,
+                longitude: 139.7707,
+                category: .restaurant
+            )
+        }
+
+        // NYC Weekend — completed trip (ended 14 days ago)
         let nyc = TripEntity(
             name: "New York City Weekend",
             destination: "New York, USA",
-            startDate: date(year: 2025, month: 12, day: 20),
-            endDate: date(year: 2025, month: 12, day: 23),
+            startDate: daysFromNow(-18),
+            endDate: daysFromNow(-14),
             status: .completed,
             notes: "Holiday shopping and sightseeing"
         )

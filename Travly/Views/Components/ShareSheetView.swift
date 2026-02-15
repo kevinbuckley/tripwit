@@ -6,7 +6,7 @@ import UIKit
 /// Instead, we present it directly on the root view controller.
 enum ShareSheet {
 
-    static func share(pdfData: Data, filename: String) {
+    @MainActor static func share(pdfData: Data, filename: String) {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         try? pdfData.write(to: tempURL)
 

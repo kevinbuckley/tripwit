@@ -9,6 +9,12 @@ struct SettingsView: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingSampleDataLoaded = false
 
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "Version \(version) (\(build))"
+    }
+
     var body: some View {
         List {
             // App Info
@@ -20,7 +26,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Travly")
                             .font(.headline)
-                        Text("Version 1.0")
+                        Text(appVersion)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -46,31 +52,41 @@ struct SettingsView: View {
                 } label: {
                     Label("Load Sample Data", systemImage: "tray.and.arrow.down")
                 }
+                .disabled(!allTrips.isEmpty)
 
-                Button(role: .destructive) {
-                    showingDeleteConfirmation = true
-                } label: {
-                    Label("Delete All Trips", systemImage: "trash")
-                        .foregroundStyle(.red)
+                if !allTrips.isEmpty {
+                    Button(role: .destructive) {
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Label("Delete All Trips", systemImage: "trash")
+                            .foregroundStyle(.red)
+                    }
                 }
             } header: {
                 Text("Data Management")
             } footer: {
-                Text("Sample data creates example trips for testing. Deleting all trips cannot be undone.")
+                if allTrips.isEmpty {
+                    Text("Load sample trips to explore the app.")
+                } else {
+                    Text("Deleting all trips cannot be undone.")
+                }
             }
 
-            // Credits
+            // About
             Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Built with SwiftUI & SwiftData")
-                        .font(.subheadline)
-                    Text("iOS 17+ | Swift 6")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                Link(destination: URL(string: "https://kevinbuckley.github.io/travly/support.html")!) {
+                    Label("Help & Support", systemImage: "questionmark.circle")
                 }
-                .padding(.vertical, 2)
+
+                Link(destination: URL(string: "https://kevinbuckley.github.io/travly/privacy.html")!) {
+                    Label("Privacy Policy", systemImage: "hand.raised")
+                }
             } header: {
-                Text("Credits")
+                Text("About")
+            } footer: {
+                Text("Made with love for travel.")
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 8)
             }
         }
         .listStyle(.insetGrouped)

@@ -4,6 +4,7 @@ import UIKit
 import TripCore
 
 /// Fetches photos from the user's photo library and matches them to stops using TripCore's PhotoMatcher.
+@MainActor
 @Observable
 final class PhotoLibraryService {
 
