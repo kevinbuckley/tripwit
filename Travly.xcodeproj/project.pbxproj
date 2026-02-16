@@ -41,6 +41,7 @@
 		A46EFDB94319FC36A2536594 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FF763CDF32BBD771F47F59 /* SettingsView.swift */; };
 		A554F68C3AC53ED697D1C864 /* TravlyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FF456A94476A4B19DAA77EC /* TravlyTests.swift */; };
 		A699E40D11FB585D70DAA585 /* AITripPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA61D1D2C99FA76E1F8D896D /* AITripPlanner.swift */; };
+		A882B9BE3A05C3F50C3DE203 /* PasteItinerarySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D9667BA07AE6716B6D2287 /* PasteItinerarySheet.swift */; };
 		AD2867FE8A2A69DEBC17971B /* ShareSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 871FC162371D442485362A6E /* ShareSheetView.swift */; };
 		AFB6E8E0466A41DDCDD88E70 /* TripMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526C0747D5F5225BE613CD93 /* TripMapView.swift */; };
 		B5A7468846CA3FF836E175D1 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9BE83EF902553737155DF54 /* LocationManager.swift */; };
@@ -108,6 +109,7 @@
 		D1CB348BEB5DE3E2D27E23BD /* TravelTimeRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelTimeRow.swift; sourceTree = "<group>"; };
 		EA61D1D2C99FA76E1F8D896D /* AITripPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITripPlanner.swift; sourceTree = "<group>"; };
 		F0FF763CDF32BBD771F47F59 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F1D9667BA07AE6716B6D2287 /* PasteItinerarySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteItinerarySheet.swift; sourceTree = "<group>"; };
 		F36A11FD3E1E7021C5F02997 /* AddTripSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTripSheet.swift; sourceTree = "<group>"; };
 		F6A58A508A96961D4104BB6A /* NearbyAISuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyAISuggestSheet.swift; sourceTree = "<group>"; };
 		FA3D40E4ECC5AECFF12087C8 /* EditTripSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTripSheet.swift; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 				FA3D40E4ECC5AECFF12087C8 /* EditTripSheet.swift */,
 				68EC9EC922768C72B8E5CA54 /* LocateStopSheet.swift */,
 				F6A58A508A96961D4104BB6A /* NearbyAISuggestSheet.swift */,
+				F1D9667BA07AE6716B6D2287 /* PasteItinerarySheet.swift */,
 				171930E91C5C3993F629D04D /* QuickAddStopSheet.swift */,
 				F0FF763CDF32BBD771F47F59 /* SettingsView.swift */,
 				55816489B3DAD47A179C77FA /* StopDetailView.swift */,
@@ -364,6 +367,7 @@
 				B5A7468846CA3FF836E175D1 /* LocationManager.swift in Sources */,
 				1F7F440A40F35E2647D4A371 /* LocationSearchView.swift in Sources */,
 				3362DCAA7316C3157C415EA5 /* NearbyAISuggestSheet.swift in Sources */,
+				A882B9BE3A05C3F50C3DE203 /* PasteItinerarySheet.swift in Sources */,
 				2BC488A52A370B9E10389BAF /* PhotoLibraryService.swift in Sources */,
 				4EA4B637B817A71837CF1777 /* QuickAddStopSheet.swift in Sources */,
 				A46EFDB94319FC36A2536594 /* SettingsView.swift in Sources */,
@@ -415,7 +419,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Travly;
@@ -445,7 +449,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Travly;

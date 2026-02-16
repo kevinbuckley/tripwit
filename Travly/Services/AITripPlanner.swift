@@ -24,6 +24,39 @@ struct LocatedPlace {
 
 @available(iOS 26, *)
 @Generable
+struct ParsedItineraryDay {
+    @Guide(description: "The day number in the itinerary, starting from 1")
+    var dayNumber: Int
+
+    @Guide(description: "A list of stops planned for this day")
+    var stops: [ParsedItineraryStop]
+}
+
+@available(iOS 26, *)
+@Generable
+struct ParsedItineraryStop {
+    @Guide(description: "The name of the place or attraction")
+    var name: String
+
+    @Guide(description: "A short one-sentence description or note about this stop")
+    var note: String
+
+    @Guide(.anyOf(["accommodation", "restaurant", "attraction", "transport", "activity", "other"]))
+    var category: String
+
+    @Guide(description: "Suggested visit duration in minutes, e.g. 60 for one hour. Use 0 if unknown.")
+    var durationMinutes: Int
+}
+
+@available(iOS 26, *)
+@Generable
+struct ParsedItinerary {
+    @Guide(description: "A list of days extracted from the itinerary text")
+    var days: [ParsedItineraryDay]
+}
+
+@available(iOS 26, *)
+@Generable
 struct SuggestedStop {
     @Guide(description: "The name of the place or attraction to visit")
     var name: String
@@ -303,6 +336,65 @@ final class AITripPlanner {
         }
 
         isLocating = false
+    }
+
+    // MARK: - Parse Itinerary
+
+    var parsedItinerary: ParsedItinerary?
+    var isParsing = false
+
+    /// Parse free-form itinerary text (e.g. from ChatGPT) into structured days and stops.
+    func parseItinerary(text: String, destination: String, totalDays: Int) async {
+        guard isAvailable else {
+            errorMessage = "Apple Intelligence is not available on this device."
+            return
+        }
+
+        isParsing = true
+        parsedItinerary = nil
+        errorMessage = nil
+
+        let prompt = """
+        Parse the following travel itinerary text into structured days and stops. \
+        The trip destination is \(destination) and the trip has \(totalDays) day(s).
+
+        RULES:
+        - Extract every place, restaurant, attraction, or activity mentioned.
+        - Assign each stop to the correct day number. If the text uses "Day 1", "Day 2", etc., \
+          use those numbers. If stops don't have clear day assignments, assign them to day 1.
+        - Day numbers must be between 1 and \(totalDays). If the text mentions more days than \
+          the trip has, cap at \(totalDays).
+        - Classify each stop: restaurant (any food/drink/café), attraction (museums, landmarks, \
+          parks, viewpoints), activity (tours, shows, shopping, experiences), accommodation \
+          (hotels, hostels), transport (airports, train stations), other.
+        - Estimate duration in minutes if not specified (restaurants: 60-90, attractions: 60-120, \
+          activities: 60-180).
+        - Use the place name as given, do NOT rename or paraphrase.
+        - If a note or description is given for the stop, include it. Otherwise use a short description.
+
+        TEXT TO PARSE:
+        \(text)
+        """
+
+        do {
+            let parseSession = LanguageModelSession {
+                """
+                You are a travel itinerary parser. You extract structured stop data from \
+                free-form text. You are precise about place names — use them exactly as written. \
+                You assign accurate categories and reasonable duration estimates.
+                """
+            }
+
+            let result = try await parseSession.respond(
+                to: prompt,
+                generating: ParsedItinerary.self
+            )
+            parsedItinerary = result.content
+        } catch {
+            errorMessage = "Could not parse the itinerary. Please try again."
+        }
+
+        isParsing = false
     }
 
     /// Map a category string from the AI to a StopCategory enum.

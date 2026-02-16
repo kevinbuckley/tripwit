@@ -18,6 +18,7 @@ struct TripDetailView: View {
     @State private var travelTimeService = TravelTimeService()
     @State private var stopToDelete: StopEntity?
     @State private var bookingToDelete: BookingEntity?
+    @State private var showingPasteItinerary = false
 
     private var sortedDays: [DayEntity] {
         trip.days.sorted { $0.dayNumber < $1.dayNumber }
@@ -45,6 +46,9 @@ struct TripDetailView: View {
 
             // MARK: - Bookings
             bookingsSection
+
+            // MARK: - Paste Itinerary
+            pasteItinerarySection
 
             // MARK: - Itinerary
             if !sortedDays.isEmpty {
@@ -84,6 +88,9 @@ struct TripDetailView: View {
         }
         .sheet(isPresented: $showingAddBooking) {
             AddBookingSheet(trip: trip)
+        }
+        .sheet(isPresented: $showingPasteItinerary) {
+            pasteItinerarySheet
         }
         .alert("Start Trip?", isPresented: $showingStartConfirmation) {
             Button("Start", role: .none) {
@@ -431,6 +438,55 @@ struct TripDetailView: View {
     private func shareTripPDF() {
         let data = TripPDFGenerator.generatePDF(for: trip)
         ShareSheet.share(pdfData: data, filename: "\(trip.name) Itinerary.pdf")
+    }
+
+    // MARK: - Paste Itinerary
+
+    @ViewBuilder
+    private var pasteItinerarySection: some View {
+        #if canImport(FoundationModels)
+        if #available(iOS 26, *), AITripPlanner.isDeviceSupported {
+            Section {
+                Button {
+                    showingPasteItinerary = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "doc.on.clipboard.fill")
+                            .font(.title3)
+                            .foregroundStyle(.purple)
+                            .frame(width: 32, height: 32)
+                            .background(Color.purple.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Paste Itinerary")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            Text("Import stops from ChatGPT, a blog, or any text")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.purple)
+                    }
+                    .padding(.vertical, 4)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private var pasteItinerarySheet: some View {
+        #if canImport(FoundationModels)
+        if #available(iOS 26, *) {
+            PasteItinerarySheet(trip: trip)
+        }
+        #else
+        Text("Apple Intelligence requires iOS 26")
+        #endif
     }
 
     // MARK: - AI Suggestions
