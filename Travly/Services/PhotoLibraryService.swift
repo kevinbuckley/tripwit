@@ -99,8 +99,12 @@ final class PhotoLibraryService {
             )
         }
 
+        // Read user's preferred radius (stored in miles, default 1.0)
+        let radiusMiles = UserDefaults.standard.double(forKey: "photoMatchRadiusMiles")
+        let radiusMeters = (radiusMiles > 0 ? radiusMiles : 1.0) * 1609.34
+
         // Use TripCore's PhotoMatcher
-        let matcher = PhotoMatcher(maxDistanceMeters: 200, maxTimeWindowSeconds: 7200)
+        let matcher = PhotoMatcher(maxDistanceMeters: radiusMeters, maxTimeWindowSeconds: 7200)
         let allResults = matcher.matchPhotos(photoMetadataList, to: coreStops)
 
         // Filter to photos matched to THIS stop (high or medium confidence)

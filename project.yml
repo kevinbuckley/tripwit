@@ -34,7 +34,7 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Travly matches your photos to trip stops based on location and time."
         INFOPLIST_KEY_CFBundleShortVersionString: "1.0"
         MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "7"
+        CURRENT_PROJECT_VERSION: "8"
   TravlyTests:
     type: bundle.unit-test
     platform: iOS

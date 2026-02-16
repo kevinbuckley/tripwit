@@ -8,6 +8,7 @@ struct SettingsView: View {
 
     @State private var showingDeleteConfirmation = false
     @State private var showingSampleDataLoaded = false
+    @AppStorage("photoMatchRadiusMiles") private var photoMatchRadiusMiles: Double = 1.0
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -43,6 +44,25 @@ struct SettingsView: View {
                 LabeledContent("Total Stops", value: "\(stopCount)")
             } header: {
                 Text("Statistics")
+            }
+
+            // Photo Matching
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Photo Search Radius")
+                        Spacer()
+                        Text(formatRadius(photoMatchRadiusMiles))
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $photoMatchRadiusMiles, in: 0.1...5.0, step: 0.1)
+                        .tint(.blue)
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Text("Photo Matching")
+            } footer: {
+                Text("How close a photo must be to a stop to be matched. Larger values find more photos but may be less accurate.")
             }
 
             // Data Management
@@ -118,6 +138,22 @@ struct SettingsView: View {
         let manager = DataManager(modelContext: modelContext)
         for trip in allTrips {
             manager.deleteTrip(trip)
+        }
+    }
+
+    private func formatRadius(_ miles: Double) -> String {
+        if Locale.current.measurementSystem == .us {
+            if miles < 1.0 {
+                let feet = Int(miles * 5280)
+                return "\(feet) ft"
+            }
+            return String(format: "%.1f mi", miles)
+        } else {
+            let km = miles * 1.60934
+            if km < 1.0 {
+                return "\(Int(km * 1000)) m"
+            }
+            return String(format: "%.1f km", km)
         }
     }
 }
