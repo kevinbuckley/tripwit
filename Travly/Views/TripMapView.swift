@@ -10,6 +10,8 @@ struct TripMapView: View {
     @State private var selectedTripID: UUID?
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var navigateToTripID: UUID?
+    @State private var selectedStopID: UUID?
+    @State private var navigateToStopID: UUID?
 
     private var activeTrip: TripEntity? {
         allTrips.first { $0.status == .active }
@@ -40,6 +42,11 @@ struct TripMapView: View {
         .navigationDestination(item: $navigateToTripID) { tripID in
             if let trip = allTrips.first(where: { $0.id == tripID }) {
                 TripDetailView(trip: trip)
+            }
+        }
+        .navigationDestination(item: $navigateToStopID) { stopID in
+            if let stop = allStops.first(where: { $0.id == stopID }) {
+                StopDetailView(stop: stop)
             }
         }
         .onAppear {
@@ -219,7 +226,7 @@ struct TripMapView: View {
 
     private var mapContent: some View {
         ZStack(alignment: .bottomTrailing) {
-            Map(position: $cameraPosition) {
+            Map(position: $cameraPosition, selection: $selectedStopID) {
                 ForEach(allStops) { stop in
                     Marker(
                         stop.name,
@@ -229,10 +236,17 @@ struct TripMapView: View {
                         )
                     )
                     .tint(markerColor(for: stop.category))
+                    .tag(stop.id)
                 }
             }
             .onAppear {
                 fitAllStops()
+            }
+            .onChange(of: selectedStopID) { _, newValue in
+                if let stopID = newValue {
+                    navigateToStopID = stopID
+                    selectedStopID = nil
+                }
             }
 
             if !allStops.isEmpty {
@@ -253,6 +267,7 @@ struct TripMapView: View {
                 .clipShape(Circle())
                 .shadow(radius: 2)
         }
+        .accessibilityLabel("Fit all stops on map")
         .padding()
     }
 

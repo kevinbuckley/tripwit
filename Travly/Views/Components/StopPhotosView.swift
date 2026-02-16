@@ -7,7 +7,7 @@ struct StopPhotosView: View {
 
     let stop: StopEntity
     @State private var photoService = PhotoLibraryService()
-    @State private var selectedPhotoID: String?
+    @State private var selectedPhotoID: PhotoID?
     @State private var fullImage: UIImage?
 
     private var allStopsInTrip: [StopEntity] {
@@ -55,8 +55,8 @@ struct StopPhotosView: View {
                 await scanPhotos()
             }
         }
-        .fullScreenCover(item: $selectedPhotoID) { assetID in
-            PhotoFullScreenView(assetIdentifier: assetID, photoService: photoService)
+        .fullScreenCover(item: $selectedPhotoID) { photoID in
+            PhotoFullScreenView(assetIdentifier: photoID.value, photoService: photoService)
         }
     }
 
@@ -157,7 +157,7 @@ struct StopPhotosView: View {
                             photoService: photoService
                         )
                         .onTapGesture {
-                            selectedPhotoID = result.photo.assetIdentifier
+                            selectedPhotoID = PhotoID(result.photo.assetIdentifier)
                         }
                     }
                 }
@@ -223,7 +223,9 @@ private struct PhotoThumbnailView: View {
                         .stroke(.white, lineWidth: 1.5)
                 }
                 .offset(x: -4, y: -4)
+                .accessibilityHidden(true)
         }
+        .accessibilityLabel("Photo, \(confidenceLabel) match confidence")
         .onAppear {
             photoService.loadThumbnail(
                 assetIdentifier: assetIdentifier,
@@ -239,6 +241,14 @@ private struct PhotoThumbnailView: View {
         case .high: .green
         case .medium: .yellow
         case .low: .gray
+        }
+    }
+
+    private var confidenceLabel: String {
+        switch confidence {
+        case .high: "high"
+        case .medium: "medium"
+        case .low: "low"
         }
     }
 }
@@ -275,6 +285,7 @@ private struct PhotoFullScreenView: View {
                     .foregroundStyle(.white.opacity(0.8))
                     .padding()
             }
+            .accessibilityLabel("Close photo")
         }
         .onAppear {
             photoService.loadFullImage(assetIdentifier: assetIdentifier) { loaded in
@@ -284,8 +295,10 @@ private struct PhotoFullScreenView: View {
     }
 }
 
-// MARK: - String+Identifiable for fullScreenCover
+// MARK: - Identifiable wrapper for photo asset IDs
 
-extension String: @retroactive Identifiable {
-    public var id: String { self }
+struct PhotoID: Identifiable {
+    let id: String
+    var value: String { id }
+    init(_ value: String) { self.id = value }
 }

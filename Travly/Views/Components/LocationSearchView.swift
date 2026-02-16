@@ -21,6 +21,7 @@ struct LocationSearchView: View {
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var searchTask: Task<Void, Never>?
     @State private var hasSelected = false
+    @State private var searchError: String?
 
     private var hasLocation: Bool {
         selectedLatitude != 0 || selectedLongitude != 0
@@ -32,11 +33,27 @@ struct LocationSearchView: View {
             if hasSelected && hasLocation {
                 selectedLocationBanner
             }
+            if let error = searchError, !hasSelected {
+                searchErrorBanner(error)
+            }
             if !searchResults.isEmpty && !hasSelected {
                 resultsList
             }
             mapPreview
         }
+    }
+
+    private func searchErrorBanner(_ message: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.orange)
+                .font(.caption)
+            Text(message)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Search Bar
@@ -175,6 +192,7 @@ struct LocationSearchView: View {
 
     private func debounceSearch(query: String) {
         searchTask?.cancel()
+        searchError = nil
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard trimmed.count >= 2 else {
             searchResults = []
@@ -190,6 +208,7 @@ struct LocationSearchView: View {
     @MainActor
     private func performSearch(query: String) async {
         isSearching = true
+        searchError = nil
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
 
@@ -205,8 +224,18 @@ struct LocationSearchView: View {
                     longitude: item.placemark.coordinate.longitude
                 )
             }
+            if searchResults.isEmpty {
+                searchError = "No results found for \"\(query)\""
+            }
+        } catch let error as MKError where error.code == .placemarkNotFound {
+            searchResults = []
+            searchError = "No places found for \"\(query)\""
+        } catch let urlError as URLError where urlError.code == .notConnectedToInternet || urlError.code == .networkConnectionLost {
+            searchResults = []
+            searchError = "No internet connection"
         } catch {
             searchResults = []
+            searchError = "Search failed — try again"
         }
         isSearching = false
     }
@@ -229,6 +258,7 @@ struct LocationSearchView: View {
     private func clearSearch() {
         searchText = ""
         searchResults = []
+        searchError = nil
         selectedName = ""
         selectedLatitude = 0
         selectedLongitude = 0

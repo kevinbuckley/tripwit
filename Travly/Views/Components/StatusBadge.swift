@@ -30,6 +30,7 @@ struct StatusBadge: View {
             .background(color.opacity(0.15))
             .foregroundStyle(color)
             .clipShape(Capsule())
+            .accessibilityLabel("Trip status: \(label)")
     }
 }
 

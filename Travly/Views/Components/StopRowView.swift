@@ -26,9 +26,6 @@ struct StopRowView: View {
             stopLabels
             Spacer()
             visitedIndicator
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.quaternary)
         }
         .padding(.vertical, 2)
         .opacity(stop.isVisited ? 0.6 : 1.0)

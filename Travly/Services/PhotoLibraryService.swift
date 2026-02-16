@@ -18,6 +18,7 @@ final class PhotoLibraryService {
     // MARK: - Permission
 
     func requestPermission() async {
+        // .readWrite is required to read photo metadata; .addOnly only allows writing
         let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         await MainActor.run {
             permissionStatus = status

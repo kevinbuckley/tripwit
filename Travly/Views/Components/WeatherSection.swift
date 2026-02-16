@@ -88,6 +88,7 @@ struct WeatherSection: View {
                         Image(systemName: "arrow.clockwise")
                             .font(.caption)
                     }
+                    .accessibilityLabel("Refresh weather")
                 }
             }
         }

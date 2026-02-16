@@ -105,6 +105,7 @@ struct StopDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.blue)
                 .listRowBackground(Color.clear)
+                .accessibilityLabel("Get directions to \(stop.name)")
             }
 
             // AI Nearby Suggestions
@@ -183,6 +184,7 @@ struct StopDetailView: View {
             }
             .foregroundColor(.green)
         }
+        .accessibilityLabel("Mark \(stop.name) as visited")
     }
 
     private func toggleVisitedStatus() {
@@ -230,6 +232,7 @@ struct StopDetailView: View {
             }
             .disabled(newCommentText.trimmingCharacters(in: .whitespaces).isEmpty)
             .buttonStyle(.plain)
+            .accessibilityLabel("Send comment")
         }
     }
 

@@ -142,7 +142,7 @@ final class DataManager {
         let today = calendar.startOfDay(for: Date())
 
         func daysFromNow(_ offset: Int) -> Date {
-            calendar.date(byAdding: .day, value: offset, to: today)!
+            calendar.date(byAdding: .day, value: offset, to: today) ?? today
         }
 
         // Paris Getaway — active trip (started yesterday, ends in 3 days)

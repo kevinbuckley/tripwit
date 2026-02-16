@@ -62,6 +62,7 @@ struct TripDetailView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                     }
+                    .accessibilityLabel("Share itinerary as PDF")
                     Button {
                         showingEditTrip = true
                     } label: {
