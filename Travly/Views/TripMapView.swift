@@ -321,8 +321,10 @@ struct TripMapView: View {
         guard !allStops.isEmpty else { return }
         let lats = allStops.map(\.latitude)
         let lons = allStops.map(\.longitude)
-        let centerLat = (lats.min()! + lats.max()!) / 2
-        let centerLon = (lons.min()! + lons.max()!) / 2
+        guard let minLat = lats.min(), let maxLat = lats.max(),
+              let minLon = lons.min(), let maxLon = lons.max() else { return }
+        let centerLat = (minLat + maxLat) / 2
+        let centerLon = (minLon + maxLon) / 2
 
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = "restaurant"

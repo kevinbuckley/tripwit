@@ -76,19 +76,21 @@ struct StopDetailView: View {
                 if let address = stop.address, !address.isEmpty {
                     LabeledContent("Address", value: address)
                 }
-                if let phone = stop.phone, !phone.isEmpty {
+                if let phone = stop.phone, !phone.isEmpty,
+                   let phoneURL = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
                     HStack {
                         Text("Phone")
                         Spacer()
-                        Link(phone, destination: URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })")!)
+                        Link(phone, destination: phoneURL)
                             .font(.subheadline)
                     }
                 }
-                if let website = stop.website, !website.isEmpty {
+                if let website = stop.website, !website.isEmpty,
+                   let websiteURL = URL(string: website) {
                     HStack {
                         Text("Website")
                         Spacer()
-                        Link("Open", destination: URL(string: website) ?? URL(string: "https://example.com")!)
+                        Link("Open", destination: websiteURL)
                             .font(.subheadline)
                     }
                 }
