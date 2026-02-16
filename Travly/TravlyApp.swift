@@ -9,14 +9,24 @@ struct TravlyApp: App {
     private let containerError: String?
 
     init() {
+        let schema = Schema([TripEntity.self, DayEntity.self, StopEntity.self, CommentEntity.self, BookingEntity.self, WishlistItemEntity.self, TripListEntity.self, TripListItemEntity.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
         do {
-            let schema = Schema([TripEntity.self, DayEntity.self, StopEntity.self, CommentEntity.self, BookingEntity.self, WishlistItemEntity.self, TripListEntity.self, TripListItemEntity.self])
-            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             modelContainer = try ModelContainer(for: schema, configurations: [config])
             containerError = nil
         } catch {
-            modelContainer = nil
-            containerError = error.localizedDescription
+            // Schema migration failed — delete old store and retry
+            let storeURL = config.url
+            let related = [storeURL, storeURL.appendingPathExtension("wal"), storeURL.appendingPathExtension("shm")]
+            for url in related { try? FileManager.default.removeItem(at: url) }
+            do {
+                modelContainer = try ModelContainer(for: schema, configurations: [config])
+                containerError = nil
+            } catch {
+                modelContainer = nil
+                containerError = error.localizedDescription
+            }
         }
     }
 
