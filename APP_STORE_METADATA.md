@@ -75,9 +75,24 @@ Result: Rated 4+ (all ages)
 Does your app use non-exempt encryption? **No**
 (The app only uses standard HTTPS/TLS for network calls to the Open-Meteo weather API, which qualifies for the encryption exemption. `ITSAppUsesNonExemptEncryption` is set to `NO` in Info.plist.)
 
+## App Review Notes (paste into App Store Connect → App Review Information → Notes)
+
+To quickly explore the app's full functionality:
+
+1. On the welcome screen, tap "Load Example Trips" to populate the app with 3 sample trips (Paris, Tokyo, New York).
+2. Tap the "Trips" tab to see the trip list, then tap a trip to see the day-by-day itinerary.
+3. Tap a stop to see the stop detail view — you can add comments, get directions, and view matched photos (if any geotagged photos are in the simulator's photo library).
+4. Tap the "Map" tab to see all stops plotted on an interactive map. Tap a marker to navigate to the stop detail.
+5. Weather forecasts appear on any trip with future dates. The app uses the free Open-Meteo API (no API key required).
+6. The "Share" button in the trip detail toolbar generates a PDF itinerary.
+7. Photo matching requires photos with GPS metadata taken near trip stop locations.
+8. On devices with Apple Intelligence (iOS 26+), additional AI-powered features appear: "Suggest with AI" on day itineraries, "Locate with AI" on stops, and "Explore Nearby" on stop details. These buttons are hidden on unsupported devices.
+
+No login is required. All data is stored on-device only.
+
 ## Screenshot Order
-1. "Plan Your Perfect Trip" — trip list
-2. "Day-by-Day Itinerary" — day view with stops
-3. "Track All Your Bookings" — bookings section
-4. "Weather & Travel Times" — weather and route info
-5. "Share Your Itinerary" — PDF export
+1. Trip list with sample trips
+2. Trip detail with day-by-day itinerary
+3. Interactive map with stop markers
+4. Settings
+5. Welcome screen
