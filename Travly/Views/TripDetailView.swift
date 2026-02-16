@@ -16,6 +16,8 @@ struct TripDetailView: View {
     @State private var showingCompleteConfirmation = false
     @State private var showingAddBooking = false
     @State private var travelTimeService = TravelTimeService()
+    @State private var stopToDelete: StopEntity?
+    @State private var bookingToDelete: BookingEntity?
 
     private var sortedDays: [DayEntity] {
         trip.days.sorted { $0.dayNumber < $1.dayNumber }
@@ -100,6 +102,39 @@ struct TripDetailView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This will mark your trip as completed.")
+        }
+        .alert("Delete Stop?", isPresented: Binding(
+            get: { stopToDelete != nil },
+            set: { if !$0 { stopToDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                if let stop = stopToDelete {
+                    DataManager(modelContext: modelContext).deleteStop(stop)
+                    stopToDelete = nil
+                }
+            }
+            Button("Cancel", role: .cancel) { stopToDelete = nil }
+        } message: {
+            if let stop = stopToDelete {
+                Text("Are you sure you want to delete \"\(stop.name)\"? This cannot be undone.")
+            }
+        }
+        .alert("Delete Booking?", isPresented: Binding(
+            get: { bookingToDelete != nil },
+            set: { if !$0 { bookingToDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                if let booking = bookingToDelete {
+                    modelContext.delete(booking)
+                    try? modelContext.save()
+                    bookingToDelete = nil
+                }
+            }
+            Button("Cancel", role: .cancel) { bookingToDelete = nil }
+        } message: {
+            if let booking = bookingToDelete {
+                Text("Are you sure you want to delete \"\(booking.title)\"?")
+            }
         }
     }
 
@@ -214,7 +249,9 @@ struct TripDetailView: View {
                     }
                 }
                 .onDelete { offsets in
-                    deleteBookings(at: offsets)
+                    if let index = offsets.first {
+                        bookingToDelete = sortedBookings[index]
+                    }
                 }
             }
 
@@ -346,7 +383,9 @@ struct TripDetailView: View {
             }
             .onDelete { offsets in
                 let stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
-                deleteStops(from: stops, at: offsets)
+                if let index = offsets.first {
+                    stopToDelete = stops[index]
+                }
             }
             .onMove { source, destination in
                 moveStops(in: day, from: source, to: destination)
