@@ -70,7 +70,7 @@ final class DataManager {
         var dayNumber = 1
 
         while currentDate <= startOfEnd {
-            let day = DayEntity(date: currentDate, dayNumber: dayNumber)
+            let day = DayEntity(date: currentDate, dayNumber: dayNumber, location: trip.destination)
             day.trip = trip
             trip.days.append(day)
             modelContext.insert(day)
@@ -250,29 +250,38 @@ final class DataManager {
         paris.bookings.append(parisHotel)
         modelContext.insert(parisHotel)
 
-        // Tokyo Adventure — upcoming trip (starts in 30 days)
-        let tokyo = TripEntity(
-            name: "Tokyo Adventure",
-            destination: "Tokyo, Japan",
+        // Japan Adventure — upcoming multi-city trip (starts in 30 days)
+        let japan = TripEntity(
+            name: "Japan Adventure",
+            destination: "Japan",
             startDate: daysFromNow(30),
             endDate: daysFromNow(37),
             status: .planning,
-            notes: "Cherry blossom season trip"
+            notes: "Cherry blossom season trip — Tokyo & Kyoto"
         )
-        modelContext.insert(tokyo)
-        generateDays(for: tokyo)
+        modelContext.insert(japan)
+        generateDays(for: japan)
 
-        if let tokyoDay1 = tokyo.days.first(where: { $0.dayNumber == 1 }) {
-            tokyoDay1.notes = "Arrival day"
+        // Set first 4 days to Tokyo, rest to Kyoto
+        for day in japan.days {
+            if day.dayNumber <= 4 {
+                day.location = "Tokyo, Japan"
+            } else {
+                day.location = "Kyoto, Japan"
+            }
+        }
+
+        if let day1 = japan.days.first(where: { $0.dayNumber == 1 }) {
+            day1.notes = "Arrival day"
             addStop(
-                to: tokyoDay1,
+                to: day1,
                 name: "Narita Airport",
                 latitude: 35.7720,
                 longitude: 140.3929,
                 category: .transport
             )
             addStop(
-                to: tokyoDay1,
+                to: day1,
                 name: "Shinjuku Hotel",
                 latitude: 35.6938,
                 longitude: 139.7034,
@@ -280,21 +289,39 @@ final class DataManager {
             )
         }
 
-        if let tokyoDay2 = tokyo.days.first(where: { $0.dayNumber == 2 }) {
-            tokyoDay2.notes = "Temple and garden visits"
+        if let day2 = japan.days.first(where: { $0.dayNumber == 2 }) {
+            day2.notes = "Temple and garden visits"
             addStop(
-                to: tokyoDay2,
+                to: day2,
                 name: "Senso-ji Temple",
                 latitude: 35.7148,
                 longitude: 139.7967,
                 category: .attraction
             )
             addStop(
-                to: tokyoDay2,
+                to: day2,
                 name: "Tsukiji Outer Market",
                 latitude: 35.6654,
                 longitude: 139.7707,
                 category: .restaurant
+            )
+        }
+
+        if let day5 = japan.days.first(where: { $0.dayNumber == 5 }) {
+            day5.notes = "Train to Kyoto, explore temples"
+            addStop(
+                to: day5,
+                name: "Shinkansen to Kyoto",
+                latitude: 35.6812,
+                longitude: 139.7671,
+                category: .transport
+            )
+            addStop(
+                to: day5,
+                name: "Fushimi Inari Shrine",
+                latitude: 34.9671,
+                longitude: 135.7727,
+                category: .attraction
             )
         }
 

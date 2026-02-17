@@ -1,5 +1,7 @@
 import SwiftUI
 import SwiftData
+import MapKit
+import TripCore
 
 struct AddTripSheet: View {
 
@@ -12,6 +14,8 @@ struct AddTripSheet: View {
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date()
     @State private var notes = ""
     @State private var hasDates = true
+    @State private var itineraryText = ""
+    @State private var showItinerary = false
 
     private var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -49,6 +53,71 @@ struct AddTripSheet: View {
                 } header: {
                     Text("Notes")
                 }
+
+                // MARK: - Paste Itinerary
+                Section {
+                    if showItinerary {
+                        TextEditor(text: $itineraryText)
+                            .frame(minHeight: 120)
+                            .overlay(
+                                Group {
+                                    if itineraryText.isEmpty {
+                                        Text("Paste your itinerary here...\ne.g. from ChatGPT, a blog, or a friend's message")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.tertiary)
+                                            .padding(.top, 8)
+                                            .padding(.leading, 4)
+                                            .allowsHitTesting(false)
+                                    }
+                                },
+                                alignment: .topLeading
+                            )
+
+                        Button {
+                            if let clipboard = UIPasteboard.general.string, !clipboard.isEmpty {
+                                itineraryText = clipboard
+                            }
+                        } label: {
+                            Label("Paste from Clipboard", systemImage: "doc.on.clipboard")
+                                .font(.subheadline)
+                        }
+                    } else {
+                        Button {
+                            withAnimation { showItinerary = true }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "doc.on.clipboard.fill")
+                                    .font(.body)
+                                    .foregroundStyle(.purple)
+                                    .frame(width: 28, height: 28)
+                                    .background(Color.purple.opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Paste Itinerary")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primary)
+                                    Text("Import stops from ChatGPT, a blog, or any text")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    if showItinerary {
+                        Text("Paste Itinerary")
+                    }
+                } footer: {
+                    if showItinerary && !itineraryText.isEmpty {
+                        Text("Stops will be automatically parsed and added after creating the trip.")
+                    }
+                }
             }
             .navigationTitle("New Trip")
             .navigationBarTitleDisplayMode(.inline)
@@ -80,6 +149,62 @@ struct AddTripSheet: View {
         )
         trip.hasCustomDates = hasDates
         try? modelContext.save()
+
+        // Parse and add itinerary stops if text was provided
+        let trimmedItinerary = itineraryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedItinerary.isEmpty {
+            let parsedDays = ItineraryTextParser.parse(
+                text: trimmedItinerary,
+                totalDays: trip.durationInDays
+            )
+            let sortedDays = trip.days.sorted { $0.dayNumber < $1.dayNumber }
+
+            var stopsToGeocode: [(StopEntity, String)] = []
+
+            for parsedDay in parsedDays {
+                let dayNum = min(max(parsedDay.dayNumber, 1), sortedDays.count)
+                guard dayNum > 0, dayNum <= sortedDays.count else { continue }
+                let dayEntity = sortedDays[dayNum - 1]
+
+                for parsedStop in parsedDay.stops {
+                    let stop = manager.addStop(
+                        to: dayEntity,
+                        name: parsedStop.name,
+                        latitude: 0,
+                        longitude: 0,
+                        category: parsedStop.category,
+                        notes: parsedStop.note
+                    )
+                    let geocodeDest = dayEntity.location.isEmpty ? trip.destination : dayEntity.location
+                    stopsToGeocode.append((stop, geocodeDest))
+                }
+            }
+
+            // Background geocoding
+            if !stopsToGeocode.isEmpty {
+                let context = modelContext
+                Task {
+                    let geocoder = CLGeocoder()
+                    for (stop, dest) in stopsToGeocode {
+                        let query = "\(stop.name), \(dest)"
+                        do {
+                            let placemarks = try await geocoder.geocodeAddressString(query)
+                            if let location = placemarks.first?.location {
+                                await MainActor.run {
+                                    stop.latitude = location.coordinate.latitude
+                                    stop.longitude = location.coordinate.longitude
+                                    try? context.save()
+                                }
+                            }
+                        } catch {
+                            // Geocoding failed — leave at 0,0
+                        }
+                        try? await Task.sleep(for: .milliseconds(600))
+                    }
+                }
+            }
+        }
+
         dismiss()
     }
 }

@@ -720,7 +720,8 @@ struct PasteItinerarySheet: View {
                     category: parsedStop.category,
                     notes: parsedStop.note
                 )
-                addedStopEntities.append((stop, trip.destination))
+                let geocodeDest = dayEntity.location.isEmpty ? trip.destination : dayEntity.location
+                addedStopEntities.append((stop, geocodeDest))
                 count += 1
             }
         }

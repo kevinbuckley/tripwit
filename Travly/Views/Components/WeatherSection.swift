@@ -1,10 +1,34 @@
 import SwiftUI
 
 /// Displays a horizontal scrollable weather forecast for a trip.
+/// For multi-city trips, fetches weather for the primary (first) location.
 struct WeatherSection: View {
 
     let trip: TripEntity
     @State private var weatherService = WeatherService()
+
+    /// The primary weather location — uses the first day's location or falls back to trip destination.
+    private var weatherLocation: String {
+        let sortedDays = trip.days.sorted { $0.dayNumber < $1.dayNumber }
+        if let firstLoc = sortedDays.first(where: { !$0.location.isEmpty })?.location {
+            return firstLoc
+        }
+        return trip.destination
+    }
+
+    /// Unique locations across this trip for display in multi-city scenarios.
+    private var uniqueLocations: [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for day in trip.days.sorted(by: { $0.dayNumber < $1.dayNumber }) {
+            let loc = day.location.isEmpty ? trip.destination : day.location
+            if !seen.contains(loc) {
+                seen.insert(loc)
+                result.append(loc)
+            }
+        }
+        return result
+    }
 
     private var dateFormatter: DateFormatter {
         let f = DateFormatter()
@@ -74,12 +98,17 @@ struct WeatherSection: View {
         } header: {
             HStack {
                 Label("Weather", systemImage: "cloud.sun.fill")
+                if uniqueLocations.count > 1 {
+                    Text("· \(weatherLocation)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 if !weatherService.forecasts.isEmpty {
                     Button {
                         Task {
                             await weatherService.fetchWeather(
-                                destination: trip.destination,
+                                destination: weatherLocation,
                                 startDate: trip.startDate,
                                 endDate: trip.endDate
                             )
@@ -96,7 +125,7 @@ struct WeatherSection: View {
             // Only fetch if trip is in the future or current (Open-Meteo supports ~16 days ahead)
             if !trip.isPast {
                 await weatherService.fetchWeather(
-                    destination: trip.destination,
+                    destination: weatherLocation,
                     startDate: trip.startDate,
                     endDate: trip.endDate
                 )

@@ -265,85 +265,114 @@ struct TripPDFGenerator {
             // ================================================================
             let days = trip.days.sorted { $0.dayNumber < $1.dayNumber }
 
+            // Group consecutive days by location
+            var segments: [(location: String, days: [DayEntity])] = []
             for day in days {
-                space(80)
+                let loc = day.location.isEmpty ? trip.destination : day.location
+                if let last = segments.last, last.location == loc {
+                    segments[segments.count - 1].days.append(day)
+                } else {
+                    segments.append((location: loc, days: [day]))
+                }
+            }
+            let isMultiCity = segments.count > 1
 
-                // Day header card
-                let dh: CGFloat = 40
-                let dayColor = dayAccentColor(day.dayNumber)
-                fillRect(CGRect(x: m, y: y, width: cw, height: dh), color: dayColor.withAlphaComponent(0.08), radius: 8)
-
-                // Left accent bar
-                let leftBar = UIBezierPath(roundedRect: CGRect(x: m, y: y, width: 4, height: dh), byRoundingCorners: [.topLeft, .bottomLeft], cornerRadii: CGSize(width: 4, height: 4))
-                dayColor.setFill(); leftBar.fill()
-
-                draw("DAY \(day.dayNumber)", at: CGPoint(x: m + 16, y: y + 6), font: .systemFont(ofSize: 14, weight: .heavy), color: dayColor)
-                draw(shortFmt.string(from: day.date), at: CGPoint(x: m + 16, y: y + 23), font: .systemFont(ofSize: 11, weight: .regular), color: subtitleGray)
-
-                let scStr = "\(day.stops.count) stop\(day.stops.count == 1 ? "" : "s")"
-                let scSz = sizeOf(scStr, font: .systemFont(ofSize: 11, weight: .medium))
-                draw(scStr, at: CGPoint(x: pw - m - scSz.width - 12, y: y + 13), font: .systemFont(ofSize: 11, weight: .medium), color: lightGray)
-
-                y += dh + 12
-
-                if !day.notes.isEmpty {
-                    text(day.notes, font: .italicSystemFont(ofSize: 10), color: subtitleGray)
-                    y += 6
+            for seg in segments {
+                // Location segment header (only for multi-city trips)
+                if isMultiCity {
+                    space(60)
+                    y += 8
+                    // Location header bar
+                    fillRect(CGRect(x: m, y: y, width: cw, height: 32), color: accentBlue.withAlphaComponent(0.06), radius: 8)
+                    draw("📍 \(seg.location.uppercased())", at: CGPoint(x: m + 12, y: y + 8), font: .systemFont(ofSize: 12, weight: .bold), color: accentBlue)
+                    if let first = seg.days.first, let last = seg.days.last {
+                        let rangeStr = first.dayNumber == last.dayNumber ? "Day \(first.dayNumber)" : "Days \(first.dayNumber)–\(last.dayNumber)"
+                        let rs = sizeOf(rangeStr, font: .systemFont(ofSize: 10, weight: .medium))
+                        draw(rangeStr, at: CGPoint(x: pw - m - rs.width - 12, y: y + 10), font: .systemFont(ofSize: 10, weight: .medium), color: subtitleGray)
+                    }
+                    y += 40
                 }
 
-                let stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
-                if stops.isEmpty {
-                    text("No stops planned yet", font: .systemFont(ofSize: 11), color: lightGray)
-                    y += 6
-                } else {
-                    for (idx, stop) in stops.enumerated() {
-                        space(55)
-                        let cc = catColors[stop.category] ?? lightGray
-                        let tx: CGFloat = m + 36
+                for day in seg.days {
+                    space(80)
 
-                        // Category color dot
-                        let dotRect = CGRect(x: m + 6, y: y + 4, width: 10, height: 10)
-                        fillRect(dotRect, color: cc, radius: 5)
+                    // Day header card
+                    let dh: CGFloat = 40
+                    let dayColor = dayAccentColor(day.dayNumber)
+                    fillRect(CGRect(x: m, y: y, width: cw, height: dh), color: dayColor.withAlphaComponent(0.08), radius: 8)
 
-                        // Time
-                        var ts = ""
-                        if let a = stop.arrivalTime { ts = timeFmt.string(from: a) }
-                        if let d = stop.departureTime { ts += ts.isEmpty ? timeFmt.string(from: d) : " – \(timeFmt.string(from: d))" }
-                        if !ts.isEmpty { text(ts, font: .systemFont(ofSize: 9, weight: .semibold), color: cc, x: tx, w: cw - 40) }
+                    // Left accent bar
+                    let leftBar = UIBezierPath(roundedRect: CGRect(x: m, y: y, width: 4, height: dh), byRoundingCorners: [.topLeft, .bottomLeft], cornerRadii: CGSize(width: 4, height: 4))
+                    dayColor.setFill(); leftBar.fill()
 
-                        // Name
-                        text(stop.name, font: .systemFont(ofSize: 13, weight: .semibold), color: headerDark, x: tx, w: cw - 40)
+                    draw("DAY \(day.dayNumber)", at: CGPoint(x: m + 16, y: y + 6), font: .systemFont(ofSize: 14, weight: .heavy), color: dayColor)
+                    draw(shortFmt.string(from: day.date), at: CGPoint(x: m + 16, y: y + 23), font: .systemFont(ofSize: 11, weight: .regular), color: subtitleGray)
 
-                        // Category badge
-                        text(categoryLabel(stop.category), font: .systemFont(ofSize: 9, weight: .medium), color: cc, x: tx)
+                    let scStr = "\(day.stops.count) stop\(day.stops.count == 1 ? "" : "s")"
+                    let scSz = sizeOf(scStr, font: .systemFont(ofSize: 11, weight: .medium))
+                    draw(scStr, at: CGPoint(x: pw - m - scSz.width - 12, y: y + 13), font: .systemFont(ofSize: 11, weight: .medium), color: lightGray)
 
-                        // Notes
-                        if !stop.notes.isEmpty {
-                            text(stop.notes, font: .italicSystemFont(ofSize: 9), color: subtitleGray, x: tx, w: cw - 40)
-                        }
+                    y += dh + 12
 
-                        // Address
-                        if let addr = stop.address, !addr.isEmpty {
-                            text("📍 \(addr)", font: .systemFont(ofSize: 9), color: lightGray, x: tx, w: cw - 40)
-                        }
+                    if !day.notes.isEmpty {
+                        text(day.notes, font: .italicSystemFont(ofSize: 10), color: subtitleGray)
+                        y += 6
+                    }
 
-                        y += 4
+                    let stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
+                    if stops.isEmpty {
+                        text("No stops planned yet", font: .systemFont(ofSize: 11), color: lightGray)
+                        y += 6
+                    } else {
+                        for (idx, stop) in stops.enumerated() {
+                            space(55)
+                            let cc = catColors[stop.category] ?? lightGray
+                            let tx: CGFloat = m + 36
 
-                        // Dashed connector
-                        if idx < stops.count - 1 {
-                            let cx = m + 11
-                            ctx.cgContext.setStrokeColor(dividerColor.cgColor)
-                            ctx.cgContext.setLineWidth(1)
-                            ctx.cgContext.setLineDash(phase: 0, lengths: [3, 3])
-                            ctx.cgContext.move(to: CGPoint(x: cx, y: y))
-                            ctx.cgContext.addLine(to: CGPoint(x: cx, y: y + 6))
-                            ctx.cgContext.strokePath()
-                            ctx.cgContext.setLineDash(phase: 0, lengths: [])
-                            y += 8
+                            // Category color dot
+                            let dotRect = CGRect(x: m + 6, y: y + 4, width: 10, height: 10)
+                            fillRect(dotRect, color: cc, radius: 5)
+
+                            // Time
+                            var ts = ""
+                            if let a = stop.arrivalTime { ts = timeFmt.string(from: a) }
+                            if let d = stop.departureTime { ts += ts.isEmpty ? timeFmt.string(from: d) : " – \(timeFmt.string(from: d))" }
+                            if !ts.isEmpty { text(ts, font: .systemFont(ofSize: 9, weight: .semibold), color: cc, x: tx, w: cw - 40) }
+
+                            // Name
+                            text(stop.name, font: .systemFont(ofSize: 13, weight: .semibold), color: headerDark, x: tx, w: cw - 40)
+
+                            // Category badge
+                            text(categoryLabel(stop.category), font: .systemFont(ofSize: 9, weight: .medium), color: cc, x: tx)
+
+                            // Notes
+                            if !stop.notes.isEmpty {
+                                text(stop.notes, font: .italicSystemFont(ofSize: 9), color: subtitleGray, x: tx, w: cw - 40)
+                            }
+
+                            // Address
+                            if let addr = stop.address, !addr.isEmpty {
+                                text("📍 \(addr)", font: .systemFont(ofSize: 9), color: lightGray, x: tx, w: cw - 40)
+                            }
+
+                            y += 4
+
+                            // Dashed connector
+                            if idx < stops.count - 1 {
+                                let cx = m + 11
+                                ctx.cgContext.setStrokeColor(dividerColor.cgColor)
+                                ctx.cgContext.setLineWidth(1)
+                                ctx.cgContext.setLineDash(phase: 0, lengths: [3, 3])
+                                ctx.cgContext.move(to: CGPoint(x: cx, y: y))
+                                ctx.cgContext.addLine(to: CGPoint(x: cx, y: y + 6))
+                                ctx.cgContext.strokePath()
+                                ctx.cgContext.setLineDash(phase: 0, lengths: [])
+                                y += 8
+                            }
                         }
                     }
+                    y += 16
                 }
-                y += 16
             }
 
             // ================================================================

@@ -40,6 +40,7 @@
 		72219FF7D1D7B448562D4BB7 /* ExpenseEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C36821BFF1F5F6E5ADA229 /* ExpenseEntity.swift */; };
 		756EDF3008A2826BA6F9E5F0 /* LocateStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EC9EC922768C72B8E5CA54 /* LocateStopSheet.swift */; };
 		7C04C4A17B946D9735CF6799 /* TimelineStopRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79D0B6B807FFF29CAD57E2E3 /* TimelineStopRow.swift */; };
+		8B0752E3B2EFA180121C4558 /* SetDayLocationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA817EBFEF36271F750CC8E3 /* SetDayLocationSheet.swift */; };
 		8B18C12863232709CCF384E7 /* TripCore in Frameworks */ = {isa = PBXBuildFile; productRef = F5CCF8D951A9540561CF2A9D /* TripCore */; };
 		8DC1F8680426C49884389B66 /* ImportBookingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 598BC831E962F0EB0B8060B6 /* ImportBookingSheet.swift */; };
 		8E8C42AF3A2155B0827F7DA1 /* ActiveTripDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D513CC9C1CE18397D4704BD /* ActiveTripDashboard.swift */; };
@@ -119,6 +120,7 @@
 		AE5A960445ECC16847760868 /* WeatherSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSection.swift; sourceTree = "<group>"; };
 		B9507EB4177C2F087C5318FC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		B9BE83EF902553737155DF54 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		BA817EBFEF36271F750CC8E3 /* SetDayLocationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetDayLocationSheet.swift; sourceTree = "<group>"; };
 		BB62F1AFC14FA36E7D62D9E3 /* PhotoLibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryService.swift; sourceTree = "<group>"; };
 		C58481E88E2245E626418382 /* TripRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripRowView.swift; sourceTree = "<group>"; };
 		C646145A462D83ACD7E63623 /* TripPDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripPDFGenerator.swift; sourceTree = "<group>"; };
@@ -191,6 +193,7 @@
 				F6A58A508A96961D4104BB6A /* NearbyAISuggestSheet.swift */,
 				F1D9667BA07AE6716B6D2287 /* PasteItinerarySheet.swift */,
 				171930E91C5C3993F629D04D /* QuickAddStopSheet.swift */,
+				BA817EBFEF36271F750CC8E3 /* SetDayLocationSheet.swift */,
 				F0FF763CDF32BBD771F47F59 /* SettingsView.swift */,
 				55816489B3DAD47A179C77FA /* StopDetailView.swift */,
 				439FB6B15AE0ACC162EACEE7 /* SuggestStopsSheet.swift */,
@@ -405,6 +408,7 @@
 				A882B9BE3A05C3F50C3DE203 /* PasteItinerarySheet.swift in Sources */,
 				2BC488A52A370B9E10389BAF /* PhotoLibraryService.swift in Sources */,
 				4EA4B637B817A71837CF1777 /* QuickAddStopSheet.swift in Sources */,
+				8B0752E3B2EFA180121C4558 /* SetDayLocationSheet.swift in Sources */,
 				A46EFDB94319FC36A2536594 /* SettingsView.swift in Sources */,
 				AD2867FE8A2A69DEBC17971B /* ShareSheetView.swift in Sources */,
 				951F9E7BC1742A8FB3C41BD5 /* StatusBadge.swift in Sources */,
@@ -459,7 +463,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Travly;
@@ -489,7 +493,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Travly;

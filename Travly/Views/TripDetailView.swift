@@ -22,9 +22,24 @@ struct TripDetailView: View {
     @State private var bookingToDelete: BookingEntity?
     @State private var showingPasteItinerary = false
     @State private var showingImportBooking = false
+    @State private var dayForLocationEdit: DayEntity?
 
     private var sortedDays: [DayEntity] {
         trip.days.sorted { $0.dayNumber < $1.dayNumber }
+    }
+
+    /// Groups consecutive days that share the same location into segments.
+    private var locationSegments: [(location: String, days: [DayEntity])] {
+        var segments: [(location: String, days: [DayEntity])] = []
+        for day in sortedDays {
+            let loc = day.location.isEmpty ? trip.destination : day.location
+            if let last = segments.last, last.location == loc {
+                segments[segments.count - 1].days.append(day)
+            } else {
+                segments.append((location: loc, days: [day]))
+            }
+        }
+        return segments
     }
 
     private var dateFormatter: DateFormatter {
@@ -58,8 +73,16 @@ struct TripDetailView: View {
 
             // MARK: - Itinerary
             if !sortedDays.isEmpty {
-                ForEach(sortedDays) { day in
-                    daySection(day)
+                let segments = locationSegments
+                let isMultiCity = segments.count > 1
+
+                ForEach(Array(segments.enumerated()), id: \.offset) { segIndex, segment in
+                    if isMultiCity {
+                        locationHeader(segment.location, days: segment.days)
+                    }
+                    ForEach(segment.days) { day in
+                        daySection(day)
+                    }
                 }
             }
 
@@ -103,6 +126,9 @@ struct TripDetailView: View {
         }
         .sheet(isPresented: $showingImportBooking) {
             ImportBookingSheet(trip: trip)
+        }
+        .sheet(item: $dayForLocationEdit) { day in
+            SetDayLocationSheet(day: day, trip: trip)
         }
         .alert("Start Trip?", isPresented: $showingStartConfirmation) {
             Button("Start", role: .none) {
@@ -383,6 +409,43 @@ struct TripDetailView: View {
         try? modelContext.save()
     }
 
+    // MARK: - Location Header
+
+    private func locationHeader(_ location: String, days: [DayEntity]) -> some View {
+        Section {
+            HStack(spacing: 10) {
+                Image(systemName: "mappin.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.red)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(location)
+                        .font(.headline)
+                        .fontWeight(.bold)
+                    if let first = days.first, let last = days.last {
+                        if first.dayNumber == last.dayNumber {
+                            Text("Day \(first.dayNumber)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Days \(first.dayNumber)–\(last.dayNumber)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Spacer()
+                Text("\(days.count) day\(days.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(.tertiarySystemFill))
+                    .clipShape(Capsule())
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
     // MARK: - Day Section
 
     private func daySection(_ day: DayEntity) -> some View {
@@ -464,9 +527,22 @@ struct TripDetailView: View {
                 Text("Day \(day.dayNumber)")
                     .fontWeight(.semibold)
                 Spacer()
+                if !day.location.isEmpty && locationSegments.count <= 1 {
+                    Text(day.location)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Text(day.formattedDate)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+            .contextMenu {
+                Button {
+                    dayForLocationEdit = day
+                } label: {
+                    Label("Set Location", systemImage: "mappin.and.ellipse")
+                }
             }
         }
     }
@@ -612,9 +688,10 @@ struct TripDetailView: View {
     private func aiSuggestSheet(day: DayEntity) -> some View {
         #if canImport(FoundationModels)
         if #available(iOS 26, *) {
+            let dest = day.location.isEmpty ? trip.destination : day.location
             SuggestStopsSheet(
                 day: day,
-                destination: trip.destination,
+                destination: dest,
                 totalDays: trip.durationInDays
             )
         }

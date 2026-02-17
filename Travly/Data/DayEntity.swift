@@ -10,6 +10,9 @@ final class DayEntity {
     var date: Date
     var dayNumber: Int
     var notes: String
+    var location: String
+    var locationLatitude: Double
+    var locationLongitude: Double
 
     var trip: TripEntity?
 
@@ -28,11 +31,14 @@ final class DayEntity {
 
     // MARK: Initializer
 
-    init(date: Date, dayNumber: Int, notes: String = "") {
+    init(date: Date, dayNumber: Int, notes: String = "", location: String = "", locationLatitude: Double = 0, locationLongitude: Double = 0) {
         self.id = UUID()
         self.date = date
         self.dayNumber = dayNumber
         self.notes = notes
+        self.location = location
+        self.locationLatitude = locationLatitude
+        self.locationLongitude = locationLongitude
         self.stops = []
     }
 }
