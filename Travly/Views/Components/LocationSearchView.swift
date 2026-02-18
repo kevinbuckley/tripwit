@@ -8,6 +8,9 @@ struct LocationSearchResult: Identifiable {
     let city: String
     let latitude: Double
     let longitude: Double
+    let address: String
+    let phone: String
+    let website: String
 }
 
 struct LocationSearchView: View {
@@ -16,6 +19,11 @@ struct LocationSearchView: View {
     @Binding var selectedLatitude: Double
     @Binding var selectedLongitude: Double
     @Binding var selectedCity: String
+
+    /// Optional bindings for place details auto-fill
+    var selectedAddress: Binding<String>?
+    var selectedPhone: Binding<String>?
+    var selectedWebsite: Binding<String>?
 
     @State private var searchText = ""
     @State private var searchResults: [LocationSearchResult] = []
@@ -221,12 +229,16 @@ struct LocationSearchView: View {
             searchResults = response.mapItems.prefix(6).map { item in
                 let placemark = item.placemark
                 let city = placemark.locality ?? placemark.administrativeArea ?? ""
+                let parts = [placemark.subThoroughfare, placemark.thoroughfare, placemark.locality, placemark.administrativeArea, placemark.postalCode].compactMap { $0 }
                 return LocationSearchResult(
                     name: item.name ?? "Unknown",
                     subtitle: placemark.title ?? "",
                     city: city,
                     latitude: placemark.coordinate.latitude,
-                    longitude: placemark.coordinate.longitude
+                    longitude: placemark.coordinate.longitude,
+                    address: parts.joined(separator: ", "),
+                    phone: item.phoneNumber ?? "",
+                    website: item.url?.absoluteString ?? ""
                 )
             }
             if searchResults.isEmpty {
@@ -253,6 +265,11 @@ struct LocationSearchView: View {
         searchText = result.name
         searchResults = []
         hasSelected = true
+
+        // Auto-fill place details if bindings are provided
+        if !result.address.isEmpty { selectedAddress?.wrappedValue = result.address }
+        if !result.phone.isEmpty { selectedPhone?.wrappedValue = result.phone }
+        if !result.website.isEmpty { selectedWebsite?.wrappedValue = result.website }
 
         let coordinate = CLLocationCoordinate2D(latitude: result.latitude, longitude: result.longitude)
         cameraPosition = .region(MKCoordinateRegion(

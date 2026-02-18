@@ -25,6 +25,9 @@ struct TripDetailView: View {
     @State private var dayForLocationEdit: DayEntity?
     @State private var dayForNotesEdit: DayEntity?
     @State private var editingDayNotes: String = ""
+    @State private var calendarExportMessage: String?
+    @State private var showingCalendarResult = false
+    @State private var isExportingCalendar = false
 
     private var sortedDays: [DayEntity] {
         trip.days.sorted { $0.dayNumber < $1.dayNumber }
@@ -94,18 +97,41 @@ struct TripDetailView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 16) {
-                    Button {
-                        shareTripPDF()
+                    Menu {
+                        Button {
+                            shareTripPDF()
+                        } label: {
+                            Label("Share as PDF", systemImage: "doc.richtext")
+                        }
+                        Button {
+                            shareTripText()
+                        } label: {
+                            Label("Share as Text", systemImage: "text.alignleft")
+                        }
+                        Divider()
+                        Button {
+                            exportToCalendar()
+                        } label: {
+                            Label("Add to Calendar", systemImage: "calendar.badge.plus")
+                        }
+                        .disabled(isExportingCalendar)
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                     }
-                    .accessibilityLabel("Share itinerary as PDF")
+                    .accessibilityLabel("Share trip")
                     Button {
                         showingEditTrip = true
                     } label: {
                         Text("Edit")
                     }
                 }
+            }
+        }
+        .alert("Calendar", isPresented: $showingCalendarResult) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            if let message = calendarExportMessage {
+                Text(message)
             }
         }
         .sheet(isPresented: $showingEditTrip) {
@@ -679,6 +705,39 @@ struct TripDetailView: View {
     private func shareTripPDF() {
         let data = TripPDFGenerator.generatePDF(for: trip)
         ShareSheet.share(pdfData: data, filename: "\(trip.name) Itinerary.pdf")
+    }
+
+    private func shareTripText() {
+        let text = TripTextExporter.generateText(for: trip)
+        ShareSheet.shareText(text)
+    }
+
+    // MARK: - Calendar Export
+
+    private func exportToCalendar() {
+        isExportingCalendar = true
+        let calendarDays = sortedDays.map { day in
+            let stopNames = day.stops.sorted { $0.sortOrder < $1.sortOrder }.map(\.name)
+            return (dayNumber: day.dayNumber, date: day.date, notes: day.notes, stopNames: stopNames)
+        }
+        let tripName = trip.name
+        let destination = trip.destination
+
+        Task {
+            let service = CalendarService()
+            do {
+                let count = try await service.exportTrip(
+                    name: tripName,
+                    destination: destination,
+                    days: calendarDays
+                )
+                calendarExportMessage = "Added \(count) day\(count == 1 ? "" : "s") to your calendar."
+            } catch {
+                calendarExportMessage = error.localizedDescription
+            }
+            isExportingCalendar = false
+            showingCalendarResult = true
+        }
     }
 
     // MARK: - Paste Itinerary

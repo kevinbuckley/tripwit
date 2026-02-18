@@ -15,6 +15,8 @@ targets:
       - Travly
     dependencies:
       - package: TripCore
+    entitlements:
+      path: Travly/Travly.entitlements
     settings:
       base:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -31,9 +33,10 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: "Travly"
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Travly uses your location to quickly add stops near you and track your trip."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Travly matches your photos to trip stops based on location and time."
+        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Travly can add your trip days to your calendar so you can see your itinerary alongside other events."
         INFOPLIST_KEY_CFBundleShortVersionString: "1.0"
         MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "16"
+        CURRENT_PROJECT_VERSION: "17"
   TravlyTests:
     type: bundle.unit-test
     platform: iOS

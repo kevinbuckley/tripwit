@@ -9,9 +9,16 @@ enum ShareSheet {
     @MainActor static func share(pdfData: Data, filename: String) {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         try? pdfData.write(to: tempURL)
+        presentActivity(items: [tempURL])
+    }
 
+    @MainActor static func shareText(_ text: String) {
+        presentActivity(items: [text])
+    }
+
+    @MainActor private static func presentActivity(items: [Any]) {
         let activityVC = UIActivityViewController(
-            activityItems: [tempURL],
+            activityItems: items,
             applicationActivities: nil
         )
 

@@ -10,7 +10,11 @@ struct TravlyApp: App {
 
     init() {
         let schema = Schema([TripEntity.self, DayEntity.self, StopEntity.self, CommentEntity.self, BookingEntity.self, WishlistItemEntity.self, TripListEntity.self, TripListItemEntity.self, ExpenseEntity.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let config = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            cloudKitDatabase: .automatic
+        )
 
         do {
             modelContainer = try ModelContainer(for: schema, configurations: [config])

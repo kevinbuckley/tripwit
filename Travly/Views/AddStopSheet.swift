@@ -18,6 +18,9 @@ struct AddStopSheet: View {
     @State private var longitude: Double = 0
     @State private var locationName = ""
     @State private var locationCity = ""
+    @State private var placeAddress = ""
+    @State private var placePhone = ""
+    @State private var placeWebsite = ""
 
     @State private var useArrivalTime = false
     @State private var arrivalTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
@@ -82,7 +85,10 @@ struct AddStopSheet: View {
                 selectedName: $locationName,
                 selectedLatitude: $latitude,
                 selectedLongitude: $longitude,
-                selectedCity: $locationCity
+                selectedCity: $locationCity,
+                selectedAddress: $placeAddress,
+                selectedPhone: $placePhone,
+                selectedWebsite: $placeWebsite
             )
             .listRowInsets(EdgeInsets())
         } header: {
@@ -200,38 +206,13 @@ struct AddStopSheet: View {
         if useDepartureTime {
             stop.departureTime = departureTime
         }
+
+        // Apply place details from search (instant, no second API call)
+        if !placeAddress.isEmpty { stop.address = placeAddress }
+        if !placePhone.isEmpty { stop.phone = placePhone }
+        if !placeWebsite.isEmpty { stop.website = placeWebsite }
+
         try? modelContext.save()
-
-        // Auto-populate place details from MapKit
-        if latitude != 0 || longitude != 0 {
-            Task {
-                await populatePlaceDetails(stop: stop)
-            }
-        }
-
         dismiss()
-    }
-
-    private func populatePlaceDetails(stop: StopEntity) async {
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = stop.name
-        request.region = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude),
-            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-        )
-        let search = MKLocalSearch(request: request)
-        do {
-            let response = try await search.start()
-            if let item = response.mapItems.first {
-                await MainActor.run {
-                    stop.phone = item.phoneNumber
-                    if let url = item.url { stop.website = url.absoluteString }
-                    let pm = item.placemark
-                    let parts = [pm.subThoroughfare, pm.thoroughfare, pm.locality, pm.administrativeArea, pm.postalCode].compactMap { $0 }
-                    if !parts.isEmpty { stop.address = parts.joined(separator: ", ") }
-                    try? modelContext.save()
-                }
-            }
-        } catch { }
     }
 }
