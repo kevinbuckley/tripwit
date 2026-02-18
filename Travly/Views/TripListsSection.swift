@@ -5,157 +5,195 @@ struct TripListsSection: View {
     @Environment(\.modelContext) private var modelContext
     let trip: TripEntity
 
-    @State private var showingAddList = false
-    @State private var newListName = ""
-    @State private var newItemTexts: [UUID: String] = [:]
-    @State private var listToDelete: TripListEntity?
+    @State private var newItemText = ""
+    @State private var dayPickerItem: TripListItemEntity?
 
-    private var sortedLists: [TripListEntity] {
-        trip.lists.sorted { $0.sortOrder < $1.sortOrder }
+    /// The single checklist for this trip. Auto-created if none exists.
+    private var checklist: TripListEntity? {
+        trip.lists.first
+    }
+
+    private var sortedItems: [TripListItemEntity] {
+        guard let list = checklist else { return [] }
+        return list.items.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    private var sortedDays: [DayEntity] {
+        trip.days.sorted { $0.dayNumber < $1.dayNumber }
+    }
+
+    private var checkedCount: Int {
+        sortedItems.filter(\.isChecked).count
     }
 
     var body: some View {
-        ForEach(sortedLists) { list in
-            listSection(list)
-        }
-
         Section {
-            if showingAddList {
-                HStack {
-                    TextField("List name", text: $newListName)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Add") {
-                        createList()
-                    }
-                    .disabled(newListName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    Button("Cancel") {
-                        showingAddList = false
-                        newListName = ""
-                    }
-                    .foregroundStyle(.secondary)
-                }
-            } else {
-                Button {
-                    showingAddList = true
-                } label: {
-                    Label("New List", systemImage: "plus.circle")
-                        .font(.subheadline)
-                        .foregroundStyle(.blue)
-                }
-            }
-        } header: {
-            Text("Lists")
-        }
-        .alert("Delete List?", isPresented: Binding(
-            get: { listToDelete != nil },
-            set: { if !$0 { listToDelete = nil } }
-        )) {
-            Button("Delete", role: .destructive) {
-                if let list = listToDelete {
-                    modelContext.delete(list)
-                    try? modelContext.save()
-                    listToDelete = nil
-                }
-            }
-            Button("Cancel", role: .cancel) { listToDelete = nil }
-        } message: {
-            if let list = listToDelete {
-                Text("Delete \"\(list.name)\" and all its items? This cannot be undone.")
-            }
-        }
-    }
-
-    private func listSection(_ list: TripListEntity) -> some View {
-        let sortedItems = list.items.sorted { $0.sortOrder < $1.sortOrder }
-        let itemText = Binding<String>(
-            get: { newItemTexts[list.id] ?? "" },
-            set: { newItemTexts[list.id] = $0 }
-        )
-
-        return Section {
             ForEach(sortedItems) { item in
-                HStack(spacing: 10) {
-                    Button {
-                        item.isChecked.toggle()
-                        try? modelContext.save()
-                    } label: {
-                        Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(item.isChecked ? .green : .gray)
-                    }
-                    .buttonStyle(.plain)
-
-                    Text(item.text)
-                        .font(.subheadline)
-                        .strikethrough(item.isChecked)
-                        .foregroundColor(item.isChecked ? .secondary : .primary)
-                }
+                itemRow(item)
             }
             .onDelete { offsets in
-                deleteItems(from: list, at: offsets)
+                deleteItems(at: offsets)
             }
 
-            HStack(spacing: 8) {
-                TextField("Add item...", text: itemText)
-                    .font(.subheadline)
-                Button {
-                    addItem(to: list, text: itemText.wrappedValue)
-                    newItemTexts[list.id] = ""
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundColor(itemText.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty ? .gray : .blue)
-                }
-                .disabled(itemText.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
-                .buttonStyle(.plain)
-            }
+            addItemRow
         } header: {
             HStack {
-                Label(list.name, systemImage: list.icon)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                Label("Checklist", systemImage: "checklist")
                 Spacer()
-                let checkedCount = list.items.filter(\.isChecked).count
-                if !list.items.isEmpty {
-                    Text("\(checkedCount)/\(list.items.count)")
+                if !sortedItems.isEmpty {
+                    Text("\(checkedCount)/\(sortedItems.count)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Button(role: .destructive) {
-                    listToDelete = list
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(.plain)
             }
+        }
+        .sheet(item: $dayPickerItem) { item in
+            addToDaySheet(item: item)
         }
     }
 
-    private func createList() {
-        let list = TripListEntity(name: newListName.trimmingCharacters(in: .whitespaces), sortOrder: trip.lists.count)
+    // MARK: - Item Row
+
+    private func itemRow(_ item: TripListItemEntity) -> some View {
+        HStack(spacing: 10) {
+            Button {
+                item.isChecked.toggle()
+                try? modelContext.save()
+            } label: {
+                Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(item.isChecked ? .green : .gray)
+            }
+            .buttonStyle(.plain)
+
+            Text(item.text)
+                .font(.subheadline)
+                .strikethrough(item.isChecked)
+                .foregroundColor(item.isChecked ? .secondary : .primary)
+
+            Spacer()
+
+            // Add to Day button
+            Button {
+                dayPickerItem = item
+            } label: {
+                Image(systemName: "calendar.badge.plus")
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Add Item Row
+
+    private var addItemRow: some View {
+        HStack(spacing: 8) {
+            TextField("Add item...", text: $newItemText)
+                .font(.subheadline)
+                .onSubmit {
+                    addItem()
+                }
+            Button {
+                addItem()
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundColor(newItemText.trimmingCharacters(in: .whitespaces).isEmpty ? .gray : .blue)
+            }
+            .disabled(newItemText.trimmingCharacters(in: .whitespaces).isEmpty)
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Add to Day Sheet
+
+    private func addToDaySheet(item: TripListItemEntity) -> some View {
+        NavigationStack {
+            List {
+                ForEach(sortedDays) { day in
+                    Button {
+                        addItemAsStop(item, to: day)
+                        dayPickerItem = nil
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Day \(day.dayNumber)")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.primary)
+                                Text(day.formattedDate)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            if !day.location.isEmpty {
+                                Text(day.location)
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Text("\(day.stops.count) stops")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Add to Day")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dayPickerItem = nil }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    // MARK: - Actions
+
+    private func ensureChecklist() -> TripListEntity {
+        if let existing = checklist {
+            return existing
+        }
+        let list = TripListEntity(name: "Checklist", sortOrder: 0)
         list.trip = trip
         trip.lists.append(list)
         modelContext.insert(list)
         try? modelContext.save()
-        newListName = ""
-        showingAddList = false
+        return list
     }
 
-    private func addItem(to list: TripListEntity, text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
+    private func addItem() {
+        let trimmed = newItemText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
+        let list = ensureChecklist()
         let item = TripListItemEntity(text: trimmed, sortOrder: list.items.count)
         item.list = list
         list.items.append(item)
         modelContext.insert(item)
         try? modelContext.save()
+        newItemText = ""
     }
 
-    private func deleteItems(from list: TripListEntity, at offsets: IndexSet) {
-        let sorted = list.items.sorted { $0.sortOrder < $1.sortOrder }
+    private func deleteItems(at offsets: IndexSet) {
+        let items = sortedItems
         for index in offsets {
-            modelContext.delete(sorted[index])
+            modelContext.delete(items[index])
         }
+        try? modelContext.save()
+    }
+
+    private func addItemAsStop(_ item: TripListItemEntity, to day: DayEntity) {
+        let manager = DataManager(modelContext: modelContext)
+        manager.addStop(
+            to: day,
+            name: item.text,
+            latitude: 0,
+            longitude: 0,
+            category: .other,
+            notes: ""
+        )
+        // Mark the checklist item as done
+        item.isChecked = true
         try? modelContext.save()
     }
 }

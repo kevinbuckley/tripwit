@@ -23,6 +23,8 @@ struct TripDetailView: View {
     @State private var showingPasteItinerary = false
     @State private var showingImportBooking = false
     @State private var dayForLocationEdit: DayEntity?
+    @State private var dayForNotesEdit: DayEntity?
+    @State private var editingDayNotes: String = ""
 
     private var sortedDays: [DayEntity] {
         trip.days.sorted { $0.dayNumber < $1.dayNumber }
@@ -64,9 +66,6 @@ struct TripDetailView: View {
 
             // MARK: - Bookings
             bookingsSection
-
-            // MARK: - Budget
-            BudgetSection(trip: trip)
 
             // MARK: - Paste Itinerary
             pasteItinerarySection
@@ -129,6 +128,31 @@ struct TripDetailView: View {
         }
         .sheet(item: $dayForLocationEdit) { day in
             SetDayLocationSheet(day: day, trip: trip)
+        }
+        .alert("Day Description", isPresented: Binding(
+            get: { dayForNotesEdit != nil },
+            set: { if !$0 { dayForNotesEdit = nil } }
+        )) {
+            TextField("e.g. Explore the old town", text: $editingDayNotes)
+            Button("Save") {
+                if let day = dayForNotesEdit {
+                    day.notes = editingDayNotes.trimmingCharacters(in: .whitespaces)
+                    try? modelContext.save()
+                    dayForNotesEdit = nil
+                }
+            }
+            Button("Clear", role: .destructive) {
+                if let day = dayForNotesEdit {
+                    day.notes = ""
+                    try? modelContext.save()
+                    dayForNotesEdit = nil
+                }
+            }
+            Button("Cancel", role: .cancel) { dayForNotesEdit = nil }
+        } message: {
+            if let day = dayForNotesEdit {
+                Text("Set a description for Day \(day.dayNumber)")
+            }
         }
         .alert("Start Trip?", isPresented: $showingStartConfirmation) {
             Button("Start", role: .none) {
@@ -446,6 +470,34 @@ struct TripDetailView: View {
         }
     }
 
+    // MARK: - Day Notes
+
+    @ViewBuilder
+    private func dayNotesRow(_ day: DayEntity) -> some View {
+        Button {
+            editingDayNotes = day.notes
+            dayForNotesEdit = day
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "pencil.line")
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                if day.notes.isEmpty {
+                    Text("Add a description for this day...")
+                        .font(.subheadline)
+                        .foregroundStyle(.tertiary)
+                        .italic()
+                } else {
+                    Text(day.notes)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .italic()
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - Day Section
 
     private func daySection(_ day: DayEntity) -> some View {
@@ -453,12 +505,7 @@ struct TripDetailView: View {
             let sortedStops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
             let locatedStops = sortedStops.filter { $0.latitude != 0 || $0.longitude != 0 }
 
-            if !day.notes.isEmpty {
-                Text(day.notes)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .italic()
-            }
+            dayNotesRow(day)
 
             // Daily distance/time summary
             daySummaryRow(locatedStops: locatedStops)

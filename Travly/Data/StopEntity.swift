@@ -18,6 +18,7 @@ final class StopEntity {
     var sortOrder: Int
     var isVisited: Bool
     var visitedAt: Date?
+    var rating: Int
     var address: String?
     var phone: String?
     var website: String?
@@ -62,6 +63,7 @@ final class StopEntity {
         self.notes = notes
         self.isVisited = isVisited
         self.visitedAt = visitedAt
+        self.rating = 0
         self.address = address
         self.phone = phone
         self.website = website

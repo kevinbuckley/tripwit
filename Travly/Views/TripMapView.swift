@@ -7,7 +7,6 @@ struct TripMapView: View {
 
     @Query(sort: \TripEntity.startDate, order: .reverse) private var allTrips: [TripEntity]
 
-    @State private var selectedTripID: UUID?
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var navigateToTripID: UUID?
     @State private var selectedStopID: UUID?
@@ -15,19 +14,25 @@ struct TripMapView: View {
     @State private var showNearbyPOIs = false
     @State private var nearbyPOIs: [MKMapItem] = []
 
-    private var activeTrip: TripEntity? {
-        allTrips.first { $0.status == .active }
-    }
-
-    private var selectedTrip: TripEntity? {
-        if let id = selectedTripID {
-            return allTrips.first { $0.id == id }
+    /// The trip to display: active trip first, then the nearest upcoming, then most recent.
+    private var displayTrip: TripEntity? {
+        // Active trip takes priority
+        if let active = allTrips.first(where: { $0.status == .active }) {
+            return active
         }
+        // Next upcoming trip (earliest future start date)
+        let upcoming = allTrips
+            .filter { $0.status == .planning && $0.startDate > Date() }
+            .sorted { $0.startDate < $1.startDate }
+        if let next = upcoming.first {
+            return next
+        }
+        // Fall back to most recent trip
         return allTrips.first
     }
 
     private var allStops: [StopEntity] {
-        guard let trip = selectedTrip else { return [] }
+        guard let trip = displayTrip else { return [] }
         return trip.days.flatMap { $0.stops }.filter { $0.latitude != 0 || $0.longitude != 0 }
     }
 
@@ -51,30 +56,60 @@ struct TripMapView: View {
                 StopDetailView(stop: stop)
             }
         }
-        .onAppear {
-            if selectedTripID == nil {
-                selectedTripID = activeTrip?.id ?? allTrips.first?.id
-            }
-        }
-        .onChange(of: selectedTripID) { _, _ in
-            fitAllStops()
-        }
     }
 
     // MARK: - Main Content
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            if let active = activeTrip {
-                ActiveTripDashboard(trip: active)
+            if let trip = displayTrip, trip.status == .active {
+                ActiveTripDashboard(trip: trip)
             }
 
-            if allTrips.count > 1 {
-                tripPicker
+            if let trip = displayTrip {
+                tripBanner(trip)
             }
 
             mapContent
         }
+    }
+
+    // MARK: - Trip Banner (replaces picker)
+
+    private func tripBanner(_ trip: TripEntity) -> some View {
+        Button {
+            navigateToTripID = trip.id
+        } label: {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(trip.name)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin")
+                            .font(.caption2)
+                        Text(trip.destination)
+                            .font(.caption)
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(.secondary)
+                }
+                Spacer()
+                let stopCount = trip.days.flatMap(\.stops).count
+                Text("\(stopCount) stop\(stopCount == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Empty State
@@ -97,133 +132,6 @@ struct TripMapView: View {
         .padding()
     }
 
-    // MARK: - Trip Picker
-
-    private var tripPicker: some View {
-        VStack(spacing: 0) {
-            pickerHeader
-            pickerScrollView
-        }
-        .background(.ultraThinMaterial)
-    }
-
-    private var pickerHeader: some View {
-        HStack {
-            Text("SELECT A TRIP")
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundStyle(.secondary)
-                .tracking(0.5)
-            Spacer()
-            Text("\(allTrips.count) trips")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 6)
-    }
-
-    private var pickerScrollView: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(allTrips) { trip in
-                    tripCard(trip)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
-        }
-    }
-
-    // MARK: - Trip Card
-
-    private func tripCard(_ trip: TripEntity) -> some View {
-        let isSelected = trip.id == (selectedTripID ?? allTrips.first?.id)
-        let stopCount = trip.days.flatMap { $0.stops }.count
-
-        return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                selectedTripID = trip.id
-            }
-        } label: {
-            tripCardLabel(trip: trip, isSelected: isSelected, stopCount: stopCount)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func tripCardLabel(trip: TripEntity, isSelected: Bool, stopCount: Int) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(trip.name)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                StatusBadge(status: trip.status)
-            }
-
-            tripCardDestination(trip: trip, isSelected: isSelected)
-
-            tripCardStats(trip: trip, isSelected: isSelected, stopCount: stopCount)
-
-            if isSelected {
-                viewTripButton(trip: trip)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .frame(width: 220)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isSelected ? Color.blue : Color(.systemGray6))
-        )
-        .foregroundStyle(isSelected ? .white : .primary)
-    }
-
-    private func viewTripButton(trip: TripEntity) -> some View {
-        Button {
-            navigateToTripID = trip.id
-        } label: {
-            HStack(spacing: 4) {
-                Text("View Trip")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                Image(systemName: "chevron.right")
-                    .font(.caption2)
-                    .fontWeight(.bold)
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Color.white.opacity(0.25))
-            .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity, alignment: .trailing)
-    }
-
-    private func tripCardDestination(trip: TripEntity, isSelected: Bool) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: "mappin")
-                .font(.caption2)
-            Text(trip.destination)
-                .font(.caption)
-                .lineLimit(1)
-        }
-        .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
-    }
-
-    private func tripCardStats(trip: TripEntity, isSelected: Bool, stopCount: Int) -> some View {
-        HStack(spacing: 8) {
-            Label("\(trip.durationInDays)d", systemImage: "calendar")
-                .font(.caption2)
-            Label("\(stopCount) stops", systemImage: "mappin.circle")
-                .font(.caption2)
-        }
-        .foregroundColor(isSelected ? .white.opacity(0.7) : .gray)
-    }
-
     // MARK: - Map
 
     private var mapContent: some View {
@@ -241,8 +149,8 @@ struct TripMapView: View {
                     .tag(stop.id)
                 }
 
-                // Route lines between stops for selected trip
-                if let trip = selectedTrip {
+                // Route lines between stops
+                if let trip = displayTrip {
                     ForEach(trip.days.sorted(by: { $0.dayNumber < $1.dayNumber }), id: \.id) { day in
                         let dayStops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
                             .filter { $0.latitude != 0 || $0.longitude != 0 }
@@ -373,14 +281,6 @@ struct TripMapView: View {
         )
         withAnimation {
             cameraPosition = .region(region)
-        }
-    }
-
-    private func statusColor(_ status: TripStatus) -> Color {
-        switch status {
-        case .planning: .blue
-        case .active: .green
-        case .completed: .gray
         }
     }
 

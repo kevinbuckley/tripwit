@@ -11,6 +11,8 @@ struct StopDetailView: View {
     @State private var showingEditStop = false
     @State private var showingNearbyAI = false
     @State private var showingLocateAI = false
+    @State private var showingRatingSheet = false
+    @State private var pendingRating: Int = 0
     @State private var newCommentText = ""
 
     private var coordinate: CLLocationCoordinate2D {
@@ -171,33 +173,57 @@ struct StopDetailView: View {
     }
 
     private var visitedStatusRow: some View {
-        HStack {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Visited")
-                    .fontWeight(.medium)
-                if let visitedAt = stop.visitedAt {
-                    Text(visitedAt, style: .date)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Visited")
+                        .fontWeight(.medium)
+                    if let visitedAt = stop.visitedAt {
+                        Text(visitedAt, style: .date)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                Spacer()
+                Button("Undo") {
+                    stop.isVisited = false
+                    stop.visitedAt = nil
+                    stop.rating = 0
+                    try? modelContext.save()
+                }
+                .font(.subheadline)
+                .foregroundColor(.red)
+            }
+
+            // Star rating display / editor
+            HStack(spacing: 4) {
+                ForEach(1...5, id: \.self) { star in
+                    Button {
+                        stop.rating = star
+                        try? modelContext.save()
+                    } label: {
+                        Image(systemName: star <= stop.rating ? "star.fill" : "star")
+                            .font(.title3)
+                            .foregroundStyle(star <= stop.rating ? .yellow : Color(.systemGray4))
+                    }
+                    .buttonStyle(.plain)
+                }
+                if stop.rating > 0 {
+                    Text("\(stop.rating)/5")
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(visitedAt, style: .time)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 4)
                 }
             }
-            Spacer()
-            Button("Undo") {
-                toggleVisitedStatus()
-            }
-            .font(.subheadline)
-            .foregroundColor(.red)
         }
     }
 
     private var markAsVisitedButton: some View {
         Button {
-            toggleVisitedStatus()
+            showingRatingSheet = true
+            pendingRating = 0
         } label: {
             HStack {
                 Image(systemName: "checkmark.circle")
@@ -207,12 +233,25 @@ struct StopDetailView: View {
             .foregroundColor(.green)
         }
         .accessibilityLabel("Mark \(stop.name) as visited")
-    }
-
-    private func toggleVisitedStatus() {
-        stop.isVisited.toggle()
-        stop.visitedAt = stop.isVisited ? Date() : nil
-        try? modelContext.save()
+        .alert("Rate Your Visit", isPresented: $showingRatingSheet) {
+            ForEach([1, 2, 3, 4, 5], id: \.self) { stars in
+                Button(String(repeating: "★", count: stars) + String(repeating: "☆", count: 5 - stars)) {
+                    stop.isVisited = true
+                    stop.visitedAt = Date()
+                    stop.rating = stars
+                    try? modelContext.save()
+                }
+            }
+            Button("Skip Rating") {
+                stop.isVisited = true
+                stop.visitedAt = Date()
+                stop.rating = 0
+                try? modelContext.save()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("How was \(stop.name)?")
+        }
     }
 
     // MARK: - Comments
