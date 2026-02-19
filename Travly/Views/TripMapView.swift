@@ -5,6 +5,8 @@ import TripCore
 
 struct TripMapView: View {
 
+    var onGoToTrips: (() -> Void)? = nil
+
     @Query(sort: \TripEntity.startDate, order: .reverse) private var allTrips: [TripEntity]
 
     @State private var cameraPosition: MapCameraPosition = .automatic
@@ -119,14 +121,26 @@ struct TripMapView: View {
             Spacer()
             Image(systemName: "map")
                 .font(.system(size: 56))
-                .foregroundStyle(.blue.opacity(0.5))
+                .foregroundStyle(.blue.opacity(0.4))
             Text("No Trips to Display")
                 .font(.title3)
                 .fontWeight(.medium)
-            Text("Create a trip with stops to see them on the map.")
+            Text("Create a trip with stops to see them here.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+            if let goToTrips = onGoToTrips {
+                Button {
+                    goToTrips()
+                } label: {
+                    Label("Go to My Trips", systemImage: "list.bullet")
+                        .font(.headline)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.top, 4)
+            }
             Spacer()
         }
         .padding()

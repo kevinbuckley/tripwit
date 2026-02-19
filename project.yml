@@ -36,7 +36,7 @@ targets:
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Travly can add your trip days to your calendar so you can see your itinerary alongside other events."
         INFOPLIST_KEY_CFBundleShortVersionString: "1.1"
         MARKETING_VERSION: "1.1"
-        CURRENT_PROJECT_VERSION: "19"
+        CURRENT_PROJECT_VERSION: "20"
   TravlyTests:
     type: bundle.unit-test
     platform: iOS

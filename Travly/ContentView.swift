@@ -7,7 +7,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
-    @State private var selectedTab = 0
+    @State private var selectedTab = 1
     @State private var tripsNavPath = NavigationPath()
     @Query(sort: \TripEntity.startDate, order: .reverse) private var allTrips: [TripEntity]
 
@@ -59,7 +59,7 @@ struct ContentView: View {
     private var mainTabView: some View {
         TabView(selection: $selectedTab) {
             NavigationStack {
-                TripMapView()
+                TripMapView(onGoToTrips: { selectedTab = 1 })
             }
             .tabItem {
                 Label("Map", systemImage: "map")
