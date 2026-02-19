@@ -538,16 +538,49 @@ struct TripDetailView: View {
             // Daily distance/time summary
             daySummaryRow(locatedStops: locatedStops)
 
+            // Drop zone row — visible only while a stop is being dragged to a different day
+            if draggingStopID != nil {
+                let isTarget = dropTargetDayID == day.id
+                HStack {
+                    Spacer()
+                    Label(isTarget ? "Release to move here" : "Move to Day \(day.dayNumber)",
+                          systemImage: isTarget ? "arrow.down.circle.fill" : "arrow.right.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(isTarget ? .white : .blue)
+                    Spacer()
+                }
+                .padding(.vertical, 6)
+                .background(isTarget ? Color.blue : Color.blue.opacity(0.08),
+                            in: RoundedRectangle(cornerRadius: 8))
+                .listRowBackground(Color.clear)
+                .dropDestination(for: String.self) { items, _ in
+                    guard let uuidString = items.first,
+                          let stop = findStop(byID: uuidString),
+                          stop.day?.id != day.id else { return false }
+                    moveStopToDay(stop, targetDay: day)
+                    draggingStopID = nil
+                    dropTargetDayID = nil
+                    return true
+                } isTargeted: { isTargeted in
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        dropTargetDayID = isTargeted ? day.id : (dropTargetDayID == day.id ? nil : dropTargetDayID)
+                    }
+                }
+            }
+
             ForEach(Array(sortedStops.enumerated()), id: \.element.id) { index, stop in
                 NavigationLink(destination: StopDetailView(stop: stop)) {
                     StopRowView(stop: stop)
                 }
                 .draggable(stop.id.uuidString) {
-                    // Preview shown while dragging
                     Label(stop.name, systemImage: "mappin.circle.fill")
                         .padding(8)
                         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
                         .onAppear { draggingStopID = stop.id.uuidString }
+                        .onDisappear {
+                            draggingStopID = nil
+                            dropTargetDayID = nil
+                        }
                 }
                 .contextMenu {
                     if sortedDays.count > 1 {
@@ -609,11 +642,6 @@ struct TripDetailView: View {
                 Text("Day \(day.dayNumber)")
                     .fontWeight(.semibold)
                 Spacer()
-                if dropTargetDayID == day.id {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .foregroundStyle(.blue)
-                        .transition(.scale.combined(with: .opacity))
-                }
                 if !day.location.isEmpty && locationSegments.count <= 1 {
                     Text(day.location)
                         .font(.caption)
@@ -624,19 +652,6 @@ struct TripDetailView: View {
                     .foregroundStyle(.secondary)
             }
             .contentShape(Rectangle())
-            .dropDestination(for: String.self) { items, _ in
-                guard let uuidString = items.first,
-                      let stop = findStop(byID: uuidString),
-                      stop.day?.id != day.id else { return false }
-                moveStopToDay(stop, targetDay: day)
-                draggingStopID = nil
-                dropTargetDayID = nil
-                return true
-            } isTargeted: { isTargeted in
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    dropTargetDayID = isTargeted ? day.id : (dropTargetDayID == day.id ? nil : dropTargetDayID)
-                }
-            }
             .contextMenu {
                 Button {
                     dayForLocationEdit = day
