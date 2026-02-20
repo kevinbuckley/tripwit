@@ -6,8 +6,7 @@ struct TravlyApp: App {
 
     let modelContainer: ModelContainer?
     @State private var locationManager = LocationManager()
-    @State private var pendingImport: TripTransfer?
-    @State private var importError: String?
+    @State private var pendingImportURL: URL?
     private let containerError: String?
 
     init() {
@@ -39,27 +38,12 @@ struct TravlyApp: App {
     var body: some Scene {
         WindowGroup {
             if let modelContainer {
-                ContentView()
+                ContentView(pendingImportURL: $pendingImportURL)
                     .environment(locationManager)
                     .modelContainer(modelContainer)
                     .onOpenURL { url in
                         guard url.pathExtension == "travly" else { return }
-                        do {
-                            pendingImport = try TripShareService.decodeTrip(from: url)
-                        } catch {
-                            importError = error.localizedDescription
-                        }
-                    }
-                    .sheet(item: $pendingImport) { transfer in
-                        ImportTripSheet(transfer: transfer)
-                    }
-                    .alert("Import Error", isPresented: Binding(
-                        get: { importError != nil },
-                        set: { if !$0 { importError = nil } }
-                    )) {
-                        Button("OK", role: .cancel) { importError = nil }
-                    } message: {
-                        Text(importError ?? "Could not read the trip file.")
+                        pendingImportURL = url
                     }
             } else {
                 dataErrorView

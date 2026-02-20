@@ -5,9 +5,9 @@ struct ImportTripSheet: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     let transfer: TripTransfer
+    var onImported: ((UUID) -> Void)?
 
     @State private var isImporting = false
 
@@ -83,9 +83,12 @@ struct ImportTripSheet: View {
 
     private func importTrip() {
         isImporting = true
-        TripShareService.importTrip(transfer, into: modelContext)
+        let trip = TripShareService.importTrip(transfer, into: modelContext)
         try? modelContext.save()
-        hasCompletedOnboarding = true
+        let tripID = trip.id
         dismiss()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            onImported?(tripID)
+        }
     }
 }

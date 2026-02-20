@@ -7,6 +7,9 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
+    @Binding var pendingImportURL: URL?
+    @State private var pendingImport: TripTransfer?
+    @State private var importError: String?
     @State private var selectedTab = 1
     @State private var tripsNavPath = NavigationPath()
     @Query(sort: \TripEntity.startDate, order: .reverse) private var allTrips: [TripEntity]
@@ -28,31 +31,59 @@ struct ContentView: View {
     #endif
 
     var body: some View {
-        if hasCompletedOnboarding || isScreenshotMode {
-            mainTabView
-                .onAppear {
-                    #if DEBUG
-                    if isScreenshotMode {
-                        seedScreenshotDataIfNeeded()
-                        switch screenshotTab {
-                        case "map": selectedTab = 0
-                        case "trips": selectedTab = 1
-                        case "wishlist": selectedTab = 2
-                        case "settings": selectedTab = 3
-                        case "tripdetail":
-                            selectedTab = 1
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                if let first = allTrips.first(where: { $0.status == .active }) ?? allTrips.first {
-                                    tripsNavPath.append(first.id)
+        Group {
+            if hasCompletedOnboarding || isScreenshotMode {
+                mainTabView
+                    .onAppear {
+                        #if DEBUG
+                        if isScreenshotMode {
+                            seedScreenshotDataIfNeeded()
+                            switch screenshotTab {
+                            case "map": selectedTab = 0
+                            case "trips": selectedTab = 1
+                            case "wishlist": selectedTab = 2
+                            case "settings": selectedTab = 3
+                            case "tripdetail":
+                                selectedTab = 1
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    if let first = allTrips.first(where: { $0.status == .active }) ?? allTrips.first {
+                                        tripsNavPath.append(first.id)
+                                    }
                                 }
+                            default: selectedTab = 1
                             }
-                        default: selectedTab = 1
                         }
+                        #endif
                     }
-                    #endif
+            } else {
+                WelcomeView(hasCompletedOnboarding: $hasCompletedOnboarding)
+            }
+        }
+        .onChange(of: pendingImportURL) { _, url in
+            guard let url else { return }
+            do {
+                pendingImport = try TripShareService.decodeTrip(from: url)
+            } catch {
+                importError = error.localizedDescription
+            }
+            pendingImportURL = nil
+        }
+        .sheet(item: $pendingImport) { transfer in
+            ImportTripSheet(transfer: transfer) { importedTripID in
+                hasCompletedOnboarding = true
+                selectedTab = 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    tripsNavPath.append(importedTripID)
                 }
-        } else {
-            WelcomeView(hasCompletedOnboarding: $hasCompletedOnboarding)
+            }
+        }
+        .alert("Import Error", isPresented: Binding(
+            get: { importError != nil },
+            set: { if !$0 { importError = nil } }
+        )) {
+            Button("OK", role: .cancel) { importError = nil }
+        } message: {
+            Text(importError ?? "Could not read the trip file.")
         }
     }
 
