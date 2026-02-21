@@ -86,6 +86,18 @@ final class PersistenceController: ObservableObject {
         container.loadPersistentStores { description, error in
             if let error {
                 print("Core Data store failed to load (\(description.url?.lastPathComponent ?? "unknown")): \(error)")
+                // If a store fails to load, try to destroy it and reload.
+                // This handles corrupted stores or stores left over from SwiftData migration.
+                if let url = description.url {
+                    print("Attempting to destroy and recreate store at \(url.lastPathComponent)")
+                    try? FileManager.default.removeItem(at: url)
+                    // Also remove WAL/SHM companions
+                    try? FileManager.default.removeItem(at: url.appendingPathExtension("shm"))
+                    try? FileManager.default.removeItem(at: url.appendingPathExtension("wal"))
+                    let urlPath = url.path
+                    try? FileManager.default.removeItem(atPath: urlPath + "-shm")
+                    try? FileManager.default.removeItem(atPath: urlPath + "-wal")
+                }
             }
         }
 
@@ -109,15 +121,14 @@ final class PersistenceController: ObservableObject {
     }
 
     /// Remove any leftover SwiftData .store files from before the Core Data migration.
+    /// Also removes any corrupted Core Data .sqlite files if flagged.
     private static func cleanUpLegacyStores(in directory: URL) {
         let fm = FileManager.default
-        let legacyFiles = [
-            "default.store", "default.store-shm", "default.store-wal",
-            "Travly.store", "Travly.store-shm", "Travly.store-wal"
-        ]
-        for file in legacyFiles {
-            let url = directory.appending(path: file)
-            if fm.fileExists(atPath: url.path) {
+        guard let contents = try? fm.contentsOfDirectory(atPath: directory.path) else { return }
+        for file in contents {
+            // Remove SwiftData .store files and their companions
+            if file.hasSuffix(".store") || file.hasSuffix(".store-shm") || file.hasSuffix(".store-wal") {
+                let url = directory.appending(path: file)
                 try? fm.removeItem(at: url)
                 print("Removed legacy SwiftData file: \(file)")
             }

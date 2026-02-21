@@ -17,6 +17,11 @@ targets:
       - package: TripCore
     entitlements:
       path: Travly/Travly.entitlements
+      properties:
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.kevinbuckley.travelplanner
     settings:
       base:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -37,7 +42,7 @@ targets:
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Travly can add your trip days to your calendar so you can see your itinerary alongside other events."
         INFOPLIST_KEY_CFBundleShortVersionString: "1.2"
         MARKETING_VERSION: "1.2"
-        CURRENT_PROJECT_VERSION: "29"
+        CURRENT_PROJECT_VERSION: "30"
   TravlyTests:
     type: bundle.unit-test
     platform: iOS
