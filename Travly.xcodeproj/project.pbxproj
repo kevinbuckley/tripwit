@@ -509,7 +509,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Travly/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Travly;
-				INFOPLIST_KEY_CFBundleShortVersionString = 1.1;
+				INFOPLIST_KEY_CFBundleShortVersionString = 1.2;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Travly can add your trip days to your calendar so you can see your itinerary alongside other events.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Travly uses your location to quickly add stops near you and track your trip.";
@@ -522,7 +522,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -542,7 +542,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Travly/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Travly;
-				INFOPLIST_KEY_CFBundleShortVersionString = 1.1;
+				INFOPLIST_KEY_CFBundleShortVersionString = 1.2;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Travly can add your trip days to your calendar so you can see your itinerary alongside other events.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Travly uses your location to quickly add stops near you and track your trip.";
@@ -555,7 +555,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
