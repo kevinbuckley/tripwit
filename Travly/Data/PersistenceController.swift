@@ -28,6 +28,10 @@ final class PersistenceController: ObservableObject {
         container.viewContext
     }
 
+    /// Keep references to store descriptions so we can identify private vs shared stores by URL.
+    private var privateStoreURL: URL?
+    private var sharedStoreURL: URL?
+
     init(inMemory: Bool = false) {
         container = NSPersistentCloudKitContainer(name: "Travly")
         cloudContainer = CKContainer(identifier: Self.containerIdentifier)
@@ -42,10 +46,14 @@ final class PersistenceController: ObservableObject {
                 in: .userDomainMask
             ).first!
 
+            // Clean up any old SwiftData .store files from before migration
+            Self.cleanUpLegacyStores(in: storeDir)
+
             // Private store — user's own data
             let privateURL = storeDir.appending(path: "Private.sqlite")
             let privateDesc = NSPersistentStoreDescription(url: privateURL)
-            privateDesc.configuration = "Default"
+            // Do NOT set configuration — let all entities be available in both stores.
+            // CloudKit dual-store requires entities in both private and shared stores.
             let privateOptions = NSPersistentCloudKitContainerOptions(
                 containerIdentifier: Self.containerIdentifier
             )
@@ -59,7 +67,7 @@ final class PersistenceController: ObservableObject {
             // Shared store — data shared with/by others
             let sharedURL = storeDir.appending(path: "Shared.sqlite")
             let sharedDesc = NSPersistentStoreDescription(url: sharedURL)
-            sharedDesc.configuration = "Default"
+            // Do NOT set configuration — same reason as above.
             let sharedOptions = NSPersistentCloudKitContainerOptions(
                 containerIdentifier: Self.containerIdentifier
             )
@@ -71,6 +79,8 @@ final class PersistenceController: ObservableObject {
                                  forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 
             container.persistentStoreDescriptions = [privateDesc, sharedDesc]
+            privateStoreURL = privateURL
+            sharedStoreURL = sharedURL
         }
 
         container.loadPersistentStores { description, error in
@@ -79,13 +89,13 @@ final class PersistenceController: ObservableObject {
             }
         }
 
-        // FIX #2: Use NSMergeByPropertyStoreTrumpMergePolicy so remote/server changes
+        // Use NSMergeByPropertyStoreTrumpMergePolicy so remote/server changes
         // take priority over local in-memory changes. This is correct for CloudKit sync
         // where the "truth" is what's on the server, especially with 5 concurrent editors.
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyStoreTrumpMergePolicy
 
-        // FIX #3: Set transaction author so persistent history can distinguish
+        // Set transaction author so persistent history can distinguish
         // local changes from remote ones — critical for deduplication.
         container.viewContext.transactionAuthor = Self.appTransactionAuthorName
 
@@ -98,7 +108,23 @@ final class PersistenceController: ObservableObject {
         )
     }
 
-    // FIX #6: Process persistent history on remote changes to ensure
+    /// Remove any leftover SwiftData .store files from before the Core Data migration.
+    private static func cleanUpLegacyStores(in directory: URL) {
+        let fm = FileManager.default
+        let legacyFiles = [
+            "default.store", "default.store-shm", "default.store-wal",
+            "Travly.store", "Travly.store-shm", "Travly.store-wal"
+        ]
+        for file in legacyFiles {
+            let url = directory.appending(path: file)
+            if fm.fileExists(atPath: url.path) {
+                try? fm.removeItem(at: url)
+                print("Removed legacy SwiftData file: \(file)")
+            }
+        }
+    }
+
+    // Process persistent history on remote changes to ensure
     // all devices converge to the same state after concurrent edits.
     @objc private func handleRemoteChange(_ notification: Notification) {
         let context = container.newBackgroundContext()
@@ -150,12 +176,10 @@ final class PersistenceController: ObservableObject {
 
     // MARK: - CloudKit Sharing
 
-    /// Check if an object is in the shared store (shared by/with someone).
+    /// Check if an object is in the shared store.
     func isShared(_ object: NSManagedObject) -> Bool {
         guard let store = object.objectID.persistentStore else { return false }
-        guard let options = store.options?[NSPersistentCloudKitContainerOptions.key]
-                as? NSPersistentCloudKitContainerOptions else { return false }
-        return options.databaseScope == .shared
+        return store.url == sharedStoreURL
     }
 
     /// Check if the object is shared AND the current user is a participant (not owner).
@@ -167,10 +191,13 @@ final class PersistenceController: ObservableObject {
 
     /// Get the existing CKShare for a managed object.
     func existingShare(for object: NSManagedObject) -> CKShare? {
-        guard let shares = try? container.fetchShares(matching: [object.objectID]) else {
+        do {
+            let shares = try container.fetchShares(matching: [object.objectID])
+            return shares[object.objectID]
+        } catch {
+            print("Error fetching share: \(error)")
             return nil
         }
-        return shares[object.objectID]
     }
 
     /// Check if the current user can edit a shared object.
@@ -198,24 +225,19 @@ final class PersistenceController: ObservableObject {
         return nil
     }
 
-    /// The private persistent store.
+    /// The private persistent store (identified by URL).
     var privatePersistentStore: NSPersistentStore? {
-        container.persistentStoreCoordinator.persistentStores.first {
-            ($0.options?[NSPersistentCloudKitContainerOptions.key]
-                as? NSPersistentCloudKitContainerOptions)?.databaseScope == .private
+        guard let privateStoreURL else { return nil }
+        return container.persistentStoreCoordinator.persistentStores.first {
+            $0.url == privateStoreURL
         }
     }
 
-    /// The shared persistent store.
+    /// The shared persistent store (identified by URL).
     var sharedPersistentStore: NSPersistentStore? {
-        container.persistentStoreCoordinator.persistentStores.first {
-            ($0.options?[NSPersistentCloudKitContainerOptions.key]
-                as? NSPersistentCloudKitContainerOptions)?.databaseScope == .shared
+        guard let sharedStoreURL else { return nil }
+        return container.persistentStoreCoordinator.persistentStores.first {
+            $0.url == sharedStoreURL
         }
     }
-}
-
-// Helper to access the options key
-extension NSPersistentCloudKitContainerOptions {
-    static let key = "NSPersistentCloudKitContainerOptionsKey"
 }
