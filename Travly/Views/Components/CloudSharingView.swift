@@ -47,11 +47,17 @@ struct CloudSharingView: UIViewControllerRepresentable {
         }
 
         func cloudSharingControllerDidSaveShare(_ csc: UICloudSharingController) {
+            // Persist the share locally so CloudKit knows about it.
             if let share = csc.share,
                let store = parent.persistence.privatePersistentStore {
                 parent.persistence.container.persistUpdatedShare(share, in: store)
             }
-            parent.dismiss()
+            // Do NOT dismiss here. UICloudSharingController manages its own
+            // presentation lifecycle (e.g. showing iMessage/Mail compose sheet).
+            // Dismissing the SwiftUI wrapper now would rip away the presenter
+            // while the share sheet is still on screen, causing an infinite spinner.
+            // The host controller's presentationControllerDidDismiss or
+            // viewWillDisappear handles the final SwiftUI cleanup.
         }
 
         func cloudSharingControllerDidStopSharing(_ csc: UICloudSharingController) {
@@ -66,7 +72,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
                     }
                 }
             }
-            parent.dismiss()
+            // Same as above — do NOT dismiss here.
         }
 
         func itemTitle(for csc: UICloudSharingController) -> String? {
@@ -107,6 +113,7 @@ class CloudSharingHostController: UIViewController, UIAdaptivePresentationContro
     var onDismiss: (() -> Void)?
 
     private var didPresent = false
+    private var sharingControllerPresented = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -125,12 +132,10 @@ class CloudSharingHostController: UIViewController, UIAdaptivePresentationContro
 
         if let existingShare = sharingService.existingShare(for: trip) {
             controller = UICloudSharingController(share: existingShare, container: persistence.cloudContainer)
+            finishPresenting(controller)
         } else {
             // Pre-create the share BEFORE presenting the controller so the
             // preparation handler never needs to await on the main thread.
-            // UICloudSharingController's prep closure runs on the main thread;
-            // calling `container.share()` (which also needs main-thread Core Data
-            // access) from an async Task inside that closure causes a deadlock/freeze.
             let tripRef = trip!
             let sharingRef = sharingService!
             let persistenceRef = persistence!
@@ -148,33 +153,36 @@ class CloudSharingHostController: UIViewController, UIAdaptivePresentationContro
 
                     spinner.removeFromSuperview()
 
-                    // Now present with the pre-created share (no async in the callback)
                     let sharingController = UICloudSharingController(share: share, container: persistenceRef.cloudContainer)
-                    sharingController.delegate = self.coordinator
-                    sharingController.availablePermissions = [.allowPublic, .allowPrivate, .allowReadOnly, .allowReadWrite]
-                    sharingController.modalPresentationStyle = .formSheet
-                    sharingController.presentationController?.delegate = self
-
-                    self.present(sharingController, animated: true)
+                    self.finishPresenting(sharingController)
                 } catch {
                     spinner.removeFromSuperview()
                     print("Failed to create share: \(error)")
                     self.onDismiss?()
                 }
             }
-            return
         }
+    }
 
+    private func finishPresenting(_ controller: UICloudSharingController) {
         controller.delegate = coordinator
         controller.availablePermissions = [.allowPublic, .allowPrivate, .allowReadOnly, .allowReadWrite]
         controller.modalPresentationStyle = .formSheet
+
+        // Use ourselves as the presentation delegate so we know when the
+        // UICloudSharingController is fully dismissed (including any
+        // sub-sheets like iMessage or Mail it presents).
         controller.presentationController?.delegate = self
 
+        sharingControllerPresented = true
         present(controller, animated: true)
     }
 
-    // Called when user swipes down or taps Cancel on the UICloudSharingController
+    // Called when UICloudSharingController is dismissed by the user
+    // (swipe down, Cancel, or after sending the share via iMessage/Mail).
+    // This is the ONLY place we dismiss the SwiftUI fullScreenCover.
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        sharingControllerPresented = false
         onDismiss?()
     }
 }
