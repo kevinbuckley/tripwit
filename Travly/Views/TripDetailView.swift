@@ -185,12 +185,13 @@ struct TripDetailView: View {
                 Text(message)
             }
         }
-        .sheet(isPresented: $showingCloudSharing) {
+        .fullScreenCover(isPresented: $showingCloudSharing) {
             CloudSharingView(
                 trip: trip,
                 persistence: PersistenceController.shared,
                 sharingService: sharingService
             )
+            .background(ClearBackgroundView())
         }
         .sheet(isPresented: $showingEditTrip) {
             EditTripSheet(trip: trip)

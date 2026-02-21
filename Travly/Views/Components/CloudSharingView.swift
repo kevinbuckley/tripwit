@@ -19,6 +19,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
         host.persistence = persistence
         host.sharingService = sharingService
         host.coordinator = context.coordinator
+        host.onDismiss = { dismiss() }
         return host
     }
 
@@ -78,18 +79,39 @@ struct CloudSharingView: UIViewControllerRepresentable {
     }
 }
 
+// MARK: - Clear Background
+
+/// Removes the default opaque background from a fullScreenCover
+/// so the UICloudSharingController appears without a blank backdrop.
+struct ClearBackgroundView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
 // MARK: - Host Controller
 
 /// A transparent view controller that presents UICloudSharingController
 /// directly via UIKit to avoid SwiftUI sheet rendering issues.
-class CloudSharingHostController: UIViewController {
+class CloudSharingHostController: UIViewController, UIAdaptivePresentationControllerDelegate {
 
     var trip: TripEntity!
     var persistence: PersistenceController!
     var sharingService: CloudKitSharingService!
     var coordinator: CloudSharingView.Coordinator!
+    var onDismiss: (() -> Void)?
 
     private var didPresent = false
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .clear
+    }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -121,7 +143,13 @@ class CloudSharingHostController: UIViewController {
         controller.delegate = coordinator
         controller.availablePermissions = [.allowPublic, .allowPrivate, .allowReadOnly, .allowReadWrite]
         controller.modalPresentationStyle = .formSheet
+        controller.presentationController?.delegate = self
 
         present(controller, animated: true)
+    }
+
+    // Called when user swipes down or taps Cancel on the UICloudSharingController
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        onDismiss?()
     }
 }
