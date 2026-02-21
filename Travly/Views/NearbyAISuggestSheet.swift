@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import TripCore
 
 #if canImport(FoundationModels)
@@ -8,7 +8,7 @@ import FoundationModels
 @available(iOS 26, *)
 struct NearbyAISuggestSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let stop: StopEntity
@@ -68,7 +68,7 @@ struct NearbyAISuggestSheet: View {
             Spacer()
             ProgressView()
                 .controlSize(.large)
-            Text("Finding places near \(stop.name)...")
+            Text("Finding places near \(stop.wrappedName)...")
                 .font(.headline)
                 .multilineTextAlignment(.center)
             Text("Apple Intelligence is looking for nearby attractions and restaurants")
@@ -154,7 +154,7 @@ struct NearbyAISuggestSheet: View {
                     .font(.title2)
                     .foregroundColor(.blue)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Near \(stop.name)")
+                    Text("Near \(stop.wrappedName)")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     Text(String(format: "%.4f, %.4f", stop.latitude, stop.longitude))
@@ -246,9 +246,9 @@ struct NearbyAISuggestSheet: View {
 
     private func generateNearby() async {
         selectedIndices = []
-        let existingNames = day.stops.map(\.name)
+        let existingNames = day.stopsArray.map(\.wrappedName)
         await planner.suggestNearby(
-            stopName: stop.name,
+            stopName: stop.wrappedName,
             stopCategory: stop.category.rawValue,
             latitude: stop.latitude,
             longitude: stop.longitude,
@@ -258,7 +258,7 @@ struct NearbyAISuggestSheet: View {
     }
 
     private func addSelectedStops() {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         var count = 0
 
         for index in selectedIndices.sorted() {

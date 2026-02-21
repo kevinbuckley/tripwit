@@ -1,11 +1,11 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
 struct EditStopSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let stop: StopEntity
@@ -24,16 +24,16 @@ struct EditStopSheet: View {
 
     init(stop: StopEntity) {
         self.stop = stop
-        _name = State(initialValue: stop.name)
+        _name = State(initialValue: stop.name ?? "")
         _category = State(initialValue: stop.category)
-        _notes = State(initialValue: stop.notes)
+        _notes = State(initialValue: stop.notes ?? "")
         _useArrivalTime = State(initialValue: stop.arrivalTime != nil)
         _arrivalTime = State(initialValue: stop.arrivalTime ?? Date())
         _useDepartureTime = State(initialValue: stop.departureTime != nil)
         _departureTime = State(initialValue: stop.departureTime ?? Date())
         _latitude = State(initialValue: stop.latitude)
         _longitude = State(initialValue: stop.longitude)
-        _locationName = State(initialValue: stop.name)
+        _locationName = State(initialValue: stop.name ?? "")
         _locationCity = State(initialValue: "")
     }
 
@@ -140,7 +140,7 @@ struct EditStopSheet: View {
         stop.departureTime = useDepartureTime ? departureTime : nil
         stop.latitude = latitude
         stop.longitude = longitude
-        try? modelContext.save()
+        try? viewContext.save()
 
         // Re-populate place details if location changed
         if locationChanged && (latitude != 0 || longitude != 0) {
@@ -154,7 +154,7 @@ struct EditStopSheet: View {
 
     private func populatePlaceDetails() async {
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = stop.name
+        request.naturalLanguageQuery = stop.wrappedName
         request.region = MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude),
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
@@ -169,7 +169,7 @@ struct EditStopSheet: View {
                     let pm = item.placemark
                     let parts = [pm.subThoroughfare, pm.thoroughfare, pm.locality, pm.administrativeArea, pm.postalCode].compactMap { $0 }
                     if !parts.isEmpty { stop.address = parts.joined(separator: ", ") }
-                    try? modelContext.save()
+                    try? viewContext.save()
                 }
             }
         } catch { }

@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+import CoreData
 
 struct AddBookingSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let trip: TripEntity
@@ -144,12 +144,13 @@ struct AddBookingSheet: View {
     // MARK: - Save
 
     private func save() {
-        let booking = BookingEntity(
+        let booking = BookingEntity.create(
+            in: viewContext,
             type: bookingType,
             title: title.trimmingCharacters(in: .whitespaces),
             confirmationCode: confirmationCode.trimmingCharacters(in: .whitespaces),
             notes: notes.trimmingCharacters(in: .whitespaces),
-            sortOrder: trip.bookings.count
+            sortOrder: trip.bookingsArray.count
         )
 
         switch bookingType {
@@ -173,9 +174,7 @@ struct AddBookingSheet: View {
         }
 
         booking.trip = trip
-        trip.bookings.append(booking)
-        modelContext.insert(booking)
-        try? modelContext.save()
+        try? viewContext.save()
         dismiss()
     }
 }

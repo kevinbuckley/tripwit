@@ -1,29 +1,41 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import TripCore
 
 struct TripListView: View {
 
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \TripEntity.startDate, order: .reverse) private var allTrips: [TripEntity]
+    @Environment(\.managedObjectContext) private var viewContext
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \TripEntity.startDate, ascending: false)]) private var allTrips: FetchedResults<TripEntity>
 
     @State private var showingAddTrip = false
     @State private var tripToDelete: TripEntity?
 
+    private let sharingService = CloudKitSharingService()
+
+    /// Own trips (not shared with me by others).
+    private var ownTrips: [TripEntity] {
+        allTrips.filter { !sharingService.isParticipant($0) }
+    }
+
+    /// Trips shared with me by others.
+    private var sharedWithMeTrips: [TripEntity] {
+        allTrips.filter { sharingService.isParticipant($0) }
+    }
+
     private var activeTrips: [TripEntity] {
-        allTrips.filter { $0.status == .active }
+        ownTrips.filter { $0.status == .active }
     }
 
     private var upcomingTrips: [TripEntity] {
-        allTrips.filter { $0.status == .planning && $0.isFuture }
+        ownTrips.filter { $0.status == .planning && $0.isFuture }
     }
 
     private var pastTrips: [TripEntity] {
-        allTrips.filter { $0.status == .completed }
+        ownTrips.filter { $0.status == .completed }
     }
 
     private var planningCurrentTrips: [TripEntity] {
-        allTrips.filter { $0.status == .planning && !$0.isFuture }
+        ownTrips.filter { $0.status == .planning && !$0.isFuture }
     }
 
     var body: some View {
@@ -53,14 +65,14 @@ struct TripListView: View {
         )) {
             Button("Delete", role: .destructive) {
                 if let trip = tripToDelete {
-                    DataManager(modelContext: modelContext).deleteTrip(trip)
+                    DataManager(context: viewContext).deleteTrip(trip)
                     tripToDelete = nil
                 }
             }
             Button("Cancel", role: .cancel) { tripToDelete = nil }
         } message: {
             if let trip = tripToDelete {
-                Text("Delete \"\(trip.name)\" and all its stops, bookings, and comments? This cannot be undone.")
+                Text("Delete \"\(trip.wrappedName)\" and all its stops, bookings, and comments? This cannot be undone.")
             }
         }
     }
@@ -103,7 +115,7 @@ struct TripListView: View {
                 Section {
                     ForEach(activeTrips) { trip in
                         NavigationLink(destination: TripDetailView(trip: trip)) {
-                            TripRowView(trip: trip)
+                            tripRow(trip)
                         }
                     }
                     .onDelete { offsets in
@@ -124,7 +136,7 @@ struct TripListView: View {
                 Section {
                     ForEach(combined) { trip in
                         NavigationLink(destination: TripDetailView(trip: trip)) {
-                            TripRowView(trip: trip)
+                            tripRow(trip)
                         }
                     }
                     .onDelete { offsets in
@@ -144,7 +156,7 @@ struct TripListView: View {
                 Section {
                     ForEach(pastTrips) { trip in
                         NavigationLink(destination: TripDetailView(trip: trip)) {
-                            TripRowView(trip: trip)
+                            tripRow(trip)
                         }
                     }
                     .onDelete { offsets in
@@ -159,8 +171,47 @@ struct TripListView: View {
                         .fontWeight(.semibold)
                 }
             }
+
+            // Shared with Me section
+            if !sharedWithMeTrips.isEmpty {
+                Section {
+                    ForEach(sharedWithMeTrips) { trip in
+                        NavigationLink(destination: TripDetailView(trip: trip)) {
+                            tripRow(trip, showOwner: true)
+                        }
+                    }
+                    // No swipe-to-delete for shared trips
+                } header: {
+                    Label("Shared with Me", systemImage: "person.2.fill")
+                        .foregroundStyle(.purple)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                }
+            }
         }
         .listStyle(.insetGrouped)
     }
 
+    // MARK: - Row
+
+    @ViewBuilder
+    private func tripRow(_ trip: TripEntity, showOwner: Bool = false) -> some View {
+        HStack {
+            TripRowView(trip: trip)
+            if sharingService.isShared(trip) && !showOwner {
+                Spacer()
+                Image(systemName: "person.2.fill")
+                    .font(.caption)
+                    .foregroundStyle(.blue.opacity(0.7))
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if showOwner, let ownerName = sharingService.ownerName(for: trip) {
+                Text("by \(ownerName)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(.trailing, 4)
+            }
+        }
+    }
 }

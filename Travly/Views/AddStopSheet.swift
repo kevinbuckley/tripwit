@@ -1,11 +1,11 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
 struct AddStopSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @Environment(LocationManager.self) private var locationManager: LocationManager?
 
@@ -191,7 +191,7 @@ struct AddStopSheet: View {
     }
 
     private func addStop() {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         let stop = manager.addStop(
             to: day,
             name: name.trimmingCharacters(in: .whitespaces),
@@ -212,7 +212,7 @@ struct AddStopSheet: View {
         if !placePhone.isEmpty { stop.phone = placePhone }
         if !placeWebsite.isEmpty { stop.website = placeWebsite }
 
-        try? modelContext.save()
+        try? viewContext.save()
         dismiss()
     }
 }

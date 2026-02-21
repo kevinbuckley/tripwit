@@ -86,16 +86,16 @@ final class PhotoLibraryService {
         let coreStops = allStops.compactMap { stopEntity -> Stop? in
             guard stopEntity.latitude != 0 || stopEntity.longitude != 0 else { return nil }
             return Stop(
-                id: stopEntity.id,
+                id: stopEntity.id ?? UUID(),
                 dayId: stopEntity.day?.id ?? UUID(),
-                name: stopEntity.name,
+                name: stopEntity.wrappedName,
                 latitude: stopEntity.latitude,
                 longitude: stopEntity.longitude,
                 arrivalTime: stopEntity.arrivalTime,
                 departureTime: stopEntity.departureTime,
                 category: stopEntity.category,
-                notes: stopEntity.notes,
-                sortOrder: stopEntity.sortOrder
+                notes: stopEntity.wrappedNotes,
+                sortOrder: Int(stopEntity.sortOrder)
             )
         }
 
@@ -108,8 +108,9 @@ final class PhotoLibraryService {
         let allResults = matcher.matchPhotos(photoMetadataList, to: coreStops)
 
         // Filter to photos matched to THIS stop (high or medium confidence)
+        let stopID = stop.id ?? UUID()
         let stopResults = allResults.filter { result in
-            result.matchedStop?.id == stop.id && result.confidence >= .medium
+            result.matchedStop?.id == stopID && result.confidence >= .medium
         }.sorted { $0.confidence > $1.confidence }
 
         await MainActor.run {

@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import TripCore
 
 struct ImportBookingSheet: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let trip: TripEntity
@@ -149,12 +149,13 @@ struct ImportBookingSheet: View {
 
     private func importBookings() {
         for parsed in parsedBookings {
-            let booking = BookingEntity(
+            let booking = BookingEntity.create(
+                in: viewContext,
                 type: parsed.type,
                 title: parsed.title,
                 confirmationCode: parsed.confirmationCode,
                 notes: parsed.notes,
-                sortOrder: trip.bookings.count
+                sortOrder: trip.bookingsArray.count
             )
 
             // Apply type-specific fields from details
@@ -171,10 +172,8 @@ struct ImportBookingSheet: View {
             }
 
             booking.trip = trip
-            trip.bookings.append(booking)
-            modelContext.insert(booking)
         }
-        try? modelContext.save()
+        try? viewContext.save()
         addedCount = parsedBookings.count
         parsedBookings = []
 

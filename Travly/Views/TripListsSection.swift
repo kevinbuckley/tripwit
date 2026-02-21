@@ -1,9 +1,10 @@
 import SwiftUI
-import SwiftData
+import CoreData
 
 struct TripListsSection: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     let trip: TripEntity
+    var canEdit: Bool = true
 
     @State private var newItemTexts: [UUID: String] = [:]
     @State private var dayPickerItem: TripListItemEntity?
@@ -19,18 +20,21 @@ struct TripListsSection: View {
     ]
 
     private var sortedLists: [TripListEntity] {
-        trip.lists.sorted { $0.sortOrder < $1.sortOrder }
+        trip.listsArray.sorted { $0.sortOrder < $1.sortOrder }
     }
 
     private var sortedDays: [DayEntity] {
-        trip.days.sorted { $0.dayNumber < $1.dayNumber }
+        trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
     }
 
     var body: some View {
         ForEach(sortedLists) { list in
             listSection(list)
         }
-        addListSection
+        if canEdit {
+            addListSection
+        }
+        EmptyView()
             .sheet(item: $dayPickerItem) { item in
                 addToDaySheet(item: item)
             }
@@ -39,7 +43,7 @@ struct TripListsSection: View {
     // MARK: - List Section
 
     private func listSection(_ list: TripListEntity) -> some View {
-        let items = list.items.sorted { $0.sortOrder < $1.sortOrder }
+        let items = list.itemsArray.sorted { $0.sortOrder < $1.sortOrder }
         let checkedCount = items.filter(\.isChecked).count
 
         return Section {
@@ -47,13 +51,18 @@ struct TripListsSection: View {
                 itemRow(item, list: list)
             }
             .onDelete { offsets in
-                deleteItems(at: offsets, from: list)
+                if canEdit {
+                    deleteItems(at: offsets, from: list)
+                }
             }
+            .deleteDisabled(!canEdit)
 
-            addItemRow(for: list)
+            if canEdit {
+                addItemRow(for: list)
+            }
         } header: {
             HStack {
-                Label(list.name, systemImage: list.icon)
+                Label(list.wrappedName, systemImage: list.wrappedIcon)
                 Spacer()
                 if !items.isEmpty {
                     Text("\(checkedCount)/\(items.count)")
@@ -69,15 +78,18 @@ struct TripListsSection: View {
     private func itemRow(_ item: TripListItemEntity, list: TripListEntity) -> some View {
         HStack(spacing: 10) {
             Button {
-                item.isChecked.toggle()
-                try? modelContext.save()
+                if canEdit {
+                    item.isChecked.toggle()
+                    try? viewContext.save()
+                }
             } label: {
                 Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(item.isChecked ? .green : .gray)
             }
             .buttonStyle(.plain)
+            .disabled(!canEdit)
 
-            Text(item.text)
+            Text(item.wrappedText)
                 .font(.subheadline)
                 .strikethrough(item.isChecked)
                 .foregroundColor(item.isChecked ? .secondary : .primary)
@@ -85,7 +97,7 @@ struct TripListsSection: View {
             Spacer()
 
             // Only show "Add to Day" for Checklist-type lists (not Packing)
-            if list.name == "Checklist" || list.name == "To-Do" {
+            if canEdit, list.wrappedName == "Checklist" || list.wrappedName == "To-Do" {
                 Button {
                     dayPickerItem = item
                 } label: {
@@ -112,18 +124,18 @@ struct TripListsSection: View {
             } label: {
                 Image(systemName: "plus.circle.fill")
                     .foregroundColor(
-                        (newItemTexts[list.id] ?? "").trimmingCharacters(in: .whitespaces).isEmpty ? .gray : .blue
+                        (list.id.flatMap { newItemTexts[$0] } ?? "").trimmingCharacters(in: .whitespaces).isEmpty ? .gray : .blue
                     )
             }
-            .disabled((newItemTexts[list.id] ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled((list.id.flatMap { newItemTexts[$0] } ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
             .buttonStyle(.plain)
         }
     }
 
     private func bindingForList(_ list: TripListEntity) -> Binding<String> {
         Binding(
-            get: { newItemTexts[list.id] ?? "" },
-            set: { newItemTexts[list.id] = $0 }
+            get: { list.id.flatMap { newItemTexts[$0] } ?? "" },
+            set: { if let id = list.id { newItemTexts[id] = $0 } }
         )
     }
 
@@ -131,7 +143,7 @@ struct TripListsSection: View {
 
     private var addListSection: some View {
         Section {
-            let existingNames = Set(trip.lists.map(\.name))
+            let existingNames = Set(trip.listsArray.map(\.wrappedName))
             let available = Self.listTemplates.filter { !existingNames.contains($0.name) }
 
             if !available.isEmpty {
@@ -200,12 +212,12 @@ struct TripListsSection: View {
                                     .foregroundColor(.secondary)
                             }
                             Spacer()
-                            if !day.location.isEmpty {
-                                Text(day.location)
+                            if !day.wrappedLocation.isEmpty {
+                                Text(day.wrappedLocation)
                                     .font(.caption)
                                     .foregroundStyle(.tertiary)
                             }
-                            Text("\(day.stops.count) stops")
+                            Text("\(day.stopsArray.count) stops")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -226,43 +238,40 @@ struct TripListsSection: View {
     // MARK: - Actions
 
     private func createList(name: String, icon: String) {
-        let list = TripListEntity(name: name, icon: icon, sortOrder: trip.lists.count)
+        let list = TripListEntity.create(in: viewContext, name: name, icon: icon, sortOrder: trip.listsArray.count)
         list.trip = trip
-        trip.lists.append(list)
-        modelContext.insert(list)
-        try? modelContext.save()
+        try? viewContext.save()
     }
 
     private func addItem(to list: TripListEntity) {
-        let trimmed = (newItemTexts[list.id] ?? "").trimmingCharacters(in: .whitespaces)
+        guard let listID = list.id else { return }
+        let trimmed = (newItemTexts[listID] ?? "").trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        let item = TripListItemEntity(text: trimmed, sortOrder: list.items.count)
+        let item = TripListItemEntity.create(in: viewContext, text: trimmed, sortOrder: list.itemsArray.count)
         item.list = list
-        list.items.append(item)
-        modelContext.insert(item)
-        try? modelContext.save()
-        newItemTexts[list.id] = ""
+        try? viewContext.save()
+        newItemTexts[listID] = ""
     }
 
     private func deleteItems(at offsets: IndexSet, from list: TripListEntity) {
-        let items = list.items.sorted { $0.sortOrder < $1.sortOrder }
+        let items = list.itemsArray.sorted { $0.sortOrder < $1.sortOrder }
         for index in offsets {
-            modelContext.delete(items[index])
+            viewContext.delete(items[index])
         }
-        try? modelContext.save()
+        try? viewContext.save()
     }
 
     private func addItemAsStop(_ item: TripListItemEntity, to day: DayEntity) {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         manager.addStop(
             to: day,
-            name: item.text,
+            name: item.wrappedText,
             latitude: 0,
             longitude: 0,
             category: .other,
             notes: ""
         )
         item.isChecked = true
-        try? modelContext.save()
+        try? viewContext.save()
     }
 }

@@ -86,7 +86,7 @@ struct TripPDFGenerator {
                 ctx.cgContext.move(to: CGPoint(x: 48, y: fy - 6))
                 ctx.cgContext.addLine(to: CGPoint(x: pw - 48, y: fy - 6))
                 ctx.cgContext.strokePath()
-                draw("Travly  •  \(trip.name)", at: CGPoint(x: 48, y: fy), font: .systemFont(ofSize: 8, weight: .medium), color: lightGray)
+                draw("Travly  •  \(trip.wrappedName)", at: CGPoint(x: 48, y: fy), font: .systemFont(ofSize: 8, weight: .medium), color: lightGray)
             }
 
             func fillRect(_ rect: CGRect, color: UIColor, radius: CGFloat = 0) {
@@ -106,24 +106,24 @@ struct TripPDFGenerator {
             draw("✈  YOUR TRIP TO", at: CGPoint(x: m, y: y), font: .systemFont(ofSize: 14, weight: .medium), color: accentBlue)
             y += 24
 
-            text(trip.name.uppercased(), font: .systemFont(ofSize: 34, weight: .heavy), color: headerDark)
+            text(trip.wrappedName.uppercased(), font: .systemFont(ofSize: 34, weight: .heavy), color: headerDark)
             y += 6
             fillRect(CGRect(x: m, y: y, width: 60, height: 3), color: accentBlue)
             y += 16
 
-            text(trip.destination, font: .systemFont(ofSize: 20, weight: .medium), color: subtitleGray)
+            text(trip.wrappedDestination, font: .systemFont(ofSize: 20, weight: .medium), color: subtitleGray)
             y += 12
-            text("\(dateFmt.string(from: trip.startDate))  –  \(dateFmt.string(from: trip.endDate))", font: .systemFont(ofSize: 13), color: lightGray)
+            text("\(dateFmt.string(from: trip.wrappedStartDate))  –  \(dateFmt.string(from: trip.wrappedEndDate))", font: .systemFont(ofSize: 13), color: lightGray)
             y += 4
             text("\(trip.durationInDays) days", font: .systemFont(ofSize: 13), color: lightGray)
 
             // Stats bar
             y += 36
-            let stopCount = trip.days.reduce(0) { $0 + $1.stops.count }
-            let bkCount = trip.bookings.count
+            let stopCount = trip.daysArray.reduce(0) { $0 + $1.stopsArray.count }
+            let bkCount = trip.bookingsArray.count
             fillRect(CGRect(x: m, y: y, width: cw, height: 56), color: accentBlueBg, radius: 10)
 
-            let stats: [(String, String)] = [("\(trip.durationInDays)", "DAYS"), ("\(stopCount)", "STOPS"), ("\(bkCount)", "BOOKINGS"), ("\(trip.days.count)", "DAY PLANS")]
+            let stats: [(String, String)] = [("\(trip.durationInDays)", "DAYS"), ("\(stopCount)", "STOPS"), ("\(bkCount)", "BOOKINGS"), ("\(trip.daysArray.count)", "DAY PLANS")]
             let sw = cw / CGFloat(stats.count)
             for (i, stat) in stats.enumerated() {
                 let cx = m + sw * CGFloat(i) + sw / 2
@@ -134,16 +134,16 @@ struct TripPDFGenerator {
             }
             y += 56
 
-            if !trip.notes.isEmpty {
+            if !trip.wrappedNotes.isEmpty {
                 y += 24
-                text(trip.notes, font: .italicSystemFont(ofSize: 11), color: subtitleGray)
+                text(trip.wrappedNotes, font: .italicSystemFont(ofSize: 11), color: subtitleGray)
             }
             footer()
 
             // ================================================================
             // BOOKINGS
             // ================================================================
-            let bookings = trip.bookings.sorted { $0.sortOrder < $1.sortOrder }
+            let bookings = trip.bookingsArray
             if !bookings.isEmpty {
                 newPage()
                 text("Flights & Hotels", font: .systemFont(ofSize: 22, weight: .bold), color: headerDark)
@@ -160,10 +160,10 @@ struct TripPDFGenerator {
                     draw(badgeStr, at: CGPoint(x: m + 5, y: y + 3), font: badgeFont, color: .white)
                     y += bs.height + 10
 
-                    text(bk.title, font: .systemFont(ofSize: 14, weight: .semibold), color: headerDark)
+                    text(bk.wrappedTitle, font: .systemFont(ofSize: 14, weight: .semibold), color: headerDark)
 
-                    if !bk.confirmationCode.isEmpty {
-                        text("Confirmation: \(bk.confirmationCode)", font: .monospacedSystemFont(ofSize: 11, weight: .medium), color: accentBlue)
+                    if !bk.wrappedConfirmationCode.isEmpty {
+                        text("Confirmation: \(bk.wrappedConfirmationCode)", font: .monospacedSystemFont(ofSize: 11, weight: .medium), color: accentBlue)
                     }
 
                     if bk.bookingType == .flight {
@@ -189,7 +189,7 @@ struct TripPDFGenerator {
                         if let t = bk.arrivalTime { text("Return: \(dateFmt.string(from: t)) \(timeFmt.string(from: t))", font: .systemFont(ofSize: 11), color: subtitleGray) }
                     }
 
-                    if !bk.notes.isEmpty { text(bk.notes, font: .italicSystemFont(ofSize: 10), color: lightGray) }
+                    if !bk.wrappedNotes.isEmpty { text(bk.wrappedNotes, font: .italicSystemFont(ofSize: 10), color: lightGray) }
                     y += 8; divider()
                 }
                 footer()
@@ -198,14 +198,14 @@ struct TripPDFGenerator {
             // ================================================================
             // BUDGET & EXPENSES
             // ================================================================
-            let expenses = trip.expenses.sorted { $0.dateIncurred < $1.dateIncurred }
+            let expenses = trip.expensesArray
             if trip.budgetAmount > 0 || !expenses.isEmpty {
                 newPage()
                 text("Budget & Expenses", font: .systemFont(ofSize: 22, weight: .bold), color: headerDark)
                 y += 16
 
                 let total = expenses.reduce(0.0) { $0 + $1.amount }
-                let cf = NumberFormatter(); cf.numberStyle = .currency; cf.currencyCode = trip.budgetCurrencyCode
+                let cf = NumberFormatter(); cf.numberStyle = .currency; cf.currencyCode = trip.wrappedBudgetCurrencyCode
 
                 if trip.budgetAmount > 0 {
                     let spent = cf.string(from: NSNumber(value: total)) ?? "$\(total)"
@@ -247,10 +247,10 @@ struct TripPDFGenerator {
                     divider()
                     for exp in expenses {
                         space(20)
-                        let dateStr = shortFmt.string(from: exp.dateIncurred)
+                        let dateStr = shortFmt.string(from: exp.wrappedDateIncurred)
                         let amtStr = cf.string(from: NSNumber(value: exp.amount)) ?? "$\(exp.amount)"
                         let savedY = y
-                        text("\(dateStr)  •  \(exp.title)", font: .systemFont(ofSize: 11), color: bodyText, w: cw * 0.7)
+                        text("\(dateStr)  •  \(exp.wrappedTitle)", font: .systemFont(ofSize: 11), color: bodyText, w: cw * 0.7)
                         // Right-align amount on same starting line
                         let as2 = sizeOf(amtStr, font: .monospacedDigitSystemFont(ofSize: 11, weight: .semibold))
                         draw(amtStr, at: CGPoint(x: pw - m - as2.width, y: savedY), font: .monospacedDigitSystemFont(ofSize: 11, weight: .semibold), color: headerDark)
@@ -263,12 +263,12 @@ struct TripPDFGenerator {
             // ================================================================
             // ITINERARY
             // ================================================================
-            let days = trip.days.sorted { $0.dayNumber < $1.dayNumber }
+            let days = trip.daysArray
 
             // Group consecutive days by location
             var segments: [(location: String, days: [DayEntity])] = []
             for day in days {
-                let loc = day.location.isEmpty ? trip.destination : day.location
+                let loc = day.wrappedLocation.isEmpty ? trip.wrappedDestination : day.wrappedLocation
                 if let last = segments.last, last.location == loc {
                     segments[segments.count - 1].days.append(day)
                 } else {
@@ -306,20 +306,20 @@ struct TripPDFGenerator {
                     dayColor.setFill(); leftBar.fill()
 
                     draw("DAY \(day.dayNumber)", at: CGPoint(x: m + 16, y: y + 6), font: .systemFont(ofSize: 14, weight: .heavy), color: dayColor)
-                    draw(shortFmt.string(from: day.date), at: CGPoint(x: m + 16, y: y + 23), font: .systemFont(ofSize: 11, weight: .regular), color: subtitleGray)
+                    draw(shortFmt.string(from: day.wrappedDate), at: CGPoint(x: m + 16, y: y + 23), font: .systemFont(ofSize: 11, weight: .regular), color: subtitleGray)
 
-                    let scStr = "\(day.stops.count) stop\(day.stops.count == 1 ? "" : "s")"
+                    let scStr = "\(day.stopsArray.count) stop\(day.stopsArray.count == 1 ? "" : "s")"
                     let scSz = sizeOf(scStr, font: .systemFont(ofSize: 11, weight: .medium))
                     draw(scStr, at: CGPoint(x: pw - m - scSz.width - 12, y: y + 13), font: .systemFont(ofSize: 11, weight: .medium), color: lightGray)
 
                     y += dh + 12
 
-                    if !day.notes.isEmpty {
-                        text(day.notes, font: .italicSystemFont(ofSize: 10), color: subtitleGray)
+                    if !day.wrappedNotes.isEmpty {
+                        text(day.wrappedNotes, font: .italicSystemFont(ofSize: 10), color: subtitleGray)
                         y += 6
                     }
 
-                    let stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
+                    let stops = day.stopsArray
                     if stops.isEmpty {
                         text("No stops planned yet", font: .systemFont(ofSize: 11), color: lightGray)
                         y += 6
@@ -340,14 +340,14 @@ struct TripPDFGenerator {
                             if !ts.isEmpty { text(ts, font: .systemFont(ofSize: 9, weight: .semibold), color: cc, x: tx, w: cw - 40) }
 
                             // Name
-                            text(stop.name, font: .systemFont(ofSize: 13, weight: .semibold), color: headerDark, x: tx, w: cw - 40)
+                            text(stop.wrappedName, font: .systemFont(ofSize: 13, weight: .semibold), color: headerDark, x: tx, w: cw - 40)
 
                             // Category badge
                             text(categoryLabel(stop.category), font: .systemFont(ofSize: 9, weight: .medium), color: cc, x: tx)
 
                             // Notes
-                            if !stop.notes.isEmpty {
-                                text(stop.notes, font: .italicSystemFont(ofSize: 9), color: subtitleGray, x: tx, w: cw - 40)
+                            if !stop.wrappedNotes.isEmpty {
+                                text(stop.wrappedNotes, font: .italicSystemFont(ofSize: 9), color: subtitleGray, x: tx, w: cw - 40)
                             }
 
                             // Address
@@ -378,7 +378,7 @@ struct TripPDFGenerator {
             // ================================================================
             // CHECKLISTS
             // ================================================================
-            let lists = trip.lists.sorted { $0.sortOrder < $1.sortOrder }.filter { !$0.items.isEmpty }
+            let lists = trip.listsArray.filter { !$0.itemsArray.isEmpty }
             if !lists.isEmpty {
                 space(60)
                 divider()
@@ -387,13 +387,13 @@ struct TripPDFGenerator {
 
                 for list in lists {
                     space(28)
-                    let done = list.items.filter(\.isChecked).count
-                    text("\(list.name)  (\(done)/\(list.items.count))", font: .systemFont(ofSize: 13, weight: .semibold), color: headerDark)
+                    let done = list.itemsArray.filter(\.isChecked).count
+                    text("\(list.wrappedName)  (\(done)/\(list.itemsArray.count))", font: .systemFont(ofSize: 13, weight: .semibold), color: headerDark)
                     y += 4
-                    for item in list.items.sorted(by: { $0.sortOrder < $1.sortOrder }) {
+                    for item in list.itemsArray {
                         space(18)
                         let ck = item.isChecked ? "☑" : "☐"
-                        text("  \(ck)  \(item.text)", font: .systemFont(ofSize: 11), color: item.isChecked ? lightGray : bodyText)
+                        text("  \(ck)  \(item.wrappedText)", font: .systemFont(ofSize: 11), color: item.isChecked ? lightGray : bodyText)
                         y += 1
                     }
                     y += 10
@@ -426,7 +426,7 @@ struct TripPDFGenerator {
         }
     }
 
-    private static func dayAccentColor(_ dayNumber: Int) -> UIColor {
+    private static func dayAccentColor(_ dayNumber: Int32) -> UIColor {
         let colors: [UIColor] = [
             UIColor(red: 0.20, green: 0.40, blue: 0.85, alpha: 1.0),
             UIColor(red: 0.20, green: 0.72, blue: 0.40, alpha: 1.0),
@@ -437,6 +437,6 @@ struct TripPDFGenerator {
             UIColor(red: 0.15, green: 0.65, blue: 0.65, alpha: 1.0),
             UIColor(red: 0.30, green: 0.30, blue: 0.75, alpha: 1.0),
         ]
-        return colors[(dayNumber - 1) % colors.count]
+        return colors[Int(dayNumber - 1) % colors.count]
     }
 }

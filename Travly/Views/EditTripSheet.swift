@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import TripCore
 
 struct EditTripSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let trip: TripEntity
@@ -23,14 +23,14 @@ struct EditTripSheet: View {
 
     init(trip: TripEntity) {
         self.trip = trip
-        _name = State(initialValue: trip.name)
-        _destination = State(initialValue: trip.destination)
-        _startDate = State(initialValue: trip.startDate)
-        _endDate = State(initialValue: trip.endDate)
-        _notes = State(initialValue: trip.notes)
+        _name = State(initialValue: trip.name ?? "")
+        _destination = State(initialValue: trip.destination ?? "")
+        _startDate = State(initialValue: trip.startDate ?? Date())
+        _endDate = State(initialValue: trip.endDate ?? Date())
+        _notes = State(initialValue: trip.notes ?? "")
         _status = State(initialValue: trip.status)
         _budgetText = State(initialValue: trip.budgetAmount > 0 ? String(format: "%.0f", trip.budgetAmount) : "")
-        _budgetCurrency = State(initialValue: trip.budgetCurrencyCode)
+        _budgetCurrency = State(initialValue: trip.budgetCurrencyCode ?? "USD")
     }
 
     private var isValid: Bool {
@@ -127,8 +127,8 @@ struct EditTripSheet: View {
     }
 
     private func attemptSave() {
-        let datesChanged = trip.startDate != startDate || trip.endDate != endDate
-        let hasStops = trip.days.contains { !$0.stops.isEmpty }
+        let datesChanged = trip.wrappedStartDate != startDate || trip.wrappedEndDate != endDate
+        let hasStops = trip.daysArray.contains { !$0.stopsArray.isEmpty }
 
         if datesChanged && hasStops {
             showingDateChangeWarning = true
@@ -138,7 +138,7 @@ struct EditTripSheet: View {
     }
 
     private func saveChanges(regenerateDays: Bool) {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         trip.name = name.trimmingCharacters(in: .whitespaces)
         trip.destination = destination.trimmingCharacters(in: .whitespaces)
         trip.startDate = startDate

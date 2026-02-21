@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
+import CoreData
 
 struct SettingsView: View {
 
-    @Environment(\.modelContext) private var modelContext
-    @Query private var allTrips: [TripEntity]
+    @Environment(\.managedObjectContext) private var viewContext
+    @FetchRequest(sortDescriptors: []) private var allTrips: FetchedResults<TripEntity>
 
     @State private var showingDeleteConfirmation = false
     @State private var showingSampleDataLoaded = false
@@ -37,8 +37,8 @@ struct SettingsView: View {
 
             // Stats
             Section {
-                let stopCount = allTrips.flatMap(\.days).flatMap(\.stops).count
-                let dayCount = allTrips.flatMap(\.days).count
+                let stopCount = allTrips.flatMap(\.daysArray).flatMap(\.stopsArray).count
+                let dayCount = allTrips.flatMap(\.daysArray).count
                 LabeledContent("Total Trips", value: "\(allTrips.count)")
                 LabeledContent("Total Days", value: "\(dayCount)")
                 LabeledContent("Total Stops", value: "\(stopCount)")
@@ -127,7 +127,7 @@ struct SettingsView: View {
     }
 
     private func loadSampleData() {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         manager.loadSampleDataIfEmpty()
         if allTrips.isEmpty {
             showingSampleDataLoaded = true
@@ -135,7 +135,7 @@ struct SettingsView: View {
     }
 
     private func deleteAllTrips() {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         for trip in allTrips {
             manager.deleteTrip(trip)
         }

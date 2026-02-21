@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+import CoreData
 import TripCore
 
 struct TripShareService {
@@ -9,53 +9,53 @@ struct TripShareService {
     static func exportTrip(_ trip: TripEntity) throws -> URL {
         let transfer = TripTransfer(
             schemaVersion: TripTransfer.currentSchemaVersion,
-            name: trip.name,
-            destination: trip.destination,
-            startDate: trip.startDate,
-            endDate: trip.endDate,
-            statusRaw: trip.statusRaw,
-            notes: trip.notes,
+            name: trip.wrappedName,
+            destination: trip.wrappedDestination,
+            startDate: trip.wrappedStartDate,
+            endDate: trip.wrappedEndDate,
+            statusRaw: trip.wrappedStatusRaw,
+            notes: trip.wrappedNotes,
             hasCustomDates: trip.hasCustomDates,
             budgetAmount: trip.budgetAmount,
-            budgetCurrencyCode: trip.budgetCurrencyCode,
-            days: trip.days.sorted { $0.dayNumber < $1.dayNumber }.map { day in
+            budgetCurrencyCode: trip.wrappedBudgetCurrencyCode,
+            days: trip.daysArray.map { day in
                 DayTransfer(
-                    date: day.date,
-                    dayNumber: day.dayNumber,
-                    notes: day.notes,
-                    location: day.location,
+                    date: day.wrappedDate,
+                    dayNumber: Int(day.dayNumber),
+                    notes: day.wrappedNotes,
+                    location: day.wrappedLocation,
                     locationLatitude: day.locationLatitude,
                     locationLongitude: day.locationLongitude,
-                    stops: day.stops.sorted { $0.sortOrder < $1.sortOrder }.map { stop in
+                    stops: day.stopsArray.map { stop in
                         StopTransfer(
-                            name: stop.name,
+                            name: stop.wrappedName,
                             latitude: stop.latitude,
                             longitude: stop.longitude,
                             arrivalTime: stop.arrivalTime,
                             departureTime: stop.departureTime,
-                            categoryRaw: stop.categoryRaw,
-                            notes: stop.notes,
-                            sortOrder: stop.sortOrder,
+                            categoryRaw: stop.wrappedCategoryRaw,
+                            notes: stop.wrappedNotes,
+                            sortOrder: Int(stop.sortOrder),
                             isVisited: stop.isVisited,
                             visitedAt: stop.visitedAt,
-                            rating: stop.rating,
+                            rating: Int(stop.rating),
                             address: stop.address,
                             phone: stop.phone,
                             website: stop.website,
-                            comments: stop.comments.sorted { $0.createdAt < $1.createdAt }.map { c in
-                                CommentTransfer(text: c.text, createdAt: c.createdAt)
+                            comments: stop.commentsArray.map { c in
+                                CommentTransfer(text: c.wrappedText, createdAt: c.wrappedCreatedAt)
                             }
                         )
                     }
                 )
             },
-            bookings: trip.bookings.sorted { $0.sortOrder < $1.sortOrder }.map { b in
+            bookings: trip.bookingsArray.map { b in
                 BookingTransfer(
-                    typeRaw: b.typeRaw,
-                    title: b.title,
-                    confirmationCode: b.confirmationCode,
-                    notes: b.notes,
-                    sortOrder: b.sortOrder,
+                    typeRaw: b.wrappedTypeRaw,
+                    title: b.wrappedTitle,
+                    confirmationCode: b.wrappedConfirmationCode,
+                    notes: b.wrappedNotes,
+                    sortOrder: Int(b.sortOrder),
                     airline: b.airline,
                     flightNumber: b.flightNumber,
                     departureAirport: b.departureAirport,
@@ -68,26 +68,26 @@ struct TripShareService {
                     checkOutDate: b.checkOutDate
                 )
             },
-            lists: trip.lists.sorted { $0.sortOrder < $1.sortOrder }.map { list in
+            lists: trip.listsArray.map { list in
                 ListTransfer(
-                    name: list.name,
-                    icon: list.icon,
-                    sortOrder: list.sortOrder,
-                    items: list.items.sorted { $0.sortOrder < $1.sortOrder }.map { item in
-                        ListItemTransfer(text: item.text, isChecked: item.isChecked, sortOrder: item.sortOrder)
+                    name: list.wrappedName,
+                    icon: list.wrappedIcon,
+                    sortOrder: Int(list.sortOrder),
+                    items: list.itemsArray.map { item in
+                        ListItemTransfer(text: item.wrappedText, isChecked: item.isChecked, sortOrder: Int(item.sortOrder))
                     }
                 )
             },
-            expenses: trip.expenses.sorted { $0.sortOrder < $1.sortOrder }.map { e in
+            expenses: trip.expensesArray.map { e in
                 ExpenseTransfer(
-                    title: e.title,
+                    title: e.wrappedTitle,
                     amount: e.amount,
-                    currencyCode: e.currencyCode,
-                    dateIncurred: e.dateIncurred,
-                    categoryRaw: e.categoryRaw,
-                    notes: e.notes,
-                    sortOrder: e.sortOrder,
-                    createdAt: e.createdAt
+                    currencyCode: e.wrappedCurrencyCode,
+                    dateIncurred: e.wrappedDateIncurred,
+                    categoryRaw: e.wrappedCategoryRaw,
+                    notes: e.wrappedNotes,
+                    sortOrder: Int(e.sortOrder),
+                    createdAt: e.wrappedCreatedAt
                 )
             }
         )
@@ -97,7 +97,7 @@ struct TripShareService {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(transfer)
 
-        let sanitized = trip.name
+        let sanitized = trip.wrappedName
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .joined(separator: "_")
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(sanitized).travly")
@@ -120,21 +120,23 @@ struct TripShareService {
     // MARK: - Import (Transfer → new Entities)
 
     @discardableResult
-    static func importTrip(_ transfer: TripTransfer, into context: ModelContext) -> TripEntity {
-        let trip = TripEntity(
+    static func importTrip(_ transfer: TripTransfer, into context: NSManagedObjectContext) -> TripEntity {
+        let trip = TripEntity.create(
+            in: context,
             name: transfer.name,
             destination: transfer.destination,
             startDate: transfer.startDate,
             endDate: transfer.endDate,
             notes: transfer.notes
         )
+        trip.statusRaw = transfer.statusRaw
         trip.hasCustomDates = transfer.hasCustomDates
         trip.budgetAmount = transfer.budgetAmount
         trip.budgetCurrencyCode = transfer.budgetCurrencyCode
-        context.insert(trip)
 
         for dayT in transfer.days {
-            let day = DayEntity(
+            let day = DayEntity.create(
+                in: context,
                 date: dayT.date,
                 dayNumber: dayT.dayNumber,
                 notes: dayT.notes,
@@ -143,10 +145,10 @@ struct TripShareService {
                 locationLongitude: dayT.locationLongitude
             )
             day.trip = trip
-            context.insert(day)
 
             for stopT in dayT.stops {
-                let stop = StopEntity(
+                let stop = StopEntity.create(
+                    in: context,
                     name: stopT.name,
                     latitude: stopT.latitude,
                     longitude: stopT.longitude,
@@ -161,21 +163,20 @@ struct TripShareService {
                     phone: stopT.phone,
                     website: stopT.website
                 )
-                stop.rating = stopT.rating
+                stop.rating = Int32(stopT.rating)
                 stop.day = day
-                context.insert(stop)
 
                 for commentT in stopT.comments {
-                    let comment = CommentEntity(text: commentT.text)
+                    let comment = CommentEntity.create(in: context, text: commentT.text)
                     comment.createdAt = commentT.createdAt
                     comment.stop = stop
-                    context.insert(comment)
                 }
             }
         }
 
         for bkT in transfer.bookings {
-            let booking = BookingEntity(
+            let booking = BookingEntity.create(
+                in: context,
                 type: BookingType(rawValue: bkT.typeRaw) ?? .other,
                 title: bkT.title,
                 confirmationCode: bkT.confirmationCode,
@@ -193,24 +194,31 @@ struct TripShareService {
             booking.checkInDate = bkT.checkInDate
             booking.checkOutDate = bkT.checkOutDate
             booking.trip = trip
-            context.insert(booking)
         }
 
         for listT in transfer.lists {
-            let list = TripListEntity(name: listT.name, icon: listT.icon, sortOrder: listT.sortOrder)
+            let list = TripListEntity.create(
+                in: context,
+                name: listT.name,
+                icon: listT.icon,
+                sortOrder: listT.sortOrder
+            )
             list.trip = trip
-            context.insert(list)
 
             for itemT in listT.items {
-                let item = TripListItemEntity(text: itemT.text, sortOrder: itemT.sortOrder)
+                let item = TripListItemEntity.create(
+                    in: context,
+                    text: itemT.text,
+                    sortOrder: itemT.sortOrder
+                )
                 item.isChecked = itemT.isChecked
                 item.list = list
-                context.insert(item)
             }
         }
 
         for expT in transfer.expenses {
-            let expense = ExpenseEntity(
+            let expense = ExpenseEntity.create(
+                in: context,
                 title: expT.title,
                 amount: expT.amount,
                 currencyCode: expT.currencyCode,
@@ -220,7 +228,6 @@ struct TripShareService {
                 sortOrder: expT.sortOrder
             )
             expense.trip = trip
-            context.insert(expense)
         }
 
         try? context.save()

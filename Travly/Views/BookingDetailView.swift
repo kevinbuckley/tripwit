@@ -31,7 +31,7 @@ struct BookingDetailView: View {
                         .background(iconColor.opacity(0.15))
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(booking.title)
+                        Text(booking.wrappedTitle)
                             .font(.headline)
                         Text(booking.bookingType.label)
                             .font(.subheadline)
@@ -40,12 +40,12 @@ struct BookingDetailView: View {
                 }
                 .padding(.vertical, 4)
 
-                if !booking.confirmationCode.isEmpty {
+                if !booking.wrappedConfirmationCode.isEmpty {
                     HStack {
                         Text("Confirmation")
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Text(booking.confirmationCode)
+                        Text(booking.wrappedConfirmationCode)
                             .font(.body.monospaced())
                             .fontWeight(.semibold)
                             .foregroundStyle(.blue)
@@ -67,9 +67,9 @@ struct BookingDetailView: View {
             }
 
             // Notes
-            if !booking.notes.isEmpty {
+            if !booking.wrappedNotes.isEmpty {
                 Section {
-                    Text(booking.notes)
+                    Text(booking.wrappedNotes)
                         .font(.body)
                         .foregroundStyle(.secondary)
                 } header: {
@@ -78,7 +78,7 @@ struct BookingDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(booking.title)
+        .navigationTitle(booking.wrappedTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

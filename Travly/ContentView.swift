@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import TripCore
 
 struct ContentView: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     @Binding var pendingImportURL: URL?
@@ -12,7 +12,7 @@ struct ContentView: View {
     @State private var importError: String?
     @State private var selectedTab = 1
     @State private var tripsNavPath = NavigationPath()
-    @Query(sort: \TripEntity.startDate, order: .reverse) private var allTrips: [TripEntity]
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \TripEntity.startDate, ascending: false)]) private var allTrips: FetchedResults<TripEntity>
 
     #if DEBUG
     /// Screenshot mode: pass `-screenshotTab trips` (or `map`, `settings`, `tripdetail`) as launch arg.
@@ -131,14 +131,14 @@ struct ContentView: View {
 
     #if DEBUG
     private func seedScreenshotDataIfNeeded() {
-        let descriptor = FetchDescriptor<TripEntity>()
-        let count = (try? modelContext.fetchCount(descriptor)) ?? 0
+        let request: NSFetchRequest<TripEntity> = TripEntity.fetchRequest() as! NSFetchRequest<TripEntity>
+        let count = (try? viewContext.count(for: request)) ?? 0
         if count == 0 {
-            let manager = DataManager(modelContext: modelContext)
+            let manager = DataManager(context: viewContext)
             manager.loadSampleDataIfEmpty()
         }
-        let wishlistDescriptor = FetchDescriptor<WishlistItemEntity>()
-        let wishlistCount = (try? modelContext.fetchCount(wishlistDescriptor)) ?? 0
+        let wishlistRequest: NSFetchRequest<WishlistItemEntity> = WishlistItemEntity.fetchRequest() as! NSFetchRequest<WishlistItemEntity>
+        let wishlistCount = (try? viewContext.count(for: wishlistRequest)) ?? 0
         if wishlistCount == 0 {
             seedWishlistItems()
         }
@@ -154,10 +154,9 @@ struct ContentView: View {
             ("Colosseum", "Rome", 41.8902, 12.4922, .attraction),
         ]
         for (name, city, lat, lon, cat) in items {
-            let item = WishlistItemEntity(name: name, destination: city, latitude: lat, longitude: lon, category: cat)
-            modelContext.insert(item)
+            WishlistItemEntity.create(in: viewContext, name: name, destination: city, latitude: lat, longitude: lon, category: cat)
         }
-        try? modelContext.save()
+        try? viewContext.save()
     }
     #endif
 }

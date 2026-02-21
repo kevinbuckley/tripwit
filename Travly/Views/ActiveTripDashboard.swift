@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
@@ -17,11 +17,11 @@ struct ActiveTripDashboard: View {
 
     private var todayDay: DayEntity? {
         let today = calendar.startOfDay(for: Date())
-        return trip.days.first { calendar.isDate($0.date, inSameDayAs: today) }
+        return trip.daysArray.first { calendar.isDate($0.wrappedDate, inSameDayAs: today) }
     }
 
     private var dayNumber: Int {
-        todayDay?.dayNumber ?? 1
+        Int(todayDay?.dayNumber ?? 1)
     }
 
     private var totalDays: Int {
@@ -30,7 +30,7 @@ struct ActiveTripDashboard: View {
 
     private var todayStops: [StopEntity] {
         guard let day = todayDay else { return [] }
-        return day.stops.sorted { lhs, rhs in
+        return day.stopsArray.sorted { lhs, rhs in
             switch (lhs.arrivalTime, rhs.arrivalTime) {
             case let (a?, b?): return a < b
             case (.some, .none): return true
@@ -115,7 +115,7 @@ struct ActiveTripDashboard: View {
                 .fontWeight(.bold)
                 .foregroundColor(.green)
                 .tracking(0.5)
-            Text("Day \(dayNumber) of \(trip.name)")
+            Text("Day \(dayNumber) of \(trip.wrappedName)")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
@@ -132,7 +132,7 @@ struct ActiveTripDashboard: View {
             Text("\u{00B7}")
                 .font(.caption)
                 .foregroundColor(.secondary)
-            Text(trip.destination)
+            Text(trip.wrappedDestination)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .lineLimit(1)

@@ -1,11 +1,11 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import CoreLocation
 import TripCore
 
 struct QuickAddStopSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @Environment(LocationManager.self) private var locationManager
 
@@ -146,7 +146,7 @@ struct QuickAddStopSheet: View {
     }
 
     private func addStop(name: String, location: CLLocation) {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         let stop = manager.addStop(
             to: day,
             name: name,
@@ -155,7 +155,7 @@ struct QuickAddStopSheet: View {
             category: .other
         )
         stop.arrivalTime = Date()
-        try? modelContext.save()
+        try? viewContext.save()
         didAdd = true
 
         // Haptic feedback on success

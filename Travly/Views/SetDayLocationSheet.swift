@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 
 struct SetDayLocationSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let day: DayEntity
@@ -26,12 +26,12 @@ struct SetDayLocationSheet: View {
     init(day: DayEntity, trip: TripEntity) {
         self.day = day
         self.trip = trip
-        _locationText = State(initialValue: day.location)
-        _selectedDays = State(initialValue: [day.id])
+        _locationText = State(initialValue: day.location ?? "")
+        _selectedDays = State(initialValue: day.id.map { [$0] } ?? [])
     }
 
     private var sortedDays: [DayEntity] {
-        trip.days.sorted { $0.dayNumber < $1.dayNumber }
+        trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
     }
 
     var body: some View {
@@ -85,12 +85,14 @@ struct SetDayLocationSheet: View {
 
                     if applyTo == .custom {
                         ForEach(sortedDays) { d in
-                            let isSelected = selectedDays.contains(d.id)
+                            let isSelected = d.id.map { selectedDays.contains($0) } ?? false
                             Button {
-                                if isSelected {
-                                    selectedDays.remove(d.id)
-                                } else {
-                                    selectedDays.insert(d.id)
+                                if let dayID = d.id {
+                                    if isSelected {
+                                        selectedDays.remove(dayID)
+                                    } else {
+                                        selectedDays.insert(dayID)
+                                    }
                                 }
                             } label: {
                                 HStack {
@@ -102,8 +104,8 @@ struct SetDayLocationSheet: View {
                                     Text(d.formattedDate)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
-                                    if !d.location.isEmpty {
-                                        Text(d.location)
+                                    if !d.wrappedLocation.isEmpty {
+                                        Text(d.wrappedLocation)
                                             .font(.caption2)
                                             .foregroundStyle(.tertiary)
                                     }
@@ -144,13 +146,13 @@ struct SetDayLocationSheet: View {
         case .throughEnd:
             daysToUpdate = sortedDays.filter { $0.dayNumber >= day.dayNumber }
         case .custom:
-            daysToUpdate = sortedDays.filter { selectedDays.contains($0.id) }
+            daysToUpdate = sortedDays.filter { $0.id.map { selectedDays.contains($0) } ?? false }
         }
 
         for d in daysToUpdate {
             d.location = loc
         }
-        try? modelContext.save()
+        try? viewContext.save()
     }
 }
 

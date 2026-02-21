@@ -1,76 +1,62 @@
 import SwiftUI
-import SwiftData
+import CoreData
+import CloudKit
 
 @main
 struct TravlyApp: App {
 
-    let modelContainer: ModelContainer?
+    let persistence = PersistenceController.shared
     @State private var locationManager = LocationManager()
     @State private var pendingImportURL: URL?
-    private let containerError: String?
 
-    init() {
-        let schema = Schema([TripEntity.self, DayEntity.self, StopEntity.self, CommentEntity.self, BookingEntity.self, WishlistItemEntity.self, TripListEntity.self, TripListItemEntity.self, ExpenseEntity.self])
-        let config = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false,
-            cloudKitDatabase: .automatic
-        )
-
-        do {
-            modelContainer = try ModelContainer(for: schema, configurations: [config])
-            containerError = nil
-        } catch {
-            // Schema migration failed — delete old store and retry
-            let storeURL = config.url
-            let related = [storeURL, storeURL.appendingPathExtension("wal"), storeURL.appendingPathExtension("shm")]
-            for url in related { try? FileManager.default.removeItem(at: url) }
-            do {
-                modelContainer = try ModelContainer(for: schema, configurations: [config])
-                containerError = nil
-            } catch {
-                modelContainer = nil
-                containerError = error.localizedDescription
-            }
-        }
-    }
+    /// UIApplicationDelegate adapter to handle CloudKit share acceptance.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
         WindowGroup {
-            if let modelContainer {
-                ContentView(pendingImportURL: $pendingImportURL)
-                    .environment(locationManager)
-                    .modelContainer(modelContainer)
-                    .onOpenURL { url in
-                        guard url.pathExtension == "travly" else { return }
+            ContentView(pendingImportURL: $pendingImportURL)
+                .environment(locationManager)
+                .environment(\.managedObjectContext, persistence.viewContext)
+                .onOpenURL { url in
+                    if url.pathExtension == "travly" {
                         pendingImportURL = url
                     }
-            } else {
-                dataErrorView
-            }
+                }
         }
     }
+}
 
-    private var dataErrorView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.orange)
-            Text("Unable to Load Data")
-                .font(.title2)
-                .fontWeight(.bold)
-            Text("Travly couldn't open its database. Try restarting the app. If the problem persists, reinstalling may help.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            if let containerError {
-                Text(containerError)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 32)
+// MARK: - AppDelegate for CloudKit Share Acceptance
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let config = UISceneConfiguration(
+            name: nil,
+            sessionRole: connectingSceneSession.role
+        )
+        config.delegateClass = SceneDelegate.self
+        return config
+    }
+}
+
+class SceneDelegate: NSObject, UIWindowSceneDelegate {
+
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata
+    ) {
+        let sharingService = CloudKitSharingService()
+        Task {
+            do {
+                try await sharingService.acceptShare(cloudKitShareMetadata)
+            } catch {
+                print("Failed to accept CloudKit share: \(error)")
             }
         }
-        .padding()
     }
 }

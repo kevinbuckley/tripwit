@@ -9,19 +9,19 @@ struct WeatherSection: View {
 
     /// The primary weather location — uses the first day's location or falls back to trip destination.
     private var weatherLocation: String {
-        let sortedDays = trip.days.sorted { $0.dayNumber < $1.dayNumber }
-        if let firstLoc = sortedDays.first(where: { !$0.location.isEmpty })?.location {
+        let sortedDays = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
+        if let firstLoc = sortedDays.first(where: { !$0.wrappedLocation.isEmpty })?.wrappedLocation, !firstLoc.isEmpty {
             return firstLoc
         }
-        return trip.destination
+        return trip.wrappedDestination
     }
 
     /// Unique locations across this trip for display in multi-city scenarios.
     private var uniqueLocations: [String] {
         var seen = Set<String>()
         var result: [String] = []
-        for day in trip.days.sorted(by: { $0.dayNumber < $1.dayNumber }) {
-            let loc = day.location.isEmpty ? trip.destination : day.location
+        for day in trip.daysArray.sorted(by: { $0.dayNumber < $1.dayNumber }) {
+            let loc = day.wrappedLocation.isEmpty ? trip.wrappedDestination : day.wrappedLocation
             if !seen.contains(loc) {
                 seen.insert(loc)
                 result.append(loc)
@@ -109,8 +109,8 @@ struct WeatherSection: View {
                         Task {
                             await weatherService.fetchWeather(
                                 destination: weatherLocation,
-                                startDate: trip.startDate,
-                                endDate: trip.endDate
+                                startDate: trip.wrappedStartDate,
+                                endDate: trip.wrappedEndDate
                             )
                         }
                     } label: {
@@ -126,8 +126,8 @@ struct WeatherSection: View {
             if !trip.isPast {
                 await weatherService.fetchWeather(
                     destination: weatherLocation,
-                    startDate: trip.startDate,
-                    endDate: trip.endDate
+                    startDate: trip.wrappedStartDate,
+                    endDate: trip.wrappedEndDate
                 )
             }
         }

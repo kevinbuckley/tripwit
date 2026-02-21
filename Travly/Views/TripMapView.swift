@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
@@ -7,7 +7,7 @@ struct TripMapView: View {
 
     var onGoToTrips: (() -> Void)? = nil
 
-    @Query(sort: \TripEntity.startDate, order: .reverse) private var allTrips: [TripEntity]
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \TripEntity.startDate, ascending: false)]) private var allTrips: FetchedResults<TripEntity>
 
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var navigateToTripID: UUID?
@@ -24,8 +24,8 @@ struct TripMapView: View {
         }
         // Next upcoming trip (earliest future start date)
         let upcoming = allTrips
-            .filter { $0.status == .planning && $0.startDate > Date() }
-            .sorted { $0.startDate < $1.startDate }
+            .filter { $0.status == .planning && $0.wrappedStartDate > Date() }
+            .sorted { $0.wrappedStartDate < $1.wrappedStartDate }
         if let next = upcoming.first {
             return next
         }
@@ -35,7 +35,7 @@ struct TripMapView: View {
 
     private var allStops: [StopEntity] {
         guard let trip = displayTrip else { return [] }
-        return trip.days.flatMap { $0.stops }.filter { $0.latitude != 0 || $0.longitude != 0 }
+        return trip.daysArray.flatMap { $0.stopsArray }.filter { $0.latitude != 0 || $0.longitude != 0 }
     }
 
     var body: some View {
@@ -84,7 +84,7 @@ struct TripMapView: View {
         } label: {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(trip.name)
+                    Text(trip.wrappedName)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -92,14 +92,14 @@ struct TripMapView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "mappin")
                             .font(.caption2)
-                        Text(trip.destination)
+                        Text(trip.wrappedDestination)
                             .font(.caption)
                             .lineLimit(1)
                     }
                     .foregroundColor(.secondary)
                 }
                 Spacer()
-                let stopCount = trip.days.flatMap(\.stops).count
+                let stopCount = trip.daysArray.flatMap(\.stopsArray).count
                 Text("\(stopCount) stop\(stopCount == 1 ? "" : "s")")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -153,7 +153,7 @@ struct TripMapView: View {
             Map(position: $cameraPosition, selection: $selectedStopID) {
                 ForEach(allStops) { stop in
                     Marker(
-                        stop.name,
+                        stop.wrappedName,
                         coordinate: CLLocationCoordinate2D(
                             latitude: stop.latitude,
                             longitude: stop.longitude
@@ -165,8 +165,8 @@ struct TripMapView: View {
 
                 // Route lines between stops
                 if let trip = displayTrip {
-                    ForEach(trip.days.sorted(by: { $0.dayNumber < $1.dayNumber }), id: \.id) { day in
-                        let dayStops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
+                    ForEach(trip.daysArray.sorted(by: { $0.dayNumber < $1.dayNumber }), id: \.id) { day in
+                        let dayStops = day.stopsArray.sorted { $0.sortOrder < $1.sortOrder }
                             .filter { $0.latitude != 0 || $0.longitude != 0 }
                         if dayStops.count >= 2 {
                             let coords = dayStops.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
@@ -263,9 +263,9 @@ struct TripMapView: View {
         }
     }
 
-    private func dayColor(_ dayNumber: Int) -> Color {
+    private func dayColor(_ dayNumber: Int32) -> Color {
         let colors: [Color] = [.blue, .green, .orange, .purple, .pink, .red, .teal, .indigo, .mint, .cyan]
-        return colors[(dayNumber - 1) % colors.count]
+        return colors[Int(dayNumber - 1) % colors.count]
     }
 
     // MARK: - Helpers

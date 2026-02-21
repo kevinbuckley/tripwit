@@ -1,11 +1,11 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
 struct TimelineStopRow: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
 
     let stop: StopEntity
     let isFirst: Bool
@@ -126,7 +126,7 @@ struct TimelineStopRow: View {
     }
 
     private var nameLabel: some View {
-        Text(stop.name)
+        Text(stop.wrappedName)
             .font(.subheadline)
             .fontWeight(isNextUpcoming ? .bold : .semibold)
             .foregroundColor(isNextUpcoming ? categoryColor : .primary)
@@ -195,7 +195,7 @@ struct TimelineStopRow: View {
     private func toggleVisited() {
         stop.isVisited.toggle()
         stop.visitedAt = stop.isVisited ? Date() : nil
-        try? modelContext.save()
+        try? viewContext.save()
     }
 
     // MARK: - Actions
@@ -207,7 +207,7 @@ struct TimelineStopRow: View {
         )
         let placemark = MKPlacemark(coordinate: coordinate)
         let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = stop.name
+        mapItem.name = stop.wrappedName
         mapItem.openInMaps(launchOptions: [
             MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeWalking
         ])

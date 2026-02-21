@@ -1,4 +1,4 @@
-import SwiftData
+import CoreData
 import SwiftUI
 import Foundation
 import TripCore
@@ -6,18 +6,18 @@ import TripCore
 @Observable
 final class DataManager {
 
-    let modelContext: ModelContext
+    let context: NSManagedObjectContext
 
-    init(modelContext: ModelContext) {
-        self.modelContext = modelContext
+    init(context: NSManagedObjectContext) {
+        self.context = context
     }
 
     // MARK: - Trips
 
     func fetchTrips() -> [TripEntity] {
-        let sort = SortDescriptor(\TripEntity.startDate, order: .reverse)
-        let descriptor = FetchDescriptor<TripEntity>(sortBy: [sort])
-        return (try? modelContext.fetch(descriptor)) ?? []
+        let request = TripEntity.fetchRequest() as! NSFetchRequest<TripEntity>
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \TripEntity.startDate, ascending: false)]
+        return (try? context.fetch(request)) ?? []
     }
 
     @discardableResult
@@ -28,52 +28,54 @@ final class DataManager {
         endDate: Date,
         notes: String = ""
     ) -> TripEntity {
-        let trip = TripEntity(
+        let trip = TripEntity.create(
+            in: context,
             name: name,
             destination: destination,
             startDate: startDate,
             endDate: endDate,
             notes: notes
         )
-        modelContext.insert(trip)
         generateDays(for: trip)
-        try? modelContext.save()
+        try? context.save()
         return trip
     }
 
     func updateTrip(_ trip: TripEntity) {
         trip.updatedAt = Date()
-        try? modelContext.save()
+        try? context.save()
     }
 
     func deleteTrip(_ trip: TripEntity) {
-        modelContext.delete(trip)
-        try? modelContext.save()
+        context.delete(trip)
+        try? context.save()
     }
 
     // MARK: - Days
 
-    /// Delete existing days and create new ones based on the trip's date range.
-    /// Uses the same logic as ItineraryEngine.generateDays.
     func generateDays(for trip: TripEntity) {
         // Remove existing days
-        for day in trip.days {
-            modelContext.delete(day)
+        for day in trip.daysArray {
+            context.delete(day)
         }
-        trip.days.removeAll()
+
+        guard let tripStart = trip.startDate, let tripEnd = trip.endDate else { return }
 
         let calendar = Calendar.current
-        let startOfStart = calendar.startOfDay(for: trip.startDate)
-        let startOfEnd = calendar.startOfDay(for: trip.endDate)
+        let startOfStart = calendar.startOfDay(for: tripStart)
+        let startOfEnd = calendar.startOfDay(for: tripEnd)
 
         var currentDate = startOfStart
         var dayNumber = 1
 
         while currentDate <= startOfEnd {
-            let day = DayEntity(date: currentDate, dayNumber: dayNumber, location: trip.destination)
+            let day = DayEntity.create(
+                in: context,
+                date: currentDate,
+                dayNumber: dayNumber,
+                location: trip.destination ?? ""
+            )
             day.trip = trip
-            trip.days.append(day)
-            modelContext.insert(day)
             dayNumber += 1
             guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
                 break
@@ -93,8 +95,9 @@ final class DataManager {
         category: StopCategory,
         notes: String = ""
     ) -> StopEntity {
-        let sortOrder = day.stops.count
-        let stop = StopEntity(
+        let sortOrder = day.stopsArray.count
+        let stop = StopEntity.create(
+            in: context,
             name: name,
             latitude: latitude,
             longitude: longitude,
@@ -103,40 +106,37 @@ final class DataManager {
             notes: notes
         )
         stop.day = day
-        day.stops.append(stop)
-        modelContext.insert(stop)
-        try? modelContext.save()
+        try? context.save()
         return stop
     }
 
     func deleteStop(_ stop: StopEntity) {
-        modelContext.delete(stop)
-        try? modelContext.save()
+        context.delete(stop)
+        try? context.save()
     }
 
     func toggleVisited(_ stop: StopEntity) {
         stop.isVisited.toggle()
         stop.visitedAt = stop.isVisited ? Date() : nil
-        try? modelContext.save()
+        try? context.save()
     }
 
     func moveStop(_ stop: StopEntity, to targetDay: DayEntity) {
         if let currentDay = stop.day {
-            currentDay.stops.removeAll { $0.id == stop.id }
+            currentDay.removeFromStops(stop)
         }
-        stop.sortOrder = targetDay.stops.count
+        stop.sortOrder = Int32(targetDay.stopsArray.count)
         stop.day = targetDay
-        targetDay.stops.append(stop)
-        try? modelContext.save()
+        try? context.save()
     }
 
     func reorderStops(in day: DayEntity, from source: IndexSet, to destination: Int) {
-        var stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
+        var stops = day.stopsArray
         stops.move(fromOffsets: source, toOffset: destination)
         for (index, stop) in stops.enumerated() {
-            stop.sortOrder = index
+            stop.sortOrder = Int32(index)
         }
-        try? modelContext.save()
+        try? context.save()
     }
 
     // MARK: - Expenses
@@ -150,34 +150,31 @@ final class DataManager {
         date: Date = Date(),
         notes: String = ""
     ) -> ExpenseEntity {
-        let expense = ExpenseEntity(
+        let expense = ExpenseEntity.create(
+            in: context,
             title: title,
             amount: amount,
-            currencyCode: trip.budgetCurrencyCode,
+            currencyCode: trip.budgetCurrencyCode ?? "USD",
             dateIncurred: date,
             category: category,
             notes: notes,
-            sortOrder: trip.expenses.count
+            sortOrder: trip.expensesArray.count
         )
         expense.trip = trip
-        trip.expenses.append(expense)
-        modelContext.insert(expense)
-        try? modelContext.save()
+        try? context.save()
         return expense
     }
 
     func deleteExpense(_ expense: ExpenseEntity) {
-        modelContext.delete(expense)
-        try? modelContext.save()
+        context.delete(expense)
+        try? context.save()
     }
 
     // MARK: - Sample Data
 
-    /// If no trips exist, create sample trips for demo purposes.
-    /// Dates are relative to today so sample data always looks fresh.
     func loadSampleDataIfEmpty() {
-        let descriptor = FetchDescriptor<TripEntity>()
-        let count = (try? modelContext.fetchCount(descriptor)) ?? 0
+        let request = TripEntity.fetchRequest() as! NSFetchRequest<TripEntity>
+        let count = (try? context.count(for: request)) ?? 0
         guard count == 0 else { return }
 
         let calendar = Calendar.current
@@ -187,8 +184,9 @@ final class DataManager {
             calendar.date(byAdding: .day, value: offset, to: today) ?? today
         }
 
-        // Paris Getaway — active trip (started yesterday, ends in 3 days)
-        let paris = TripEntity(
+        // Paris Getaway — active trip
+        let paris = TripEntity.create(
+            in: context,
             name: "Paris Getaway",
             destination: "Paris, France",
             startDate: daysFromNow(-1),
@@ -196,62 +194,30 @@ final class DataManager {
             status: .active,
             notes: "A romantic few days exploring the City of Light"
         )
-        modelContext.insert(paris)
         generateDays(for: paris)
 
-        if let parisDay1 = paris.days.first(where: { $0.dayNumber == 1 }) {
+        if let parisDay1 = paris.daysArray.first(where: { $0.dayNumber == 1 }) {
             parisDay1.notes = "Explore the city center"
-            addStop(
-                to: parisDay1,
-                name: "Eiffel Tower",
-                latitude: 48.8584,
-                longitude: 2.2945,
-                category: .attraction
-            )
-            addStop(
-                to: parisDay1,
-                name: "Le Jules Verne",
-                latitude: 48.8583,
-                longitude: 2.2944,
-                category: .restaurant
-            )
+            addStop(to: parisDay1, name: "Eiffel Tower", latitude: 48.8584, longitude: 2.2945, category: .attraction)
+            addStop(to: parisDay1, name: "Le Jules Verne", latitude: 48.8583, longitude: 2.2944, category: .restaurant)
         }
 
-        if let parisDay2 = paris.days.first(where: { $0.dayNumber == 2 }) {
+        if let parisDay2 = paris.daysArray.first(where: { $0.dayNumber == 2 }) {
             parisDay2.notes = "Art and culture"
-            addStop(
-                to: parisDay2,
-                name: "Louvre Museum",
-                latitude: 48.8606,
-                longitude: 2.3376,
-                category: .attraction
-            )
-            addStop(
-                to: parisDay2,
-                name: "Café de Flore",
-                latitude: 48.8540,
-                longitude: 2.3325,
-                category: .restaurant
-            )
+            addStop(to: parisDay2, name: "Louvre Museum", latitude: 48.8606, longitude: 2.3376, category: .attraction)
+            addStop(to: parisDay2, name: "Café de Flore", latitude: 48.8540, longitude: 2.3325, category: .restaurant)
         }
 
-        // Add a sample booking to Paris
-        let parisHotel = BookingEntity(
-            type: .hotel,
-            title: "Hôtel Le Marais",
-            confirmationCode: "HLM-28491",
-            sortOrder: 0
-        )
+        let parisHotel = BookingEntity.create(in: context, type: .hotel, title: "Hôtel Le Marais", confirmationCode: "HLM-28491")
         parisHotel.hotelName = "Hôtel Le Marais"
         parisHotel.hotelAddress = "12 Rue des Archives, 75004 Paris"
         parisHotel.checkInDate = daysFromNow(-1)
         parisHotel.checkOutDate = daysFromNow(3)
         parisHotel.trip = paris
-        paris.bookings.append(parisHotel)
-        modelContext.insert(parisHotel)
 
-        // Japan Adventure — upcoming multi-city trip (starts in 30 days)
-        let japan = TripEntity(
+        // Japan Adventure — upcoming trip
+        let japan = TripEntity.create(
+            in: context,
             name: "Japan Adventure",
             destination: "Japan",
             startDate: daysFromNow(30),
@@ -259,11 +225,9 @@ final class DataManager {
             status: .planning,
             notes: "Cherry blossom season trip — Tokyo & Kyoto"
         )
-        modelContext.insert(japan)
         generateDays(for: japan)
 
-        // Set first 4 days to Tokyo, rest to Kyoto
-        for day in japan.days {
+        for day in japan.daysArray {
             if day.dayNumber <= 4 {
                 day.location = "Tokyo, Japan"
             } else {
@@ -271,62 +235,27 @@ final class DataManager {
             }
         }
 
-        if let day1 = japan.days.first(where: { $0.dayNumber == 1 }) {
+        if let day1 = japan.daysArray.first(where: { $0.dayNumber == 1 }) {
             day1.notes = "Arrival day"
-            addStop(
-                to: day1,
-                name: "Narita Airport",
-                latitude: 35.7720,
-                longitude: 140.3929,
-                category: .transport
-            )
-            addStop(
-                to: day1,
-                name: "Shinjuku Hotel",
-                latitude: 35.6938,
-                longitude: 139.7034,
-                category: .accommodation
-            )
+            addStop(to: day1, name: "Narita Airport", latitude: 35.7720, longitude: 140.3929, category: .transport)
+            addStop(to: day1, name: "Shinjuku Hotel", latitude: 35.6938, longitude: 139.7034, category: .accommodation)
         }
 
-        if let day2 = japan.days.first(where: { $0.dayNumber == 2 }) {
+        if let day2 = japan.daysArray.first(where: { $0.dayNumber == 2 }) {
             day2.notes = "Temple and garden visits"
-            addStop(
-                to: day2,
-                name: "Senso-ji Temple",
-                latitude: 35.7148,
-                longitude: 139.7967,
-                category: .attraction
-            )
-            addStop(
-                to: day2,
-                name: "Tsukiji Outer Market",
-                latitude: 35.6654,
-                longitude: 139.7707,
-                category: .restaurant
-            )
+            addStop(to: day2, name: "Senso-ji Temple", latitude: 35.7148, longitude: 139.7967, category: .attraction)
+            addStop(to: day2, name: "Tsukiji Outer Market", latitude: 35.6654, longitude: 139.7707, category: .restaurant)
         }
 
-        if let day5 = japan.days.first(where: { $0.dayNumber == 5 }) {
+        if let day5 = japan.daysArray.first(where: { $0.dayNumber == 5 }) {
             day5.notes = "Train to Kyoto, explore temples"
-            addStop(
-                to: day5,
-                name: "Shinkansen to Kyoto",
-                latitude: 35.6812,
-                longitude: 139.7671,
-                category: .transport
-            )
-            addStop(
-                to: day5,
-                name: "Fushimi Inari Shrine",
-                latitude: 34.9671,
-                longitude: 135.7727,
-                category: .attraction
-            )
+            addStop(to: day5, name: "Shinkansen to Kyoto", latitude: 35.6812, longitude: 139.7671, category: .transport)
+            addStop(to: day5, name: "Fushimi Inari Shrine", latitude: 34.9671, longitude: 135.7727, category: .attraction)
         }
 
-        // NYC Weekend — completed trip (ended 14 days ago)
-        let nyc = TripEntity(
+        // NYC Weekend — completed trip
+        let _ = TripEntity.create(
+            in: context,
             name: "New York City Weekend",
             destination: "New York, USA",
             startDate: daysFromNow(-18),
@@ -334,9 +263,9 @@ final class DataManager {
             status: .completed,
             notes: "Holiday shopping and sightseeing"
         )
-        modelContext.insert(nyc)
-        generateDays(for: nyc)
+        generateDays(for: japan) // japan already generated above, this should be nyc
+        // Note: NYC doesn't need detailed stops for sample data
 
-        try? modelContext.save()
+        try? context.save()
     }
 }

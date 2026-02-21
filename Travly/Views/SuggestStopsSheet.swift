@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import TripCore
 
 #if canImport(FoundationModels)
@@ -8,7 +8,7 @@ import FoundationModels
 @available(iOS 26, *)
 struct SuggestStopsSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let day: DayEntity
@@ -221,17 +221,17 @@ struct SuggestStopsSheet: View {
 
     private func generateSuggestions() async {
         selectedIndices = []
-        let existingNames = day.stops.map(\.name)
+        let existingNames = day.stopsArray.map(\.wrappedName)
         await planner.suggestStops(
             destination: destination,
-            dayNumber: day.dayNumber,
+            dayNumber: Int(day.dayNumber),
             totalDays: totalDays,
             existingStops: existingNames
         )
     }
 
     private func addSelectedStops() {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         var count = 0
 
         for index in selectedIndices.sorted() {

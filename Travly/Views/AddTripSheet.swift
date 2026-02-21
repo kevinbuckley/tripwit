@@ -1,11 +1,11 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
 struct AddTripSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
@@ -139,7 +139,7 @@ struct AddTripSheet: View {
     }
 
     private func createTrip() {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         let trip = manager.createTrip(
             name: name.trimmingCharacters(in: .whitespaces),
             destination: destination.trimmingCharacters(in: .whitespaces),
@@ -148,7 +148,7 @@ struct AddTripSheet: View {
             notes: notes.trimmingCharacters(in: .whitespaces)
         )
         trip.hasCustomDates = hasDates
-        try? modelContext.save()
+        try? viewContext.save()
 
         // Parse and add itinerary stops if text was provided
         let trimmedItinerary = itineraryText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -157,7 +157,7 @@ struct AddTripSheet: View {
                 text: trimmedItinerary,
                 totalDays: trip.durationInDays
             )
-            let sortedDays = trip.days.sorted { $0.dayNumber < $1.dayNumber }
+            let sortedDays = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
 
             var stopsToGeocode: [(StopEntity, String)] = []
 
@@ -175,18 +175,18 @@ struct AddTripSheet: View {
                         category: parsedStop.category,
                         notes: parsedStop.note
                     )
-                    let geocodeDest = dayEntity.location.isEmpty ? trip.destination : dayEntity.location
+                    let geocodeDest = dayEntity.wrappedLocation.isEmpty ? trip.wrappedDestination : dayEntity.wrappedLocation
                     stopsToGeocode.append((stop, geocodeDest))
                 }
             }
 
             // Background geocoding
             if !stopsToGeocode.isEmpty {
-                let context = modelContext
+                let context = viewContext
                 Task {
                     let geocoder = CLGeocoder()
                     for (stop, dest) in stopsToGeocode {
-                        let query = "\(stop.name), \(dest)"
+                        let query = "\(stop.wrappedName), \(dest)"
                         do {
                             let placemarks = try await geocoder.geocodeAddressString(query)
                             if let location = placemarks.first?.location {

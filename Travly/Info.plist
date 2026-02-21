@@ -22,6 +22,8 @@
 			</dict>
 		</dict>
 	</array>
+	<key>CKSharingSupported</key>
+	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>CFBundleDocumentTypes</key>

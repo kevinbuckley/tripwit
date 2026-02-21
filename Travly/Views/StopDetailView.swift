@@ -1,12 +1,13 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
 struct StopDetailView: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     let stop: StopEntity
+    var canEdit: Bool = true
 
     @State private var showingEditStop = false
     @State private var showingNearbyAI = false
@@ -39,7 +40,7 @@ struct StopDetailView: View {
             if hasLocation {
                 Section {
                     Map(initialPosition: cameraPosition) {
-                        Marker(stop.name, coordinate: coordinate)
+                        Marker(stop.wrappedName, coordinate: coordinate)
                             .tint(markerColor)
                     }
                     .frame(height: 220)
@@ -100,9 +101,9 @@ struct StopDetailView: View {
                 Text("Details")
             }
 
-            if !stop.notes.isEmpty {
+            if !stop.wrappedNotes.isEmpty {
                 Section {
-                    Text(stop.notes)
+                    Text(stop.wrappedNotes)
                         .font(.body)
                         .foregroundStyle(.secondary)
                 } header: {
@@ -129,7 +130,7 @@ struct StopDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.blue)
                 .listRowBackground(Color.clear)
-                .accessibilityLabel("Get directions to \(stop.name)")
+                .accessibilityLabel("Get directions to \(stop.wrappedName)")
             }
 
             // AI Nearby Suggestions
@@ -141,12 +142,14 @@ struct StopDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(stop.name)
+        .navigationTitle(stop.wrappedName)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("Edit") {
-                    showingEditStop = true
+            if canEdit {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Edit") {
+                        showingEditStop = true
+                    }
                 }
             }
         }
@@ -167,7 +170,7 @@ struct StopDetailView: View {
     private var visitedContent: some View {
         if stop.isVisited {
             visitedStatusRow
-        } else {
+        } else if canEdit {
             markAsVisitedButton
         }
     }
@@ -187,28 +190,33 @@ struct StopDetailView: View {
                     }
                 }
                 Spacer()
-                Button("Undo") {
-                    stop.isVisited = false
-                    stop.visitedAt = nil
-                    stop.rating = 0
-                    try? modelContext.save()
+                if canEdit {
+                    Button("Undo") {
+                        stop.isVisited = false
+                        stop.visitedAt = nil
+                        stop.rating = 0
+                        try? viewContext.save()
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.red)
                 }
-                .font(.subheadline)
-                .foregroundColor(.red)
             }
 
             // Star rating display / editor
             HStack(spacing: 4) {
                 ForEach(1...5, id: \.self) { star in
                     Button {
-                        stop.rating = star
-                        try? modelContext.save()
+                        if canEdit {
+                            stop.rating = Int32(star)
+                            try? viewContext.save()
+                        }
                     } label: {
-                        Image(systemName: star <= stop.rating ? "star.fill" : "star")
+                        Image(systemName: star <= Int(stop.rating) ? "star.fill" : "star")
                             .font(.title3)
                             .foregroundStyle(star <= stop.rating ? .yellow : Color(.systemGray4))
                     }
                     .buttonStyle(.plain)
+                    .disabled(!canEdit)
                 }
                 if stop.rating > 0 {
                     Text("\(stop.rating)/5")
@@ -232,48 +240,53 @@ struct StopDetailView: View {
             }
             .foregroundColor(.green)
         }
-        .accessibilityLabel("Mark \(stop.name) as visited")
+        .accessibilityLabel("Mark \(stop.wrappedName) as visited")
         .alert("Rate Your Visit", isPresented: $showingRatingSheet) {
             ForEach([1, 2, 3, 4, 5], id: \.self) { stars in
                 Button(String(repeating: "★", count: stars) + String(repeating: "☆", count: 5 - stars)) {
                     stop.isVisited = true
                     stop.visitedAt = Date()
-                    stop.rating = stars
-                    try? modelContext.save()
+                    stop.rating = Int32(stars)
+                    try? viewContext.save()
                 }
             }
             Button("Skip Rating") {
                 stop.isVisited = true
                 stop.visitedAt = Date()
                 stop.rating = 0
-                try? modelContext.save()
+                try? viewContext.save()
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("How was \(stop.name)?")
+            Text("How was \(stop.wrappedName)?")
         }
     }
 
     // MARK: - Comments
 
     private var sortedComments: [CommentEntity] {
-        stop.comments.sorted { $0.createdAt > $1.createdAt }
+        stop.commentsArray.sorted { $0.wrappedCreatedAt > $1.wrappedCreatedAt }
     }
 
     private var commentsSection: some View {
         Section {
-            addCommentRow
+            if canEdit {
+                addCommentRow
+            }
             ForEach(sortedComments) { comment in
                 commentRow(comment)
             }
             .onDelete { offsets in
-                deleteComments(at: offsets)
+                if canEdit {
+                    deleteComments(at: offsets)
+                }
             }
+            .deleteDisabled(!canEdit)
         } header: {
             HStack {
                 Text("Comments")
                 Spacer()
-                Text("\(stop.comments.count)")
+                Text("\(stop.commentsArray.count)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -299,9 +312,9 @@ struct StopDetailView: View {
 
     private func commentRow(_ comment: CommentEntity) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(comment.text)
+            Text(comment.wrappedText)
                 .font(.body)
-            Text(comment.createdAt, style: .relative)
+            Text(comment.wrappedCreatedAt, style: .relative)
                 .font(.caption2)
                 .foregroundColor(.secondary)
             + Text(" ago")
@@ -314,11 +327,9 @@ struct StopDetailView: View {
     private func addComment() {
         let trimmed = newCommentText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        let comment = CommentEntity(text: trimmed)
+        let comment = CommentEntity.create(in: viewContext, text: trimmed)
         comment.stop = stop
-        stop.comments.append(comment)
-        modelContext.insert(comment)
-        try? modelContext.save()
+        try? viewContext.save()
         newCommentText = ""
     }
 
@@ -326,9 +337,9 @@ struct StopDetailView: View {
         let comments = sortedComments
         for index in offsets {
             let comment = comments[index]
-            modelContext.delete(comment)
+            viewContext.delete(comment)
         }
-        try? modelContext.save()
+        try? viewContext.save()
     }
 
     // MARK: - Locate AI
@@ -425,7 +436,7 @@ struct StopDetailView: View {
     private func openDirections() {
         let placemark = MKPlacemark(coordinate: coordinate)
         let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = stop.name
+        mapItem.name = stop.wrappedName
         mapItem.openInMaps(launchOptions: [
             MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeWalking
         ])

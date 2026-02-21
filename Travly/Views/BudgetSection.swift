@@ -1,20 +1,21 @@
 import SwiftUI
-import SwiftData
+import CoreData
 
 struct BudgetSection: View {
-    @Environment(\.modelContext) private var modelContext
-    @Bindable var trip: TripEntity
+    @Environment(\.managedObjectContext) private var viewContext
+    @ObservedObject var trip: TripEntity
+    var canEdit: Bool = true
 
     @State private var showingAddExpense = false
     @State private var expenseToEdit: ExpenseEntity?
     @State private var expenseToDelete: ExpenseEntity?
 
     private var sortedExpenses: [ExpenseEntity] {
-        trip.expenses.sorted { $0.dateIncurred > $1.dateIncurred }
+        trip.expensesArray.sorted { $0.wrappedDateIncurred > $1.wrappedDateIncurred }
     }
 
     private var totalSpent: Double {
-        trip.expenses.reduce(0) { $0 + $1.amount }
+        trip.expensesArray.reduce(0) { $0 + $1.amount }
     }
 
     private var hasBudget: Bool {
@@ -35,12 +36,12 @@ struct BudgetSection: View {
     var body: some View {
         Section {
             // Summary
-            if hasBudget || !trip.expenses.isEmpty {
+            if hasBudget || !trip.expensesArray.isEmpty {
                 budgetSummary
             }
 
             // Category breakdown
-            if !trip.expenses.isEmpty {
+            if !trip.expensesArray.isEmpty {
                 categoryBreakdown
             }
 
@@ -61,34 +62,40 @@ struct BudgetSection: View {
             } else {
                 ForEach(sortedExpenses) { expense in
                     Button {
-                        expenseToEdit = expense
+                        if canEdit {
+                            expenseToEdit = expense
+                        }
                     } label: {
                         expenseRow(expense)
                     }
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            expenseToDelete = expense
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                        if canEdit {
+                            Button(role: .destructive) {
+                                expenseToDelete = expense
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                     }
                 }
             }
 
             // Add button
-            Button {
-                showingAddExpense = true
-            } label: {
-                Label("Add Expense", systemImage: "plus.circle")
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
+            if canEdit {
+                Button {
+                    showingAddExpense = true
+                } label: {
+                    Label("Add Expense", systemImage: "plus.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(.blue)
+                }
             }
         } header: {
             HStack {
                 Text("Budget")
                 Spacer()
-                if !trip.expenses.isEmpty {
+                if !trip.expensesArray.isEmpty {
                     Text(formatCurrency(totalSpent))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -107,14 +114,14 @@ struct BudgetSection: View {
         )) {
             Button("Delete", role: .destructive) {
                 if let expense = expenseToDelete {
-                    DataManager(modelContext: modelContext).deleteExpense(expense)
+                    DataManager(context: viewContext).deleteExpense(expense)
                     expenseToDelete = nil
                 }
             }
             Button("Cancel", role: .cancel) { expenseToDelete = nil }
         } message: {
             if let expense = expenseToDelete {
-                Text("Delete \"\(expense.title)\"?")
+                Text("Delete \"\(expense.wrappedTitle)\"?")
             }
         }
     }
@@ -191,7 +198,7 @@ struct BudgetSection: View {
 
     private var categoryTotals: [CategoryTotal] {
         var totals: [ExpenseCategory: Double] = [:]
-        for expense in trip.expenses {
+        for expense in trip.expensesArray {
             totals[expense.category, default: 0] += expense.amount
         }
         return totals
@@ -211,10 +218,10 @@ struct BudgetSection: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(expense.title)
+                Text(expense.wrappedTitle)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                Text(expense.dateIncurred, style: .date)
+                Text(expense.wrappedDateIncurred, style: .date)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -234,7 +241,7 @@ struct BudgetSection: View {
     private func formatCurrency(_ amount: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencyCode = trip.budgetCurrencyCode
+        formatter.currencyCode = trip.wrappedBudgetCurrencyCode
         formatter.maximumFractionDigits = 2
         return formatter.string(from: NSNumber(value: amount)) ?? "$\(String(format: "%.2f", amount))"
     }

@@ -1,43 +1,48 @@
-import SwiftData
+import CoreData
 import Foundation
 import TripCore
 
-@Model
-final class StopEntity {
+@objc(StopEntity)
+public class StopEntity: NSManagedObject {
+    @NSManaged public var id: UUID?
+    @NSManaged public var name: String?
+    @NSManaged public var latitude: Double
+    @NSManaged public var longitude: Double
+    @NSManaged public var arrivalTime: Date?
+    @NSManaged public var departureTime: Date?
+    @NSManaged public var categoryRaw: String?
+    @NSManaged public var notes: String?
+    @NSManaged public var sortOrder: Int32
+    @NSManaged public var isVisited: Bool
+    @NSManaged public var visitedAt: Date?
+    @NSManaged public var rating: Int32
+    @NSManaged public var address: String?
+    @NSManaged public var phone: String?
+    @NSManaged public var website: String?
+    @NSManaged public var day: DayEntity?
+    @NSManaged public var comments: NSSet?
+}
 
-    // MARK: Stored Properties
+extension StopEntity: Identifiable {}
 
-    var id: UUID
-    var name: String
-    var latitude: Double
-    var longitude: Double
-    var arrivalTime: Date?
-    var departureTime: Date?
-    var categoryRaw: String
-    var notes: String
-    var sortOrder: Int
-    var isVisited: Bool
-    var visitedAt: Date?
-    var rating: Int
-    var address: String?
-    var phone: String?
-    var website: String?
-
-    var day: DayEntity?
-
-    @Relationship(deleteRule: .cascade, inverse: \CommentEntity.stop)
-    var comments: [CommentEntity]
-
-    // MARK: Computed Properties
+extension StopEntity {
+    // MARK: - Safe accessors (non-optional wrappers)
+    var wrappedName: String { name ?? "" }
+    var wrappedCategoryRaw: String { categoryRaw ?? "other" }
+    var wrappedNotes: String { notes ?? "" }
 
     var category: StopCategory {
-        get { StopCategory(rawValue: categoryRaw) ?? .other }
+        get { StopCategory(rawValue: wrappedCategoryRaw) ?? .other }
         set { categoryRaw = newValue.rawValue }
     }
 
-    // MARK: Initializer
+    var commentsArray: [CommentEntity] {
+        (comments as? Set<CommentEntity>)?.sorted { ($0.createdAt ?? .distantPast) < ($1.createdAt ?? .distantPast) } ?? []
+    }
 
-    init(
+    @discardableResult
+    static func create(
+        in context: NSManagedObjectContext,
         name: String,
         latitude: Double,
         longitude: Double,
@@ -51,22 +56,28 @@ final class StopEntity {
         address: String? = nil,
         phone: String? = nil,
         website: String? = nil
-    ) {
-        self.id = UUID()
-        self.name = name
-        self.latitude = latitude
-        self.longitude = longitude
-        self.arrivalTime = arrivalTime
-        self.departureTime = departureTime
-        self.categoryRaw = category.rawValue
-        self.sortOrder = sortOrder
-        self.notes = notes
-        self.isVisited = isVisited
-        self.visitedAt = visitedAt
-        self.rating = 0
-        self.address = address
-        self.phone = phone
-        self.website = website
-        self.comments = []
+    ) -> StopEntity {
+        let stop = StopEntity(context: context)
+        stop.id = UUID()
+        stop.name = name
+        stop.latitude = latitude
+        stop.longitude = longitude
+        stop.arrivalTime = arrivalTime
+        stop.departureTime = departureTime
+        stop.categoryRaw = category.rawValue
+        stop.sortOrder = Int32(sortOrder)
+        stop.notes = notes
+        stop.isVisited = isVisited
+        stop.visitedAt = visitedAt
+        stop.rating = 0
+        stop.address = address
+        stop.phone = phone
+        stop.website = website
+        return stop
     }
+
+    @objc(addCommentsObject:)
+    @NSManaged public func addToComments(_ value: CommentEntity)
+    @objc(removeCommentsObject:)
+    @NSManaged public func removeFromComments(_ value: CommentEntity)
 }

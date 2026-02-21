@@ -43,7 +43,7 @@ struct StopRowView: View {
     private var stopLabels: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
-                Text(stop.name)
+                Text(stop.wrappedName)
                     .font(.subheadline)
                     .fontWeight(.medium)
                 if stop.isVisited {

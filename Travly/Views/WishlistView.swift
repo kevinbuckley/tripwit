@@ -1,13 +1,13 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
 struct WishlistView: View {
 
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \WishlistItemEntity.createdAt, order: .reverse) private var items: [WishlistItemEntity]
-    @Query(sort: \TripEntity.startDate, order: .reverse) private var allTrips: [TripEntity]
+    @Environment(\.managedObjectContext) private var viewContext
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \WishlistItemEntity.createdAt, ascending: false)]) private var items: FetchedResults<WishlistItemEntity>
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \TripEntity.startDate, ascending: false)]) private var allTrips: FetchedResults<TripEntity>
 
     @State private var showingAddItem = false
     @State private var itemToAddToTrip: WishlistItemEntity?
@@ -15,13 +15,13 @@ struct WishlistView: View {
     @State private var selectedCity: String = "All"
 
     private var uniqueCities: [String] {
-        let cities = items.compactMap { $0.destination.isEmpty ? nil : $0.destination }
+        let cities = items.compactMap { $0.wrappedDestination.isEmpty ? nil : $0.wrappedDestination }
         return Array(Set(cities)).sorted()
     }
 
     private var filterOptions: [String] {
         var options = ["All"] + uniqueCities
-        let hasUncategorized = items.contains { $0.destination.isEmpty }
+        let hasUncategorized = items.contains { $0.wrappedDestination.isEmpty }
         if hasUncategorized && !uniqueCities.isEmpty {
             options.append("Other")
         }
@@ -30,9 +30,9 @@ struct WishlistView: View {
 
     private var filteredItems: [WishlistItemEntity] {
         switch selectedCity {
-        case "All": return items
-        case "Other": return items.filter { $0.destination.isEmpty }
-        default: return items.filter { $0.destination == selectedCity }
+        case "All": return Array(items)
+        case "Other": return items.filter { $0.wrappedDestination.isEmpty }
+        default: return items.filter { $0.wrappedDestination == selectedCity }
         }
     }
 
@@ -56,7 +56,7 @@ struct WishlistView: View {
             AddWishlistItemSheet()
         }
         .sheet(item: $itemToAddToTrip) { item in
-            AddWishlistToTripSheet(item: item, trips: allTrips)
+            AddWishlistToTripSheet(item: item, trips: Array(allTrips))
         }
         .sheet(item: $itemToEdit) { item in
             EditWishlistItemSheet(item: item)
@@ -102,8 +102,8 @@ struct WishlistView: View {
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
-                            modelContext.delete(item)
-                            try? modelContext.save()
+                            viewContext.delete(item)
+                            try? viewContext.save()
                         } label: {
                             Label("Delete", systemImage: "trash")
                         }
@@ -158,16 +158,16 @@ struct WishlistView: View {
                 .background(categoryColor(item.category).opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.name)
+                Text(item.wrappedName)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                if !item.destination.isEmpty {
-                    Text(item.destination)
+                if !item.wrappedDestination.isEmpty {
+                    Text(item.wrappedDestination)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                if !item.notes.isEmpty {
-                    Text(item.notes)
+                if !item.wrappedNotes.isEmpty {
+                    Text(item.wrappedNotes)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
@@ -211,7 +211,7 @@ struct WishlistView: View {
 // MARK: - Add Wishlist Item Sheet
 
 struct AddWishlistItemSheet: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
@@ -261,7 +261,8 @@ struct AddWishlistItemSheet: View {
     }
 
     private func saveItem() {
-        let item = WishlistItemEntity(
+        let item = WishlistItemEntity.create(
+            in: viewContext,
             name: name.trimmingCharacters(in: .whitespaces),
             destination: locationCity.trimmingCharacters(in: .whitespaces),
             latitude: latitude,
@@ -269,8 +270,8 @@ struct AddWishlistItemSheet: View {
             category: category,
             notes: notes.trimmingCharacters(in: .whitespaces)
         )
-        modelContext.insert(item)
-        try? modelContext.save()
+        _ = item
+        try? viewContext.save()
         dismiss()
     }
 }
@@ -278,7 +279,7 @@ struct AddWishlistItemSheet: View {
 // MARK: - Add Wishlist Item to Trip Sheet
 
 struct AddWishlistToTripSheet: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let item: WishlistItemEntity
@@ -295,12 +296,12 @@ struct AddWishlistToTripSheet: View {
                     ForEach(trips.filter { $0.status != .completed }) { trip in
                         Button {
                             selectedTrip = trip
-                            selectedDay = trip.days.sorted(by: { $0.dayNumber < $1.dayNumber }).first
+                            selectedDay = trip.daysArray.sorted(by: { $0.dayNumber < $1.dayNumber }).first
                         } label: {
                             HStack {
                                 VStack(alignment: .leading) {
-                                    Text(trip.name).font(.subheadline).fontWeight(.medium)
-                                    Text(trip.destination).font(.caption).foregroundStyle(.secondary)
+                                    Text(trip.wrappedName).font(.subheadline).fontWeight(.medium)
+                                    Text(trip.wrappedDestination).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 if selectedTrip?.id == trip.id {
@@ -313,7 +314,7 @@ struct AddWishlistToTripSheet: View {
                 } header: { Text("Select Trip") }
 
                 if let trip = selectedTrip {
-                    let sortedDays = trip.days.sorted { $0.dayNumber < $1.dayNumber }
+                    let sortedDays = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
                     if !sortedDays.isEmpty {
                         Section {
                             ForEach(sortedDays) { day in
@@ -339,7 +340,7 @@ struct AddWishlistToTripSheet: View {
                     Section {
                         HStack {
                             Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                            Text("Added \(item.name) to the trip!")
+                            Text("Added \(item.wrappedName) to the trip!")
                                 .font(.subheadline)
                         }
                     }
@@ -359,19 +360,19 @@ struct AddWishlistToTripSheet: View {
 
     private func addToTrip() {
         guard let day = selectedDay else { return }
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         let stop = manager.addStop(
             to: day,
-            name: item.name,
+            name: item.wrappedName,
             latitude: item.latitude,
             longitude: item.longitude,
             category: item.category,
-            notes: item.notes
+            notes: item.wrappedNotes
         )
         stop.address = item.address
         stop.phone = item.phone
         stop.website = item.website
-        try? modelContext.save()
+        try? viewContext.save()
         added = true
 
         // Auto-dismiss after showing success
@@ -385,10 +386,10 @@ struct AddWishlistToTripSheet: View {
 // MARK: - Edit Wishlist Item Sheet
 
 struct EditWishlistItemSheet: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
-    @Bindable var item: WishlistItemEntity
+    @ObservedObject var item: WishlistItemEntity
 
     @State private var name: String = ""
     @State private var category: StopCategory = .attraction
@@ -435,13 +436,13 @@ struct EditWishlistItemSheet: View {
     }
 
     private func loadItem() {
-        name = item.name
+        name = item.wrappedName
         category = item.category
-        notes = item.notes
+        notes = item.wrappedNotes
         latitude = item.latitude
         longitude = item.longitude
-        locationName = item.name
-        locationCity = item.destination
+        locationName = item.wrappedName
+        locationCity = item.wrappedDestination
     }
 
     private func saveChanges() {
@@ -451,7 +452,7 @@ struct EditWishlistItemSheet: View {
         item.latitude = latitude
         item.longitude = longitude
         item.destination = locationCity.trimmingCharacters(in: .whitespaces)
-        try? modelContext.save()
+        try? viewContext.save()
         dismiss()
     }
 }

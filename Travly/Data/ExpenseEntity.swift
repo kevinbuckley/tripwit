@@ -1,35 +1,40 @@
-import SwiftData
+import CoreData
 import SwiftUI
 import Foundation
 
-/// Represents an expense tied to a trip for budget tracking.
-@Model
-final class ExpenseEntity {
+@objc(ExpenseEntity)
+public class ExpenseEntity: NSManagedObject {
+    @NSManaged public var id: UUID?
+    @NSManaged public var title: String?
+    @NSManaged public var amount: Double
+    @NSManaged public var currencyCode: String?
+    @NSManaged public var dateIncurred: Date?
+    @NSManaged public var categoryRaw: String?
+    @NSManaged public var notes: String?
+    @NSManaged public var sortOrder: Int32
+    @NSManaged public var createdAt: Date?
+    @NSManaged public var trip: TripEntity?
+}
 
-    // MARK: Stored Properties
+extension ExpenseEntity: Identifiable {}
 
-    var id: UUID
-    var title: String
-    var amount: Double
-    var currencyCode: String
-    var dateIncurred: Date
-    var categoryRaw: String
-    var notes: String
-    var sortOrder: Int
-    var createdAt: Date
-
-    var trip: TripEntity?
-
-    // MARK: Computed Properties
+extension ExpenseEntity {
+    // MARK: - Safe accessors (non-optional wrappers)
+    var wrappedTitle: String { title ?? "" }
+    var wrappedCurrencyCode: String { currencyCode ?? "USD" }
+    var wrappedDateIncurred: Date { dateIncurred ?? Date() }
+    var wrappedCategoryRaw: String { categoryRaw ?? "other" }
+    var wrappedNotes: String { notes ?? "" }
+    var wrappedCreatedAt: Date { createdAt ?? Date() }
 
     var category: ExpenseCategory {
-        get { ExpenseCategory(rawValue: categoryRaw) ?? .other }
+        get { ExpenseCategory(rawValue: wrappedCategoryRaw) ?? .other }
         set { categoryRaw = newValue.rawValue }
     }
 
-    // MARK: Initializer
-
-    init(
+    @discardableResult
+    static func create(
+        in context: NSManagedObjectContext,
         title: String,
         amount: Double,
         currencyCode: String = "USD",
@@ -37,21 +42,22 @@ final class ExpenseEntity {
         category: ExpenseCategory = .other,
         notes: String = "",
         sortOrder: Int = 0
-    ) {
-        self.id = UUID()
-        self.title = title
-        self.amount = amount
-        self.currencyCode = currencyCode
-        self.dateIncurred = dateIncurred
-        self.categoryRaw = category.rawValue
-        self.notes = notes
-        self.sortOrder = sortOrder
-        self.createdAt = Date()
+    ) -> ExpenseEntity {
+        let expense = ExpenseEntity(context: context)
+        expense.id = UUID()
+        expense.title = title
+        expense.amount = amount
+        expense.currencyCode = currencyCode
+        expense.dateIncurred = dateIncurred
+        expense.categoryRaw = category.rawValue
+        expense.notes = notes
+        expense.sortOrder = Int32(sortOrder)
+        expense.createdAt = Date()
+        return expense
     }
 }
 
 // MARK: - ExpenseCategory
-
 enum ExpenseCategory: String, Codable, CaseIterable {
     case accommodation
     case food

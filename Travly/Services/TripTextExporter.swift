@@ -14,19 +14,19 @@ struct TripTextExporter {
         timeFmt.timeStyle = .short
 
         // Header
-        lines.append(trip.name.uppercased())
-        lines.append("\(trip.destination)")
-        lines.append("\(dateFmt.string(from: trip.startDate)) - \(dateFmt.string(from: trip.endDate)) (\(trip.durationInDays) days)")
+        lines.append(trip.wrappedName.uppercased())
+        lines.append("\(trip.wrappedDestination)")
+        lines.append("\(dateFmt.string(from: trip.wrappedStartDate)) - \(dateFmt.string(from: trip.wrappedEndDate)) (\(trip.durationInDays) days)")
         lines.append("")
 
         // Bookings
-        let bookings = trip.bookings.sorted { $0.sortOrder < $1.sortOrder }
+        let bookings = trip.bookingsArray
         if !bookings.isEmpty {
             lines.append("FLIGHTS & HOTELS")
             for bk in bookings {
-                var desc = "\(bk.bookingType.label): \(bk.title)"
-                if !bk.confirmationCode.isEmpty {
-                    desc += " (\(bk.confirmationCode))"
+                var desc = "\(bk.bookingType.label): \(bk.wrappedTitle)"
+                if !bk.wrappedConfirmationCode.isEmpty {
+                    desc += " (\(bk.wrappedConfirmationCode))"
                 }
                 lines.append("  \(desc)")
             }
@@ -34,24 +34,24 @@ struct TripTextExporter {
         }
 
         // Itinerary
-        let days = trip.days.sorted { $0.dayNumber < $1.dayNumber }
+        let days = trip.daysArray
         for day in days {
-            var header = "DAY \(day.dayNumber) — \(dateFmt.string(from: day.date))"
-            if !day.location.isEmpty {
-                header += " — \(day.location)"
+            var header = "DAY \(day.dayNumber) — \(dateFmt.string(from: day.wrappedDate))"
+            if !day.wrappedLocation.isEmpty {
+                header += " — \(day.wrappedLocation)"
             }
             lines.append(header)
 
-            if !day.notes.isEmpty {
-                lines.append("  \(day.notes)")
+            if !day.wrappedNotes.isEmpty {
+                lines.append("  \(day.wrappedNotes)")
             }
 
-            let stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
+            let stops = day.stopsArray
             if stops.isEmpty {
                 lines.append("  No stops planned")
             } else {
                 for stop in stops {
-                    var stopLine = "  \u{2022} \(stop.name)"
+                    var stopLine = "  \u{2022} \(stop.wrappedName)"
                     if let arrival = stop.arrivalTime {
                         stopLine += " (\(timeFmt.string(from: arrival))"
                         if let departure = stop.departureTime {
@@ -60,8 +60,8 @@ struct TripTextExporter {
                         stopLine += ")"
                     }
                     lines.append(stopLine)
-                    if !stop.notes.isEmpty {
-                        lines.append("    \(stop.notes)")
+                    if !stop.wrappedNotes.isEmpty {
+                        lines.append("    \(stop.wrappedNotes)")
                     }
                 }
             }

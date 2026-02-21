@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
@@ -9,7 +9,7 @@ import FoundationModels
 @available(iOS 26, *)
 struct LocateStopSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let stop: StopEntity
@@ -18,7 +18,7 @@ struct LocateStopSheet: View {
     @State private var hasApplied = false
 
     private var destination: String {
-        stop.day?.trip?.destination ?? ""
+        stop.day?.trip?.wrappedDestination ?? ""
     }
 
     var body: some View {
@@ -53,7 +53,7 @@ struct LocateStopSheet: View {
             Spacer()
             ProgressView()
                 .controlSize(.large)
-            Text("Finding \(stop.name)...")
+            Text("Finding \(stop.wrappedName)...")
                 .font(.headline)
             if !destination.isEmpty {
                 Text("Searching in \(destination)")
@@ -161,13 +161,13 @@ struct LocateStopSheet: View {
 
     private func locate() async {
         hasApplied = false
-        await planner.locatePlace(name: stop.name, destination: destination)
+        await planner.locatePlace(name: stop.wrappedName, destination: destination)
     }
 
     private func applyLocation(_ place: LocatedPlace) {
         stop.latitude = place.latitude
         stop.longitude = place.longitude
-        try? modelContext.save()
+        try? viewContext.save()
         hasApplied = true
     }
 }

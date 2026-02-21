@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+import CoreData
 
 struct EditBookingSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let booking: BookingEntity
@@ -32,9 +32,9 @@ struct EditBookingSheet: View {
     init(booking: BookingEntity) {
         self.booking = booking
         _bookingType = State(initialValue: booking.bookingType)
-        _title = State(initialValue: booking.title)
-        _confirmationCode = State(initialValue: booking.confirmationCode)
-        _notes = State(initialValue: booking.notes)
+        _title = State(initialValue: booking.title ?? "")
+        _confirmationCode = State(initialValue: booking.confirmationCode ?? "")
+        _notes = State(initialValue: booking.notes ?? "")
 
         _airline = State(initialValue: booking.airline ?? "")
         _flightNumber = State(initialValue: booking.flightNumber ?? "")
@@ -222,7 +222,7 @@ struct EditBookingSheet: View {
             booking.checkOutDate = nil
         }
 
-        try? modelContext.save()
+        try? viewContext.save()
         dismiss()
     }
 }

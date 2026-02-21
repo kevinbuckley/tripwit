@@ -9,17 +9,17 @@ struct TripRowView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        return "\(formatter.string(from: trip.startDate)) - \(formatter.string(from: trip.endDate))"
+        return "\(formatter.string(from: trip.wrappedStartDate)) - \(formatter.string(from: trip.wrappedEndDate))"
     }
 
     private var stopCount: Int {
-        trip.days.reduce(0) { $0 + $1.stops.count }
+        trip.daysArray.reduce(0) { $0 + $1.stopsArray.count }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(trip.name)
+                Text(trip.wrappedName)
                     .font(.headline)
                 Spacer()
                 StatusBadge(status: trip.status)
@@ -29,7 +29,7 @@ struct TripRowView: View {
                 Image(systemName: "mappin.and.ellipse")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(trip.destination)
+                Text(trip.wrappedDestination)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

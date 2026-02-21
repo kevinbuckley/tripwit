@@ -24,7 +24,8 @@ final class TravelTimeService {
 
     /// Calculate travel time between two stops.
     func calculateTravelTime(from fromStop: StopEntity, to toStop: StopEntity) async {
-        let key = Self.key(from: fromStop.id, to: toStop.id)
+        guard let fromID = fromStop.id, let toID = toStop.id else { return }
+        let key = Self.key(from: fromID, to: toID)
 
         // Skip if already calculated or loading
         if let existing = estimates[key], !existing.isLoading {
@@ -42,8 +43,8 @@ final class TravelTimeService {
 
         // Mark as loading
         estimates[key] = TravelEstimate(
-            fromStopID: fromStop.id,
-            toStopID: toStop.id,
+            fromStopID: fromID,
+            toStopID: toID,
             drivingMinutes: nil,
             walkingMinutes: nil,
             distanceMeters: nil,
@@ -73,8 +74,8 @@ final class TravelTimeService {
                 }
 
                 estimates[key] = TravelEstimate(
-                    fromStopID: fromStop.id,
-                    toStopID: toStop.id,
+                    fromStopID: fromID,
+                    toStopID: toID,
                     drivingMinutes: drivingMins,
                     walkingMinutes: walkingMins,
                     distanceMeters: distanceM,
@@ -84,8 +85,8 @@ final class TravelTimeService {
         } catch {
             // Mark as failed (not loading, no data)
             estimates[key] = TravelEstimate(
-                fromStopID: fromStop.id,
-                toStopID: toStop.id,
+                fromStopID: fromID,
+                toStopID: toID,
                 drivingMinutes: nil,
                 walkingMinutes: nil,
                 distanceMeters: nil,

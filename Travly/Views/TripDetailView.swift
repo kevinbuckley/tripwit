@@ -1,14 +1,14 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import CoreLocation
 import TripCore
 
 struct TripDetailView: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
 
-    @Bindable var trip: TripEntity
+    @ObservedObject var trip: TripEntity
 
     @State private var showingEditTrip = false
     @State private var showingAddStop = false
@@ -30,16 +30,19 @@ struct TripDetailView: View {
     @State private var isExportingCalendar = false
     @State private var draggingStopID: String?
     @State private var dropTargetDayID: UUID?
+    @State private var showingCloudSharing = false
+
+    private let sharingService = CloudKitSharingService()
 
     private var sortedDays: [DayEntity] {
-        trip.days.sorted { $0.dayNumber < $1.dayNumber }
+        trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
     }
 
     /// Groups consecutive days that share the same location into segments.
     private var locationSegments: [(location: String, days: [DayEntity])] {
         var segments: [(location: String, days: [DayEntity])] = []
         for day in sortedDays {
-            let loc = day.location.isEmpty ? trip.destination : day.location
+            let loc = day.wrappedLocation.isEmpty ? trip.wrappedDestination : day.wrappedLocation
             if let last = segments.last, last.location == loc {
                 segments[segments.count - 1].days.append(day)
             } else {
@@ -56,13 +59,34 @@ struct TripDetailView: View {
         return formatter
     }
 
+    private var canEdit: Bool {
+        sharingService.canEdit(trip)
+    }
+
     var body: some View {
         List {
+            // MARK: - View Only Banner
+            if sharingService.isShared(trip) && !canEdit {
+                HStack(spacing: 6) {
+                    Image(systemName: "person.fill.viewfinder")
+                        .font(.subheadline)
+                    Text("View Only")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                .foregroundStyle(.orange)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 6)
+                .listRowBackground(Color.orange.opacity(0.1))
+            }
+
             // MARK: - Header
             headerSection
 
             // MARK: - Status Actions
-            statusActionSection
+            if canEdit {
+                statusActionSection
+            }
 
             // MARK: - Weather
             if !trip.isPast {
@@ -73,7 +97,9 @@ struct TripDetailView: View {
             bookingsSection
 
             // MARK: - Paste Itinerary
-            pasteItinerarySection
+            if canEdit {
+                pasteItinerarySection
+            }
 
             // MARK: - Itinerary
             if !sortedDays.isEmpty {
@@ -91,21 +117,29 @@ struct TripDetailView: View {
             }
 
             // MARK: - Custom Lists
-            TripListsSection(trip: trip)
+            TripListsSection(trip: trip, canEdit: canEdit)
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(trip.name)
+        .navigationTitle(trip.wrappedName)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 16) {
                     Menu {
                         Button {
-                            shareTripFile()
+                            showingCloudSharing = true
                         } label: {
-                            Label("Share Trip", systemImage: "paperplane")
+                            Label(
+                                sharingService.isShared(trip) ? "Manage Sharing" : "Collaborate",
+                                systemImage: "person.crop.circle.badge.plus"
+                            )
                         }
                         Divider()
+                        Button {
+                            shareTripFile()
+                        } label: {
+                            Label("Send a Copy", systemImage: "paperplane")
+                        }
                         Button {
                             shareTripPDF()
                         } label: {
@@ -124,13 +158,22 @@ struct TripDetailView: View {
                         }
                         .disabled(isExportingCalendar)
                     } label: {
-                        Image(systemName: "square.and.arrow.up")
+                        HStack(spacing: 4) {
+                            if sharingService.isShared(trip) {
+                                Image(systemName: "person.2.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(.blue)
+                            }
+                            Image(systemName: "square.and.arrow.up")
+                        }
                     }
                     .accessibilityLabel("Share trip")
-                    Button {
-                        showingEditTrip = true
-                    } label: {
-                        Text("Edit")
+                    if sharingService.canEdit(trip) {
+                        Button {
+                            showingEditTrip = true
+                        } label: {
+                            Text("Edit")
+                        }
                     }
                 }
             }
@@ -141,6 +184,13 @@ struct TripDetailView: View {
             if let message = calendarExportMessage {
                 Text(message)
             }
+        }
+        .sheet(isPresented: $showingCloudSharing) {
+            CloudSharingView(
+                trip: trip,
+                persistence: PersistenceController.shared,
+                sharingService: sharingService
+            )
         }
         .sheet(isPresented: $showingEditTrip) {
             EditTripSheet(trip: trip)
@@ -171,14 +221,14 @@ struct TripDetailView: View {
             Button("Save") {
                 if let day = dayForNotesEdit {
                     day.notes = editingDayNotes.trimmingCharacters(in: .whitespaces)
-                    try? modelContext.save()
+                    try? viewContext.save()
                     dayForNotesEdit = nil
                 }
             }
             Button("Clear", role: .destructive) {
                 if let day = dayForNotesEdit {
                     day.notes = ""
-                    try? modelContext.save()
+                    try? viewContext.save()
                     dayForNotesEdit = nil
                 }
             }
@@ -191,7 +241,7 @@ struct TripDetailView: View {
         .alert("Start Trip?", isPresented: $showingStartConfirmation) {
             Button("Start", role: .none) {
                 trip.status = .active
-                DataManager(modelContext: modelContext).updateTrip(trip)
+                DataManager(context: viewContext).updateTrip(trip)
             }
             Button("Cancel", role: .cancel) { }
         } message: {
@@ -200,7 +250,7 @@ struct TripDetailView: View {
         .alert("Complete Trip?", isPresented: $showingCompleteConfirmation) {
             Button("Complete", role: .none) {
                 trip.status = .completed
-                DataManager(modelContext: modelContext).updateTrip(trip)
+                DataManager(context: viewContext).updateTrip(trip)
             }
             Button("Cancel", role: .cancel) { }
         } message: {
@@ -212,14 +262,14 @@ struct TripDetailView: View {
         )) {
             Button("Delete", role: .destructive) {
                 if let stop = stopToDelete {
-                    DataManager(modelContext: modelContext).deleteStop(stop)
+                    DataManager(context: viewContext).deleteStop(stop)
                     stopToDelete = nil
                 }
             }
             Button("Cancel", role: .cancel) { stopToDelete = nil }
         } message: {
             if let stop = stopToDelete {
-                Text("Are you sure you want to delete \"\(stop.name)\"? This cannot be undone.")
+                Text("Are you sure you want to delete \"\(stop.wrappedName)\"? This cannot be undone.")
             }
         }
         .alert("Delete Booking?", isPresented: Binding(
@@ -228,15 +278,15 @@ struct TripDetailView: View {
         )) {
             Button("Delete", role: .destructive) {
                 if let booking = bookingToDelete {
-                    modelContext.delete(booking)
-                    try? modelContext.save()
+                    viewContext.delete(booking)
+                    try? viewContext.save()
                     bookingToDelete = nil
                 }
             }
             Button("Cancel", role: .cancel) { bookingToDelete = nil }
         } message: {
             if let booking = bookingToDelete {
-                Text("Are you sure you want to delete \"\(booking.title)\"?")
+                Text("Are you sure you want to delete \"\(booking.wrappedTitle)\"?")
             }
         }
     }
@@ -251,12 +301,12 @@ struct TripDetailView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "mappin.and.ellipse")
                                 .foregroundStyle(.red)
-                            Text(trip.destination)
+                            Text(trip.wrappedDestination)
                                 .font(.title3)
                                 .fontWeight(.medium)
                         }
                         if trip.hasCustomDates {
-                            Text("\(dateFormatter.string(from: trip.startDate)) - \(dateFormatter.string(from: trip.endDate))")
+                            Text("\(dateFormatter.string(from: trip.wrappedStartDate)) - \(dateFormatter.string(from: trip.wrappedEndDate))")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         } else {
@@ -275,10 +325,10 @@ struct TripDetailView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    Label("\(trip.days.count) day plans", systemImage: "list.bullet")
+                    Label("\(trip.daysArray.count) day plans", systemImage: "list.bullet")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    let stopCount = trip.days.reduce(0) { $0 + $1.stops.count }
+                    let stopCount = trip.daysArray.reduce(0) { $0 + $1.stopsArray.count }
                     Label("\(stopCount) stops", systemImage: "mappin")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -286,13 +336,13 @@ struct TripDetailView: View {
             }
             .padding(.vertical, 4)
 
-            if !trip.notes.isEmpty {
+            if !trip.wrappedNotes.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Notes")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .textCase(.uppercase)
-                    Text(trip.notes)
+                    Text(trip.wrappedNotes)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -334,7 +384,7 @@ struct TripDetailView: View {
     // MARK: - Bookings Section
 
     private var sortedBookings: [BookingEntity] {
-        trip.bookings.sorted { $0.sortOrder < $1.sortOrder }
+        trip.bookingsArray.sorted { $0.sortOrder < $1.sortOrder }
     }
 
     private var bookingsSection: some View {
@@ -360,32 +410,35 @@ struct TripDetailView: View {
                     }
                 }
                 .onDelete { offsets in
-                    if let index = offsets.first {
+                    if canEdit, let index = offsets.first {
                         bookingToDelete = sortedBookings[index]
                     }
                 }
+                .deleteDisabled(!canEdit)
             }
 
-            Button {
-                showingAddBooking = true
-            } label: {
-                Label("Add Booking", systemImage: "plus.circle")
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
-            }
+            if canEdit {
+                Button {
+                    showingAddBooking = true
+                } label: {
+                    Label("Add Booking", systemImage: "plus.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(.blue)
+                }
 
-            Button {
-                showingImportBooking = true
-            } label: {
-                Label("Import from Email", systemImage: "envelope.open")
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
+                Button {
+                    showingImportBooking = true
+                } label: {
+                    Label("Import from Email", systemImage: "envelope.open")
+                        .font(.subheadline)
+                        .foregroundStyle(.blue)
+                }
             }
         } header: {
             HStack {
                 Text("Flights & Hotels")
                 Spacer()
-                Text("\(trip.bookings.count)")
+                Text("\(trip.bookingsArray.count)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -402,7 +455,7 @@ struct TripDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(booking.title)
+                Text(booking.wrappedTitle)
                     .font(.subheadline)
                     .fontWeight(.medium)
                 bookingSubtitle(booking)
@@ -410,8 +463,8 @@ struct TripDetailView: View {
 
             Spacer()
 
-            if !booking.confirmationCode.isEmpty {
-                Text(booking.confirmationCode)
+            if !booking.wrappedConfirmationCode.isEmpty {
+                Text(booking.wrappedConfirmationCode)
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
             }
@@ -462,9 +515,9 @@ struct TripDetailView: View {
     private func deleteBookings(at offsets: IndexSet) {
         let bookings = sortedBookings
         for index in offsets {
-            modelContext.delete(bookings[index])
+            viewContext.delete(bookings[index])
         }
-        try? modelContext.save()
+        try? viewContext.save()
     }
 
     // MARK: - Location Header
@@ -508,37 +561,101 @@ struct TripDetailView: View {
 
     @ViewBuilder
     private func dayNotesRow(_ day: DayEntity) -> some View {
-        Button {
-            editingDayNotes = day.notes
-            dayForNotesEdit = day
-        } label: {
+        if canEdit {
+            Button {
+                editingDayNotes = day.wrappedNotes
+                dayForNotesEdit = day
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "pencil.line")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                    if day.wrappedNotes.isEmpty {
+                        Text("Add a description for this day...")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                            .italic()
+                    } else {
+                        Text(day.wrappedNotes)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .italic()
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+        } else if !day.wrappedNotes.isEmpty {
             HStack(spacing: 8) {
                 Image(systemName: "pencil.line")
                     .font(.caption)
-                    .foregroundStyle(.blue)
-                if day.notes.isEmpty {
-                    Text("Add a description for this day...")
-                        .font(.subheadline)
-                        .foregroundStyle(.tertiary)
-                        .italic()
-                } else {
-                    Text(day.notes)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .italic()
-                }
+                    .foregroundStyle(.secondary)
+                Text(day.wrappedNotes)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .italic()
             }
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Day Section
 
-    private func daySection(_ day: DayEntity) -> some View {
-        Section {
-            let sortedStops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
-            let locatedStops = sortedStops.filter { $0.latitude != 0 || $0.longitude != 0 }
+    @ViewBuilder
+    private func stopRow(stop: StopEntity, index: Int, sortedStops: [StopEntity], day: DayEntity) -> some View {
+        NavigationLink(destination: StopDetailView(stop: stop, canEdit: canEdit)) {
+            StopRowView(stop: stop)
+        }
+        .draggable((stop.id ?? UUID()).uuidString) {
+            Label(stop.wrappedName, systemImage: "mappin.circle.fill")
+                .padding(8)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .onAppear { draggingStopID = (stop.id ?? UUID()).uuidString }
+                .onDisappear {
+                    draggingStopID = nil
+                    dropTargetDayID = nil
+                }
+        }
+        .contextMenu {
+            if canEdit {
+                if sortedDays.count > 1 {
+                    Menu("Move to...") {
+                        ForEach(sortedDays.filter { $0.id != day.id }) { targetDay in
+                            Button {
+                                moveStopToDay(stop, targetDay: targetDay)
+                            } label: {
+                                Label("Day \(targetDay.dayNumber) — \(targetDay.formattedDate)", systemImage: "arrow.right")
+                            }
+                        }
+                    }
+                }
+                Button(role: .destructive) {
+                    stopToDelete = stop
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
 
+        // Show travel time between consecutive stops
+        if index < sortedStops.count - 1 {
+            let nextStop = sortedStops[index + 1]
+            let hasFrom = stop.latitude != 0 || stop.longitude != 0
+            let hasTo = nextStop.latitude != 0 || nextStop.longitude != 0
+            if hasFrom && hasTo {
+                TravelTimeRow(
+                    estimate: travelTimeService.estimate(from: stop.id ?? UUID(), to: nextStop.id ?? UUID())
+                )
+                .task {
+                    await travelTimeService.calculateTravelTime(from: stop, to: nextStop)
+                }
+            }
+        }
+    }
+
+    private func daySection(_ day: DayEntity) -> some View {
+        let sortedStops = day.stopsArray.sorted { $0.sortOrder < $1.sortOrder }
+        let locatedStops = sortedStops.filter { $0.latitude != 0 || $0.longitude != 0 }
+
+        return Section {
             dayNotesRow(day)
 
             // Daily distance/time summary
@@ -575,72 +692,33 @@ struct TripDetailView: View {
             }
 
             ForEach(Array(sortedStops.enumerated()), id: \.element.id) { index, stop in
-                NavigationLink(destination: StopDetailView(stop: stop)) {
-                    StopRowView(stop: stop)
-                }
-                .draggable(stop.id.uuidString) {
-                    Label(stop.name, systemImage: "mappin.circle.fill")
-                        .padding(8)
-                        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                        .onAppear { draggingStopID = stop.id.uuidString }
-                        .onDisappear {
-                            draggingStopID = nil
-                            dropTargetDayID = nil
-                        }
-                }
-                .contextMenu {
-                    if sortedDays.count > 1 {
-                        Menu("Move to...") {
-                            ForEach(sortedDays.filter { $0.id != day.id }) { targetDay in
-                                Button {
-                                    moveStopToDay(stop, targetDay: targetDay)
-                                } label: {
-                                    Label("Day \(targetDay.dayNumber) — \(targetDay.formattedDate)", systemImage: "arrow.right")
-                                }
-                            }
-                        }
-                    }
-                    Button(role: .destructive) {
-                        stopToDelete = stop
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-
-                // Show travel time between consecutive stops
-                if index < sortedStops.count - 1 {
-                    let nextStop = sortedStops[index + 1]
-                    let hasFrom = stop.latitude != 0 || stop.longitude != 0
-                    let hasTo = nextStop.latitude != 0 || nextStop.longitude != 0
-                    if hasFrom && hasTo {
-                        TravelTimeRow(
-                            estimate: travelTimeService.estimate(from: stop.id, to: nextStop.id)
-                        )
-                        .task {
-                            await travelTimeService.calculateTravelTime(from: stop, to: nextStop)
-                        }
-                    }
-                }
+                stopRow(stop: stop, index: index, sortedStops: sortedStops, day: day)
             }
             .onDelete { offsets in
-                let stops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
-                if let index = offsets.first {
-                    stopToDelete = stops[index]
+                if canEdit {
+                    let stops = day.stopsArray.sorted { $0.sortOrder < $1.sortOrder }
+                    if let index = offsets.first {
+                        stopToDelete = stops[index]
+                    }
                 }
             }
             .onMove { source, destination in
                 moveStops(in: day, from: source, to: destination)
             }
+            .deleteDisabled(!canEdit)
+            .moveDisabled(!canEdit)
 
-            Button {
-                selectedDayForStop = day
-            } label: {
-                Label("Add Stop", systemImage: "plus.circle")
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
+            if canEdit {
+                Button {
+                    selectedDayForStop = day
+                } label: {
+                    Label("Add Stop", systemImage: "plus.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(.blue)
+                }
+
+                aiSuggestRow(day: day)
             }
-
-            aiSuggestRow(day: day)
 
             openDayInMapsButton(day: day)
         } header: {
@@ -648,8 +726,8 @@ struct TripDetailView: View {
                 Text("Day \(day.dayNumber)")
                     .fontWeight(.semibold)
                 Spacer()
-                if !day.location.isEmpty && locationSegments.count <= 1 {
-                    Text(day.location)
+                if !day.wrappedLocation.isEmpty && locationSegments.count <= 1 {
+                    Text(day.wrappedLocation)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -659,10 +737,12 @@ struct TripDetailView: View {
             }
             .contentShape(Rectangle())
             .contextMenu {
-                Button {
-                    dayForLocationEdit = day
-                } label: {
-                    Label("Set Location", systemImage: "mappin.and.ellipse")
+                if canEdit {
+                    Button {
+                        dayForLocationEdit = day
+                    } label: {
+                        Label("Set Location", systemImage: "mappin.and.ellipse")
+                    }
                 }
             }
         }
@@ -705,7 +785,8 @@ struct TripDetailView: View {
     private func consecutiveEstimates(for stops: [StopEntity]) -> [TravelTimeService.TravelEstimate] {
         var results: [TravelTimeService.TravelEstimate] = []
         for i in 0..<(stops.count - 1) {
-            if let est = travelTimeService.estimate(from: stops[i].id, to: stops[i + 1].id) {
+            guard let fromID = stops[i].id, let toID = stops[i + 1].id else { continue }
+            if let est = travelTimeService.estimate(from: fromID, to: toID) {
                 results.append(est)
             }
         }
@@ -732,25 +813,25 @@ struct TripDetailView: View {
     // MARK: - Actions
 
     private func deleteStops(from stops: [StopEntity], at offsets: IndexSet) {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         for index in offsets {
             manager.deleteStop(stops[index])
         }
     }
 
     private func moveStops(in day: DayEntity, from source: IndexSet, to destination: Int) {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         manager.reorderStops(in: day, from: source, to: destination)
     }
 
     private func moveStopToDay(_ stop: StopEntity, targetDay: DayEntity) {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         manager.moveStop(stop, to: targetDay)
     }
 
     private func findStop(byID uuidString: String) -> StopEntity? {
         guard let uuid = UUID(uuidString: uuidString) else { return nil }
-        return sortedDays.flatMap(\.stops).first { $0.id == uuid }
+        return sortedDays.flatMap(\.stopsArray).first { $0.id == uuid }
     }
 
     // MARK: - Share
@@ -766,7 +847,7 @@ struct TripDetailView: View {
 
     private func shareTripPDF() {
         let data = TripPDFGenerator.generatePDF(for: trip)
-        ShareSheet.share(pdfData: data, filename: "\(trip.name) Itinerary.pdf")
+        ShareSheet.share(pdfData: data, filename: "\(trip.wrappedName) Itinerary.pdf")
     }
 
     private func shareTripText() {
@@ -779,11 +860,11 @@ struct TripDetailView: View {
     private func exportToCalendar() {
         isExportingCalendar = true
         let calendarDays = sortedDays.map { day in
-            let stopNames = day.stops.sorted { $0.sortOrder < $1.sortOrder }.map(\.name)
-            return (dayNumber: day.dayNumber, date: day.date, notes: day.notes, stopNames: stopNames)
+            let stopNames = day.stopsArray.sorted { $0.sortOrder < $1.sortOrder }.map(\.wrappedName)
+            return (dayNumber: Int(day.dayNumber), date: day.wrappedDate, notes: day.wrappedNotes, stopNames: stopNames)
         }
-        let tripName = trip.name
-        let destination = trip.destination
+        let tripName = trip.wrappedName
+        let destination = trip.wrappedDestination
 
         Task {
             let service = CalendarService()
@@ -856,7 +937,7 @@ struct TripDetailView: View {
     private func aiSuggestSheet(day: DayEntity) -> some View {
         #if canImport(FoundationModels)
         if #available(iOS 26, *) {
-            let dest = day.location.isEmpty ? trip.destination : day.location
+            let dest = day.wrappedLocation.isEmpty ? trip.wrappedDestination : day.wrappedLocation
             SuggestStopsSheet(
                 day: day,
                 destination: dest,
@@ -871,7 +952,7 @@ struct TripDetailView: View {
     // MARK: - Open Day in Apple Maps
 
     private func openDayInMapsButton(day: DayEntity) -> some View {
-        let locatedStops = day.stops.sorted { $0.sortOrder < $1.sortOrder }
+        let locatedStops = day.stopsArray.sorted { $0.sortOrder < $1.sortOrder }
             .filter { $0.latitude != 0 || $0.longitude != 0 }
         return Group {
             if locatedStops.count >= 2 {
@@ -891,7 +972,7 @@ struct TripDetailView: View {
         let mapItems = stops.map { stop -> MKMapItem in
             let placemark = MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude))
             let item = MKMapItem(placemark: placemark)
-            item.name = stop.name
+            item.name = stop.wrappedName
             return item
         }
         // Open with all stops as waypoints

@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+import CoreData
 
 struct ImportTripSheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let transfer: TripTransfer
@@ -83,9 +83,9 @@ struct ImportTripSheet: View {
 
     private func importTrip() {
         isImporting = true
-        let trip = TripShareService.importTrip(transfer, into: modelContext)
-        try? modelContext.save()
-        let tripID = trip.id
+        let trip = TripShareService.importTrip(transfer, into: viewContext)
+        try? viewContext.save()
+        let tripID = trip.id ?? UUID()
         dismiss()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             onImported?(tripID)

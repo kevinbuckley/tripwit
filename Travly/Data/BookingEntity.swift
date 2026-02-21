@@ -1,62 +1,62 @@
-import SwiftData
+import CoreData
 import Foundation
 
-/// Represents a flight, hotel, or other booking tied to a trip.
-@Model
-final class BookingEntity {
+@objc(BookingEntity)
+public class BookingEntity: NSManagedObject {
+    @NSManaged public var id: UUID?
+    @NSManaged public var typeRaw: String?
+    @NSManaged public var title: String?
+    @NSManaged public var confirmationCode: String?
+    @NSManaged public var notes: String?
+    @NSManaged public var sortOrder: Int32
+    @NSManaged public var airline: String?
+    @NSManaged public var flightNumber: String?
+    @NSManaged public var departureAirport: String?
+    @NSManaged public var arrivalAirport: String?
+    @NSManaged public var departureTime: Date?
+    @NSManaged public var arrivalTime: Date?
+    @NSManaged public var hotelName: String?
+    @NSManaged public var hotelAddress: String?
+    @NSManaged public var checkInDate: Date?
+    @NSManaged public var checkOutDate: Date?
+    @NSManaged public var trip: TripEntity?
+}
 
-    // MARK: Stored Properties
+extension BookingEntity: Identifiable {}
 
-    var id: UUID
-    var typeRaw: String  // "flight", "hotel", "car_rental", "other"
-    var title: String
-    var confirmationCode: String
-    var notes: String
-    var sortOrder: Int
-
-    // Flight-specific
-    var airline: String?
-    var flightNumber: String?
-    var departureAirport: String?
-    var arrivalAirport: String?
-    var departureTime: Date?
-    var arrivalTime: Date?
-
-    // Hotel-specific
-    var hotelName: String?
-    var hotelAddress: String?
-    var checkInDate: Date?
-    var checkOutDate: Date?
-
-    var trip: TripEntity?
-
-    // MARK: Computed Properties
+extension BookingEntity {
+    // MARK: - Safe accessors (non-optional wrappers)
+    var wrappedTypeRaw: String { typeRaw ?? "other" }
+    var wrappedTitle: String { title ?? "" }
+    var wrappedConfirmationCode: String { confirmationCode ?? "" }
+    var wrappedNotes: String { notes ?? "" }
 
     var bookingType: BookingType {
-        get { BookingType(rawValue: typeRaw) ?? .other }
+        get { BookingType(rawValue: wrappedTypeRaw) ?? .other }
         set { typeRaw = newValue.rawValue }
     }
 
-    // MARK: Initializer
-
-    init(
+    @discardableResult
+    static func create(
+        in context: NSManagedObjectContext,
         type: BookingType,
         title: String,
         confirmationCode: String = "",
         notes: String = "",
         sortOrder: Int = 0
-    ) {
-        self.id = UUID()
-        self.typeRaw = type.rawValue
-        self.title = title
-        self.confirmationCode = confirmationCode
-        self.notes = notes
-        self.sortOrder = sortOrder
+    ) -> BookingEntity {
+        let booking = BookingEntity(context: context)
+        booking.id = UUID()
+        booking.typeRaw = type.rawValue
+        booking.title = title
+        booking.confirmationCode = confirmationCode
+        booking.notes = notes
+        booking.sortOrder = Int32(sortOrder)
+        return booking
     }
 }
 
 // MARK: - BookingType
-
 enum BookingType: String, Codable, CaseIterable {
     case flight
     case hotel

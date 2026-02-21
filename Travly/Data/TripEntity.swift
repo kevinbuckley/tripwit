@@ -1,85 +1,94 @@
-import SwiftData
+import CoreData
 import Foundation
 import TripCore
 
-@Model
-final class TripEntity {
+@objc(TripEntity)
+public class TripEntity: NSManagedObject {
+    @NSManaged public var id: UUID?
+    @NSManaged public var name: String?
+    @NSManaged public var destination: String?
+    @NSManaged public var startDate: Date?
+    @NSManaged public var endDate: Date?
+    @NSManaged public var statusRaw: String?
+    @NSManaged public var coverPhotoAssetId: String?
+    @NSManaged public var notes: String?
+    @NSManaged public var createdAt: Date?
+    @NSManaged public var updatedAt: Date?
+    @NSManaged public var hasCustomDates: Bool
+    @NSManaged public var budgetAmount: Double
+    @NSManaged public var budgetCurrencyCode: String?
+    @NSManaged public var days: NSSet?
+    @NSManaged public var bookings: NSSet?
+    @NSManaged public var lists: NSSet?
+    @NSManaged public var expenses: NSSet?
+}
 
-    // MARK: Stored Properties
+extension TripEntity: Identifiable {}
 
-    var id: UUID
-    var name: String
-    var destination: String
-    var startDate: Date
-    var endDate: Date
-    var statusRaw: String
-    var coverPhotoAssetId: String?
-    var notes: String
-    var createdAt: Date
-    var updatedAt: Date
-
-    @Relationship(deleteRule: .cascade, inverse: \DayEntity.trip)
-    var days: [DayEntity]
-
-    @Relationship(deleteRule: .cascade, inverse: \BookingEntity.trip)
-    var bookings: [BookingEntity]
-
-    @Relationship(deleteRule: .cascade, inverse: \TripListEntity.trip)
-    var lists: [TripListEntity]
-
-    @Relationship(deleteRule: .cascade, inverse: \ExpenseEntity.trip)
-    var expenses: [ExpenseEntity]
-
-    var hasCustomDates: Bool
-    var budgetAmount: Double
-    var budgetCurrencyCode: String
-
-    // MARK: Computed Properties
+extension TripEntity {
+    // MARK: - Safe accessors (non-optional wrappers)
+    var wrappedName: String { name ?? "" }
+    var wrappedDestination: String { destination ?? "" }
+    var wrappedStartDate: Date { startDate ?? Date() }
+    var wrappedEndDate: Date { endDate ?? Date() }
+    var wrappedStatusRaw: String { statusRaw ?? "planning" }
+    var wrappedNotes: String { notes ?? "" }
+    var wrappedBudgetCurrencyCode: String { budgetCurrencyCode ?? "USD" }
+    var wrappedCreatedAt: Date { createdAt ?? Date() }
+    var wrappedUpdatedAt: Date { updatedAt ?? Date() }
 
     var status: TripStatus {
-        get { TripStatus(rawValue: statusRaw) ?? .planning }
+        get { TripStatus(rawValue: wrappedStatusRaw) ?? .planning }
         set { statusRaw = newValue.rawValue }
     }
 
-    /// The number of calendar days the trip spans (inclusive of both start and end date).
     var durationInDays: Int {
         let calendar = Calendar.current
-        let startOfStart = calendar.startOfDay(for: startDate)
-        let startOfEnd = calendar.startOfDay(for: endDate)
+        let startOfStart = calendar.startOfDay(for: wrappedStartDate)
+        let startOfEnd = calendar.startOfDay(for: wrappedEndDate)
         let components = calendar.dateComponents([.day], from: startOfStart, to: startOfEnd)
         return (components.day ?? 0) + 1
     }
 
-    /// Whether the trip is currently active based on today's date.
     var isActive: Bool {
         let now = Date()
         let calendar = Calendar.current
-        let startOfStart = calendar.startOfDay(for: startDate)
-        let endOfEnd = calendar.startOfDay(
-            for: calendar.date(byAdding: .day, value: 1, to: endDate) ?? endDate
-        )
+        let startOfStart = calendar.startOfDay(for: wrappedStartDate)
+        let endOfEnd = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: wrappedEndDate) ?? wrappedEndDate)
         return now >= startOfStart && now < endOfEnd
     }
 
-    /// Whether the trip end date is in the past.
     var isPast: Bool {
         let calendar = Calendar.current
-        let endOfEnd = calendar.startOfDay(
-            for: calendar.date(byAdding: .day, value: 1, to: endDate) ?? endDate
-        )
+        let endOfEnd = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: wrappedEndDate) ?? wrappedEndDate)
         return Date() >= endOfEnd
     }
 
-    /// Whether the trip start date is in the future.
     var isFuture: Bool {
         let calendar = Calendar.current
-        let startOfStart = calendar.startOfDay(for: startDate)
+        let startOfStart = calendar.startOfDay(for: wrappedStartDate)
         return Date() < startOfStart
     }
 
-    // MARK: Initializer
+    var daysArray: [DayEntity] {
+        (days as? Set<DayEntity>)?.sorted { $0.dayNumber < $1.dayNumber } ?? []
+    }
 
-    init(
+    var bookingsArray: [BookingEntity] {
+        (bookings as? Set<BookingEntity>)?.sorted { $0.sortOrder < $1.sortOrder } ?? []
+    }
+
+    var listsArray: [TripListEntity] {
+        (lists as? Set<TripListEntity>)?.sorted { $0.sortOrder < $1.sortOrder } ?? []
+    }
+
+    var expensesArray: [ExpenseEntity] {
+        (expenses as? Set<ExpenseEntity>)?.sorted { $0.sortOrder < $1.sortOrder } ?? []
+    }
+
+    @discardableResult
+    static func create(
+        in context: NSManagedObjectContext,
         name: String,
         destination: String,
         startDate: Date,
@@ -87,23 +96,39 @@ final class TripEntity {
         status: TripStatus = .planning,
         coverPhotoAssetId: String? = nil,
         notes: String = ""
-    ) {
-        self.id = UUID()
-        self.name = name
-        self.destination = destination
-        self.startDate = startDate
-        self.endDate = endDate
-        self.statusRaw = status.rawValue
-        self.coverPhotoAssetId = coverPhotoAssetId
-        self.notes = notes
-        self.createdAt = Date()
-        self.updatedAt = Date()
-        self.days = []
-        self.bookings = []
-        self.lists = []
-        self.expenses = []
-        self.hasCustomDates = true
-        self.budgetAmount = 0
-        self.budgetCurrencyCode = "USD"
+    ) -> TripEntity {
+        let trip = TripEntity(context: context)
+        trip.id = UUID()
+        trip.name = name
+        trip.destination = destination
+        trip.startDate = startDate
+        trip.endDate = endDate
+        trip.statusRaw = status.rawValue
+        trip.coverPhotoAssetId = coverPhotoAssetId
+        trip.notes = notes
+        trip.createdAt = Date()
+        trip.updatedAt = Date()
+        trip.hasCustomDates = true
+        trip.budgetAmount = 0
+        trip.budgetCurrencyCode = "USD"
+        return trip
     }
+
+    // NSSet mutators for relationships
+    @objc(addDaysObject:)
+    @NSManaged public func addToDays(_ value: DayEntity)
+    @objc(removeDaysObject:)
+    @NSManaged public func removeFromDays(_ value: DayEntity)
+    @objc(addBookingsObject:)
+    @NSManaged public func addToBookings(_ value: BookingEntity)
+    @objc(removeBookingsObject:)
+    @NSManaged public func removeFromBookings(_ value: BookingEntity)
+    @objc(addListsObject:)
+    @NSManaged public func addToLists(_ value: TripListEntity)
+    @objc(removeListsObject:)
+    @NSManaged public func removeFromLists(_ value: TripListEntity)
+    @objc(addExpensesObject:)
+    @NSManaged public func addToExpenses(_ value: ExpenseEntity)
+    @objc(removeExpensesObject:)
+    @NSManaged public func removeFromExpenses(_ value: ExpenseEntity)
 }

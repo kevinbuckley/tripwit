@@ -12,7 +12,7 @@ struct StopPhotosView: View {
 
     private var allStopsInTrip: [StopEntity] {
         guard let day = stop.day, let trip = day.trip else { return [] }
-        return trip.days.flatMap(\.stops)
+        return trip.daysArray.flatMap(\.stopsArray)
     }
 
     private var tripStartDate: Date {

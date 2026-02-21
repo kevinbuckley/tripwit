@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+import CoreData
 import MapKit
 import TripCore
 
@@ -268,7 +268,7 @@ struct ItineraryTextParser {
 
 struct PasteItinerarySheet: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let trip: TripEntity
@@ -292,7 +292,7 @@ struct PasteItinerarySheet: View {
     }
 
     private var sortedDays: [DayEntity] {
-        trip.days.sorted { $0.dayNumber < $1.dayNumber }
+        trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
     }
 
     private var hasAI: Bool {
@@ -583,7 +583,7 @@ struct PasteItinerarySheet: View {
         HStack {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundColor(.green)
-            Text("\(addedCount) stop\(addedCount == 1 ? "" : "s") added to \(trip.name)")
+            Text("\(addedCount) stop\(addedCount == 1 ? "" : "s") added to \(trip.wrappedName)")
                 .font(.subheadline)
                 .fontWeight(.medium)
             if geocodingInProgress {
@@ -641,7 +641,7 @@ struct PasteItinerarySheet: View {
             Task {
                 await planner.parseItinerary(
                     text: inputText,
-                    destination: trip.destination,
+                    destination: trip.wrappedDestination,
                     totalDays: trip.durationInDays
                 )
                 if let parsed = planner.parsedItinerary {
@@ -699,7 +699,7 @@ struct PasteItinerarySheet: View {
     }
 
     private func addSelectedStops() {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         var count = 0
         var addedStopEntities: [(StopEntity, String)] = []
 
@@ -720,7 +720,7 @@ struct PasteItinerarySheet: View {
                     category: parsedStop.category,
                     notes: parsedStop.note
                 )
-                let geocodeDest = dayEntity.location.isEmpty ? trip.destination : dayEntity.location
+                let geocodeDest = dayEntity.wrappedLocation.isEmpty ? trip.wrappedDestination : dayEntity.wrappedLocation
                 addedStopEntities.append((stop, geocodeDest))
                 count += 1
             }
@@ -748,14 +748,14 @@ struct PasteItinerarySheet: View {
     private func geocodeStops(_ stops: [(StopEntity, String)]) async {
         let geocoder = CLGeocoder()
         for (stop, destination) in stops {
-            let query = "\(stop.name), \(destination)"
+            let query = "\(stop.wrappedName), \(destination)"
             do {
                 let placemarks = try await geocoder.geocodeAddressString(query)
                 if let location = placemarks.first?.location {
                     await MainActor.run {
                         stop.latitude = location.coordinate.latitude
                         stop.longitude = location.coordinate.longitude
-                        try? modelContext.save()
+                        try? viewContext.save()
                     }
                 }
             } catch {

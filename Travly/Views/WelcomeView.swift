@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+import CoreData
 
 struct WelcomeView: View {
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Binding var hasCompletedOnboarding: Bool
     @State private var showingAddTrip = false
 
@@ -68,8 +68,8 @@ struct WelcomeView: View {
             // When AddTripSheet is dismissed (not cancelled), transition to main app
             if !isShowing {
                 // Check if a trip was actually created
-                let descriptor = FetchDescriptor<TripEntity>()
-                let count = (try? modelContext.fetchCount(descriptor)) ?? 0
+                let request: NSFetchRequest<TripEntity> = TripEntity.fetchRequest() as! NSFetchRequest<TripEntity>
+                let count = (try? viewContext.count(for: request)) ?? 0
                 if count > 0 {
                     withAnimation {
                         hasCompletedOnboarding = true
@@ -80,7 +80,7 @@ struct WelcomeView: View {
     }
 
     private func loadExamples() {
-        let manager = DataManager(modelContext: modelContext)
+        let manager = DataManager(context: viewContext)
         manager.loadSampleDataIfEmpty()
         withAnimation {
             hasCompletedOnboarding = true

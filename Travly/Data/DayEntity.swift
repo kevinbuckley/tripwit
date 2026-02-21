@@ -1,44 +1,61 @@
-import SwiftData
+import CoreData
 import Foundation
 
-@Model
-final class DayEntity {
+@objc(DayEntity)
+public class DayEntity: NSManagedObject {
+    @NSManaged public var id: UUID?
+    @NSManaged public var date: Date?
+    @NSManaged public var dayNumber: Int32
+    @NSManaged public var notes: String?
+    @NSManaged public var location: String?
+    @NSManaged public var locationLatitude: Double
+    @NSManaged public var locationLongitude: Double
+    @NSManaged public var trip: TripEntity?
+    @NSManaged public var stops: NSSet?
+}
 
-    // MARK: Stored Properties
+extension DayEntity: Identifiable {}
 
-    var id: UUID
-    var date: Date
-    var dayNumber: Int
-    var notes: String
-    var location: String
-    var locationLatitude: Double
-    var locationLongitude: Double
+extension DayEntity {
+    // MARK: - Safe accessors (non-optional wrappers)
+    var wrappedDate: Date { date ?? Date() }
+    var wrappedNotes: String { notes ?? "" }
+    var wrappedLocation: String { location ?? "" }
 
-    var trip: TripEntity?
-
-    @Relationship(deleteRule: .cascade, inverse: \StopEntity.day)
-    var stops: [StopEntity]
-
-    // MARK: Computed Properties
-
-    /// A human-readable formatted date string (e.g. "Feb 14, 2026").
     var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        return formatter.string(from: date)
+        return formatter.string(from: wrappedDate)
     }
 
-    // MARK: Initializer
-
-    init(date: Date, dayNumber: Int, notes: String = "", location: String = "", locationLatitude: Double = 0, locationLongitude: Double = 0) {
-        self.id = UUID()
-        self.date = date
-        self.dayNumber = dayNumber
-        self.notes = notes
-        self.location = location
-        self.locationLatitude = locationLatitude
-        self.locationLongitude = locationLongitude
-        self.stops = []
+    var stopsArray: [StopEntity] {
+        (stops as? Set<StopEntity>)?.sorted { $0.sortOrder < $1.sortOrder } ?? []
     }
+
+    @discardableResult
+    static func create(
+        in context: NSManagedObjectContext,
+        date: Date,
+        dayNumber: Int,
+        notes: String = "",
+        location: String = "",
+        locationLatitude: Double = 0,
+        locationLongitude: Double = 0
+    ) -> DayEntity {
+        let day = DayEntity(context: context)
+        day.id = UUID()
+        day.date = date
+        day.dayNumber = Int32(dayNumber)
+        day.notes = notes
+        day.location = location
+        day.locationLatitude = locationLatitude
+        day.locationLongitude = locationLongitude
+        return day
+    }
+
+    @objc(addStopsObject:)
+    @NSManaged public func addToStops(_ value: StopEntity)
+    @objc(removeStopsObject:)
+    @NSManaged public func removeFromStops(_ value: StopEntity)
 }

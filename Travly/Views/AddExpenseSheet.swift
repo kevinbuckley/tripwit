@@ -1,8 +1,8 @@
 import SwiftUI
-import SwiftData
+import CoreData
 
 struct AddExpenseSheet: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
     let trip: TripEntity
@@ -68,17 +68,17 @@ struct AddExpenseSheet: View {
     private var currencySymbol: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencyCode = trip.budgetCurrencyCode
+        formatter.currencyCode = trip.wrappedBudgetCurrencyCode
         return formatter.currencySymbol ?? "$"
     }
 
     private func loadExisting() {
         guard let expense = existingExpense else { return }
-        title = expense.title
+        title = expense.wrappedTitle
         amountText = String(format: "%.2f", expense.amount)
         category = expense.category
-        dateIncurred = expense.dateIncurred
-        notes = expense.notes
+        dateIncurred = expense.wrappedDateIncurred
+        notes = expense.wrappedNotes
     }
 
     private func save() {
@@ -90,9 +90,9 @@ struct AddExpenseSheet: View {
             expense.category = category
             expense.dateIncurred = dateIncurred
             expense.notes = notes.trimmingCharacters(in: .whitespaces)
-            try? modelContext.save()
+            try? viewContext.save()
         } else {
-            let manager = DataManager(modelContext: modelContext)
+            let manager = DataManager(context: viewContext)
             manager.addExpense(
                 to: trip,
                 title: title.trimmingCharacters(in: .whitespaces),
