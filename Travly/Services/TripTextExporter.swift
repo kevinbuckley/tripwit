@@ -68,7 +68,7 @@ struct TripTextExporter {
             lines.append("")
         }
 
-        lines.append("Shared from TravAI")
+        lines.append("Shared from Travly")
 
         return lines.joined(separator: "\n")
     }

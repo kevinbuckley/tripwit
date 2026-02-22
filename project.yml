@@ -1,4 +1,4 @@
-name: TravAI
+name: Travly
 options:
   bundleIdPrefix: com.kevinbuckley.travelplanner
   deploymentTarget:
@@ -8,15 +8,15 @@ packages:
   TripCore:
     path: Packages/TripCore
 targets:
-  TravAI:
+  Travly:
     type: application
     platform: iOS
     sources:
-      - TravAI
+      - Travly
     dependencies:
       - package: TripCore
     entitlements:
-      path: TravAI/TravAI.entitlements
+      path: Travly/Travly.entitlements
       properties:
         com.apple.developer.icloud-services:
           - CloudKit
@@ -35,21 +35,21 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         DEVELOPMENT_TEAM: A6VYGLF4DB
         CODE_SIGN_STYLE: Automatic
-        INFOPLIST_KEY_CFBundleDisplayName: "TravAI"
-        INFOPLIST_FILE: TravAI/Info.plist
-        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "TravAI uses your location to quickly add stops near you and track your trip."
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "TravAI matches your photos to trip stops based on location and time."
-        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "TravAI can add your trip days to your calendar so you can see your itinerary alongside other events."
+        INFOPLIST_KEY_CFBundleDisplayName: "Travly"
+        INFOPLIST_FILE: Travly/Info.plist
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Travly uses your location to quickly add stops near you and track your trip."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Travly matches your photos to trip stops based on location and time."
+        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Travly can add your trip days to your calendar so you can see your itinerary alongside other events."
         INFOPLIST_KEY_CFBundleShortVersionString: "1.2"
         MARKETING_VERSION: "1.2"
         CURRENT_PROJECT_VERSION: "54"
-  TravAITests:
+  TravlyTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - TravAITests
+      - TravlyTests
     dependencies:
-      - target: TravAI
+      - target: Travly
       - package: TripCore
     settings:
       base:

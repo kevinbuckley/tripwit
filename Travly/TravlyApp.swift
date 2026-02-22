@@ -6,7 +6,7 @@ import os.log
 private let appLog = Logger(subsystem: "com.kevinbuckley.travelplanner", category: "App")
 
 @main
-struct TravAIApp: App {
+struct TravlyApp: App {
 
     let persistence = PersistenceController.shared
     @State private var locationManager = LocationManager()
@@ -38,11 +38,11 @@ struct TravAIApp: App {
     private func handleIncomingURL(_ url: URL) {
         appLog.info("[URL] Received URL: \(url.absoluteString)")
 
-        if url.scheme == "travai" && url.host == "share" {
-            // travai://share?url=<encoded_share_url>
+        if url.scheme == "travly" && url.host == "share" {
+            // travly://share?url=<encoded_share_url>
             handleShareURL(url)
-        } else if url.pathExtension == "travai" {
-            // .travai file import
+        } else if url.pathExtension == "travly" {
+            // .travly file import
             pendingImportURL = url
         } else {
             appLog.warning("[URL] Unhandled URL: \(url.absoluteString)")
@@ -139,7 +139,7 @@ struct TravAIApp: App {
                         continuation.resume(returning: metadata)
                     } else {
                         continuation.resume(throwing: NSError(
-                            domain: "TravAI", code: -1,
+                            domain: "Travly", code: -1,
                             userInfo: [NSLocalizedDescriptionKey: "No metadata returned for share URL"]
                         ))
                     }

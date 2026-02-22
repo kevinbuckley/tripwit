@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - Trip Transfer (Codable serialization for .travai file sharing)
+// MARK: - Trip Transfer (Codable serialization for .travly file sharing)
 
 struct TripTransfer: Codable {
     static let currentSchemaVersion = 1

@@ -1,7 +1,7 @@
-# TravAI — App Store Metadata
+# Travly — App Store Metadata
 
 ## App Name
-TravAI
+Travly
 
 ## Subtitle (30 characters max)
 Plan trips, track every stop
@@ -12,10 +12,10 @@ Secondary: Productivity
 
 ## Description (4000 characters max)
 
-TravAI is a simple, powerful travel planner that helps you organize every detail of your trip — from flights and hotels to day-by-day itineraries with every stop along the way.
+Travly is a simple, powerful travel planner that helps you organize every detail of your trip — from flights and hotels to day-by-day itineraries with every stop along the way.
 
 **Plan Your Trips**
-Create trips with destinations and dates. TravAI automatically generates a day-by-day schedule you can fill with stops — restaurants, attractions, activities, and more.
+Create trips with destinations and dates. Travly automatically generates a day-by-day schedule you can fill with stops — restaurants, attractions, activities, and more.
 
 **Organize Every Stop**
 Add stops to each day with arrival and departure times, notes, and categories. Search for places or tap "I'm Here" to instantly log your current location. See all your stops on an interactive map.
@@ -30,7 +30,7 @@ See the weather forecast for your destination right inside your trip. Plan aroun
 View estimated driving and walking times between consecutive stops so you know exactly how long it takes to get from place to place.
 
 **Photo Matching**
-TravAI can match photos from your library to trip stops based on location and time — see your memories right alongside your itinerary.
+Travly can match photos from your library to trip stops based on location and time — see your memories right alongside your itinerary.
 
 **Share Your Itinerary**
 Export any trip as a clean, detailed PDF to share with travel companions via Messages, email, AirDrop, or any other method.
@@ -42,16 +42,16 @@ All your data stays on your device. No accounts, no tracking, no ads. Your trips
 travel,planner,trip,itinerary,vacation,flight,hotel,booking,map,weather
 
 ## What's New (Version 1.0)
-Welcome to TravAI! Plan trips, organize day-by-day itineraries, track bookings, check weather forecasts, and share your plans as a PDF.
+Welcome to Travly! Plan trips, organize day-by-day itineraries, track bookings, check weather forecasts, and share your plans as a PDF.
 
 ## Privacy Policy URL
-https://kevinbuckley.github.io/travai/privacy.html
+https://kevinbuckley.github.io/travly/privacy.html
 
 ## Support URL
-https://kevinbuckley.github.io/travai/support.html
+https://kevinbuckley.github.io/travly/support.html
 
 ## Marketing URL (optional)
-https://kevinbuckley.github.io/travai/
+https://kevinbuckley.github.io/travly/
 
 ## Copyright
 2026 Kevin Buckley

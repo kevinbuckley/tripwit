@@ -1,4 +1,4 @@
-# TravAI App Store Screenshot Prompts
+# Travly App Store Screenshot Prompts
 
 ## How to Use
 
@@ -20,7 +20,7 @@
 
 ### Prompt:
 ```
-I'm uploading a screenshot from my iOS travel planning app "TravAI". Create a stunning, polished App Store promotional screenshot at exactly 1290x2796 pixels.
+I'm uploading a screenshot from my iOS travel planning app "Travly". Create a stunning, polished App Store promotional screenshot at exactly 1290x2796 pixels.
 
 Design specifications:
 - Place the phone screenshot inside a realistic iPhone 15 Pro device frame (titanium finish), slightly angled 5-8 degrees to the right for depth
@@ -42,7 +42,7 @@ The overall vibe should feel premium, aspirational, and travel-inspired — like
 
 ### Prompt:
 ```
-I'm uploading a screenshot from my iOS travel planning app "TravAI". Create a stunning, polished App Store promotional screenshot at exactly 1290x2796 pixels.
+I'm uploading a screenshot from my iOS travel planning app "Travly". Create a stunning, polished App Store promotional screenshot at exactly 1290x2796 pixels.
 
 Design specifications:
 - Place the phone screenshot inside a realistic iPhone 15 Pro device frame (titanium finish), slightly angled 5-8 degrees to the left for variety
@@ -64,7 +64,7 @@ Premium, wanderlust aesthetic — the feeling of adventure and discovery.
 
 ### Prompt:
 ```
-I'm uploading a screenshot from my iOS travel planning app "TravAI". Create a stunning, polished App Store promotional screenshot at exactly 1290x2796 pixels.
+I'm uploading a screenshot from my iOS travel planning app "Travly". Create a stunning, polished App Store promotional screenshot at exactly 1290x2796 pixels.
 
 Design specifications:
 - Place the phone screenshot inside a realistic iPhone 15 Pro device frame (titanium finish), straight-on with very slight 2-3 degree angle
@@ -86,7 +86,7 @@ Warm, inviting, aspirational — like curating your perfect trip.
 
 ### Prompt:
 ```
-I'm uploading a screenshot from my iOS travel planning app "TravAI". Create a stunning, polished App Store promotional screenshot at exactly 1290x2796 pixels.
+I'm uploading a screenshot from my iOS travel planning app "Travly". Create a stunning, polished App Store promotional screenshot at exactly 1290x2796 pixels.
 
 Design specifications:
 - Place the phone screenshot inside a realistic iPhone 15 Pro device frame (titanium finish), slightly angled 5 degrees to the right
@@ -107,7 +107,7 @@ Sophisticated and organized — the feeling of having everything under control.
 
 ### Prompt (no image upload):
 ```
-Create a stunning App Store promotional screenshot at exactly 1290x2796 pixels for an iOS travel planning app called "TravAI".
+Create a stunning App Store promotional screenshot at exactly 1290x2796 pixels for an iOS travel planning app called "Travly".
 
 This screenshot showcases the NEW collaboration feature — real-time trip sharing via iCloud.
 
@@ -132,14 +132,14 @@ The vibe should feel connected, social, modern — the magic of collaborative pl
 
 ### Prompt (no image upload):
 ```
-Create a stunning App Store promotional screenshot at exactly 1290x2796 pixels for an iOS travel planning app called "TravAI".
+Create a stunning App Store promotional screenshot at exactly 1290x2796 pixels for an iOS travel planning app called "Travly".
 
 This is a feature highlights screenshot — no phone frame needed.
 
 Design specifications:
 - Background: Deep navy to midnight blue gradient (#0F172A to #1E293B)
 - Centered app icon at the top (a simple stylized airplane/compass in blue and white — keep it generic/suggestive)
-- Below the icon, the app name "TravAI" in large white text
+- Below the icon, the app name "Travly" in large white text
 - Below that, 4-5 feature bullet points in a clean vertical layout, each with a small SF Symbols-style icon:
   • ✈️ "Smart Trip Planning" — organize every day, stop, and booking
   • 🗺️ "Interactive Maps" — see your route with all stops plotted

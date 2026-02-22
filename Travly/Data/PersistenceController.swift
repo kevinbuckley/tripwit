@@ -9,7 +9,7 @@ final class PersistenceController: ObservableObject {
     let cloudContainer: CKContainer
 
     private static let containerIdentifier = "iCloud.com.kevinbuckley.travelplanner"
-    private static let appTransactionAuthorName = "TravAI"
+    private static let appTransactionAuthorName = "Travly"
 
     /// Token for tracking which persistent history changes have been consumed.
     private var lastHistoryToken: NSPersistentHistoryToken? {
@@ -33,7 +33,7 @@ final class PersistenceController: ObservableObject {
     private var sharedStoreURL: URL?
 
     init(inMemory: Bool = false) {
-        container = NSPersistentCloudKitContainer(name: "TravAI")
+        container = NSPersistentCloudKitContainer(name: "Travly")
         cloudContainer = CKContainer(identifier: Self.containerIdentifier)
 
         if inMemory {
