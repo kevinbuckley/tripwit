@@ -139,7 +139,7 @@ struct SharingDiagnosticView: View {
             ) {
                 log("TEST A1: Plain text BEFORE CKShare creation")
                 log("  hasExistingShare: \(sharingService.existingShare(for: trip) != nil)")
-                presentActivity(items: ["Hello from Travly — pre-share test!" as NSString])
+                presentActivity(items: ["Hello from TripWit — pre-share test!" as NSString])
             }
 
             // --- PHASE B: Create the CKShare ---
@@ -176,7 +176,7 @@ struct SharingDiagnosticView: View {
             ) {
                 log("TEST C1: Plain text AFTER CKShare creation")
                 log("  hasExistingShare: \(sharingService.existingShare(for: trip) != nil)")
-                presentActivity(items: ["Hello from Travly — post-share test!" as NSString])
+                presentActivity(items: ["Hello from TripWit — post-share test!" as NSString])
             }
 
             // C2. Real iCloud URL as string
@@ -195,18 +195,18 @@ struct SharingDiagnosticView: View {
                 presentActivity(items: [text as NSString])
             }
 
-            // C3. Wrapped travly:// with real URL
+            // C3. Wrapped tripwit:// with real URL
             DiagButton(
                 number: 5,
-                title: "Wrapped travly:// (real URL)",
-                subtitle: "travly://share?url=<real_encoded_url> as string",
+                title: "Wrapped tripwit:// (real URL)",
+                subtitle: "tripwit://share?url=<real_encoded_url> as string",
                 color: .orange,
                 requiresShare: true,
                 shareReady: shareURL != nil
             ) {
                 guard !wrappedURLString.isEmpty else { return }
                 let text = "Join my trip!\n\(wrappedURLString)"
-                log("TEST C3: Wrapped travly:// with real URL as NSString")
+                log("TEST C3: Wrapped tripwit:// with real URL as NSString")
                 log("  payload: \"\(text)\"")
                 presentActivity(items: [text as NSString])
             }
@@ -354,7 +354,7 @@ struct SharingDiagnosticView: View {
         let encoded = shareURL.absoluteString.addingPercentEncoding(
             withAllowedCharacters: .urlQueryAllowed
         ) ?? shareURL.absoluteString
-        return "travly://share?url=\(encoded)"
+        return "tripwit://share?url=\(encoded)"
     }
 
     @MainActor

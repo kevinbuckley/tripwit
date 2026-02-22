@@ -1,4 +1,4 @@
-# Travly
+# TripWit
 
 A privacy-first, AI-native iOS travel planner that spans the full trip lifecycle: **Plan > Experience > Remember**.
 
@@ -18,11 +18,11 @@ Plan dozens of future trips with detailed itineraries, use the app while traveli
 
 ## Market Position
 
-Travly is the **Apple Notes of travel planning** -- private, fast, works offline, deeply integrated with the Apple ecosystem, and surprisingly powerful despite looking simple.
+TripWit is the **Apple Notes of travel planning** -- private, fast, works offline, deeply integrated with the Apple ecosystem, and surprisingly powerful despite looking simple.
 
-### What makes Travly different
+### What makes TripWit different
 
-| | Travly | Wanderlog | TripIt | Lambus |
+| | TripWit | Wanderlog | TripIt | Lambus |
 |---|---|---|---|---|
 | **AI engine** | On-device (Apple Intelligence) | Cloud-based (Pro) | Limited | Limited |
 | **Privacy** | 100% on-device, zero cloud AI | Cloud processing | Cloud processing | Cloud processing |
@@ -147,18 +147,18 @@ Solo travelers and couples who want powerful planning tools without subscription
 ## Project Structure
 
 ```
-Travly/
+TripWit/
 ├── Packages/TripCore/          <- Pure Swift package (models, services, tests)
 │   ├── Sources/TripCore/
 │   │   ├── Models/             <- Trip, Day, Stop, MatchedPhoto, Coordinate
 │   │   └── Services/           <- PhotoMatcher, GeoUtils, ItineraryEngine
 │   └── Tests/TripCoreTests/    <- Unit tests
-├── Travly/                     <- SwiftUI app
+├── TripWit/                     <- SwiftUI app
 │   ├── Data/                   <- SwiftData entities + DataManager
 │   ├── Services/               <- CalendarService, WeatherService, TravelTime, PDF, TextExporter
 │   ├── Views/                  <- All screens
 │   └── Views/Components/       <- Reusable UI components
-├── TravlyTests/                <- App-level tests
+├── TripWitTests/                <- App-level tests
 └── Scripts/                    <- CLI validation scripts
 ```
 
@@ -174,7 +174,7 @@ Requires Xcode 26+ and macOS 15+.
 ./Scripts/test-logic.sh
 
 # Build for simulator
-xcodebuild build -scheme Travly \
+xcodebuild build -scheme TripWit \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
 
 # Regenerate Xcode project after changing project.yml

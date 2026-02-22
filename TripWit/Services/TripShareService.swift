@@ -4,7 +4,7 @@ import TripCore
 
 struct TripShareService {
 
-    // MARK: - Export (Entity → .travly file)
+    // MARK: - Export (Entity → .tripwit file)
 
     static func exportTrip(_ trip: TripEntity) throws -> URL {
         let transfer = TripTransfer(
@@ -100,7 +100,7 @@ struct TripShareService {
         let sanitized = trip.wrappedName
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .joined(separator: "_")
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(sanitized).travly")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(sanitized).tripwit")
         try data.write(to: url)
         return url
     }

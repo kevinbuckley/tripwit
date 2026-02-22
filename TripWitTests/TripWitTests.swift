@@ -2,7 +2,7 @@ import Testing
 import Foundation
 import TripCore
 
-@testable import Travly
+@testable import TripWit
 
 @Test func tripEntityCanBeCreated() {
     let trip = TripEntity(

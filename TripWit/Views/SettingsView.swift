@@ -25,7 +25,7 @@ struct SettingsView: View {
                         .font(.system(size: 44))
                         .foregroundStyle(.blue)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Travly")
+                        Text("TripWit")
                             .font(.headline)
                         Text(appVersion)
                             .font(.caption)
@@ -94,11 +94,11 @@ struct SettingsView: View {
 
             // About
             Section {
-                Link(destination: URL(string: "https://kevinbuckley.github.io/travly/support.html")!) {
+                Link(destination: URL(string: "https://kevinbuckley.github.io/tripwit/support.html")!) {
                     Label("Help & Support", systemImage: "questionmark.circle")
                 }
 
-                Link(destination: URL(string: "https://kevinbuckley.github.io/travly/privacy.html")!) {
+                Link(destination: URL(string: "https://kevinbuckley.github.io/tripwit/privacy.html")!) {
                     Label("Privacy Policy", systemImage: "hand.raised")
                 }
             } header: {

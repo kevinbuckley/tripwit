@@ -86,7 +86,7 @@ struct TripPDFGenerator {
                 ctx.cgContext.move(to: CGPoint(x: 48, y: fy - 6))
                 ctx.cgContext.addLine(to: CGPoint(x: pw - 48, y: fy - 6))
                 ctx.cgContext.strokePath()
-                draw("Travly  •  \(trip.wrappedName)", at: CGPoint(x: 48, y: fy), font: .systemFont(ofSize: 8, weight: .medium), color: lightGray)
+                draw("TripWit  •  \(trip.wrappedName)", at: CGPoint(x: 48, y: fy), font: .systemFont(ofSize: 8, weight: .medium), color: lightGray)
             }
 
             func fillRect(_ rect: CGRect, color: UIColor, radius: CGFloat = 0) {

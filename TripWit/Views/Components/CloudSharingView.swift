@@ -56,7 +56,7 @@ enum CloudSharingPresenter {
 
     // MARK: - New Share: Pre-create then show custom share sheet
 
-    /// Pre-creates the CKShare, wraps the URL in the travly:// scheme,
+    /// Pre-creates the CKShare, wraps the URL in the tripwit:// scheme,
     /// then shows a custom UIAlertController action sheet with:
     ///   • Message  — opens MFMessageComposeViewController directly (no spinner)
     ///   • Copy Link — copies wrapped URL to clipboard
@@ -112,7 +112,7 @@ enum CloudSharingPresenter {
 
                     guard let shareURL = share.url else {
                         loadingAlert.dismiss(animated: true) {
-                            showError(NSError(domain: "Travly", code: -2,
+                            showError(NSError(domain: "TripWit", code: -2,
                                 userInfo: [NSLocalizedDescriptionKey: "Share created but has no link. Please try again."]),
                                 from: presenter)
                         }
@@ -121,12 +121,12 @@ enum CloudSharingPresenter {
 
                     shareLog.info("[SHARE] Share URL: \(shareURL.absoluteString)")
 
-                    // Wrap in travly:// scheme — prevents Messages from detecting
+                    // Wrap in tripwit:// scheme — prevents Messages from detecting
                     // it as a CloudKit collaboration URL (which causes the spinner)
                     let encoded = shareURL.absoluteString
                         .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? shareURL.absoluteString
-                    let wrappedURLString = "travly://share?url=\(encoded)"
-                    let shareText = "Join my trip \"\(tripName)\" on Travly!\n\(wrappedURLString)"
+                    let wrappedURLString = "tripwit://share?url=\(encoded)"
+                    let shareText = "Join my trip \"\(tripName)\" on TripWit!\n\(wrappedURLString)"
 
                     loadingAlert.dismiss(animated: true) {
                         presentCustomShareSheet(
@@ -149,7 +149,7 @@ enum CloudSharingPresenter {
             }
 
             loadingAlert.dismiss(animated: true) {
-                showError(lastError ?? NSError(domain: "Travly", code: -1,
+                showError(lastError ?? NSError(domain: "TripWit", code: -1,
                     userInfo: [NSLocalizedDescriptionKey: "Failed to create share. Please try again in a moment."]),
                     from: presenter)
             }
