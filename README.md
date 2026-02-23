@@ -4,21 +4,21 @@ A privacy-first, AI-native iOS travel planner that spans the full trip lifecycle
 
 **No ads. No tracking. No accounts. No subscriptions.** Your travel data stays on your devices, synced privately through iCloud.
 
-Plan dozens of future trips with detailed itineraries, use the app while traveling to track your journey, and automatically match photos from your camera roll to locations using GPS metadata.
+Plan dozens of future trips with detailed itineraries, collaborate on trips with friends and family, use the app while traveling to track your journey, and automatically match photos from your camera roll to locations using GPS metadata.
 
 <p align="center">
-  <img src="Screenshots/6.7/screenshot_5.png" width="180" alt="Welcome screen" />
+  <img src="Screenshots/6.5/01_wishlist_1284x2778.png" width="180" alt="Wishlist" />
   &nbsp;&nbsp;
-  <img src="Screenshots/6.7/screenshot_1.png" width="180" alt="Trip list" />
+  <img src="Screenshots/6.5/02_trips_1284x2778.png" width="180" alt="Trip list" />
   &nbsp;&nbsp;
-  <img src="Screenshots/6.7/screenshot_2.png" width="180" alt="Trip detail with itinerary" />
+  <img src="Screenshots/6.5/03_details_1284x2778.png" width="180" alt="Trip detail with itinerary" />
   &nbsp;&nbsp;
-  <img src="Screenshots/6.7/screenshot_3.png" width="180" alt="Interactive map view" />
+  <img src="Screenshots/6.5/04_map_1284x2778.png" width="180" alt="Interactive map view" />
 </p>
 
 ## Market Position
 
-TripWit is the **Apple Notes of travel planning** -- private, fast, works offline, deeply integrated with the Apple ecosystem, and surprisingly powerful despite looking simple.
+TripWit is the **Apple Notes of travel planning** — private, fast, works offline, deeply integrated with the Apple ecosystem, and surprisingly powerful despite looking simple.
 
 ### What makes TripWit different
 
@@ -31,31 +31,33 @@ TripWit is the **Apple Notes of travel planning** -- private, fast, works offlin
 | **Account required** | No | Yes | Yes | Yes |
 | **Offline** | Full (local DB) | Basic free / Pro full | Full | Documents only |
 | **iCloud Sync** | Yes (automatic) | Cross-device sync | Cross-device sync | Cross-device sync |
+| **Collaboration** | Yes (iCloud sharing) | Pro only | Pro only | Yes |
 
 ### Unique advantages
 
-- **Zero data collection** -- no analytics, no telemetry, no ad SDKs, no third-party trackers
-- **No account required** -- open the app and start planning immediately
-- **On-device AI** via Apple Intelligence -- suggestions, vibe-based planning, itinerary parsing, nearby discovery, and place geocoding, all without sending data to the cloud
-- **Photo matching** -- automatically matches camera roll photos to trip stops using GPS and timestamps
+- **Zero data collection** — no analytics, no telemetry, no ad SDKs, no third-party trackers
+- **No account required** — open the app and start planning immediately
+- **On-device AI** via Apple Intelligence — suggestions, vibe-based planning, itinerary parsing, nearby discovery, and place geocoding, all without sending data to the cloud
+- **Real-time collaboration** — share trips with friends and family via iMessage, everyone can edit and changes sync instantly
+- **Photo matching** — automatically matches camera roll photos to trip stops using GPS and timestamps
 - **Weather forecasts** built into the day-by-day view
-- **Paste any itinerary** -- convert ChatGPT outputs, blog posts, or emails into structured days and stops
+- **Paste any itinerary** — convert ChatGPT outputs, blog posts, or emails into structured days and stops
 - **Rich PDF export** with cover page, bookings, budget breakdown, and full itinerary
-- **Calendar sync** -- export trip days to Apple Calendar with stop details
-- **Checklist to stop** -- convert checklist items directly into day stops
+- **Calendar sync** — export trip days to Apple Calendar with stop details
+- **Checklist to stop** — convert checklist items directly into day stops
 
 ### Security & Privacy
 
-- **All data stored locally** in SwiftData with optional iCloud sync -- never touches third-party servers
-- **No ad frameworks** -- zero AdMob, Meta SDK, or any advertising code in the binary
-- **No analytics SDKs** -- no Firebase, Mixpanel, Amplitude, or telemetry of any kind
-- **On-device AI only** -- Apple Intelligence runs locally, no prompts or data sent to cloud LLMs
-- **No account or sign-in** -- the app works fully without creating any account
-- **Minimal network calls** -- only Open-Meteo (weather) and Apple Maps (search) are contacted, both with no user-identifiable data
+- **All data stored locally** in Core Data with optional iCloud sync — never touches third-party servers
+- **No ad frameworks** — zero AdMob, Meta SDK, or any advertising code in the binary
+- **No analytics SDKs** — no Firebase, Mixpanel, Amplitude, or telemetry of any kind
+- **On-device AI only** — Apple Intelligence runs locally, no prompts or data sent to cloud LLMs
+- **No account or sign-in** — the app works fully without creating any account
+- **Minimal network calls** — only Open-Meteo (weather) and Apple Maps (search) are contacted, both with no user-identifiable data
 
 ### Target audience
 
-Solo travelers and couples who want powerful planning tools without subscriptions, accounts, or cloud dependency. Privacy-conscious users who prefer on-device intelligence over cloud AI.
+Solo travelers, couples, and groups who want powerful planning tools without subscriptions, accounts, or cloud dependency. Privacy-conscious users who prefer on-device intelligence over cloud AI.
 
 ## Features
 
@@ -67,8 +69,16 @@ Solo travelers and couples who want powerful planning tools without subscription
 - Start and complete trips with one tap
 - Budget tracking with currency support
 
+### Collaborative Sharing
+- Share trips with friends and family via iMessage
+- Real-time sync — everyone sees changes instantly
+- Shared trips appear in a dedicated "Shared with Me" section
+- Full edit access for collaborators
+- Import/export trips as `.tripwit` files to share with anyone
+
 ### Itinerary Planning
 - Add stops to each day with integrated Apple Maps place search
+- Region-aware search results biased toward your trip destination
 - Auto-fill address, phone, and website from search results
 - Six stop categories: Accommodation, Restaurant, Attraction, Transport, Activity, Other
 - Drag to reorder stops within a day
@@ -77,12 +87,12 @@ Solo travelers and couples who want powerful planning tools without subscription
 - Editable day descriptions
 - Paste itineraries from ChatGPT, blogs, or any text
 
-### AI Features (iOS 26+, Apple Intelligence)
-- **Daily suggestions** -- generate 5 stop ideas for any day
-- **Vibe-based planning** -- describe a mood, get a full day itinerary
-- **Nearby discovery** -- find places near any stop
-- **Place geocoding** -- locate coordinates for any place name
-- **Itinerary parsing** -- convert free-form text into structured stops
+### AI Features (Apple Intelligence)
+- **Daily suggestions** — generate 5 stop ideas for any day
+- **Vibe-based planning** — describe a mood, get a full day itinerary
+- **Nearby discovery** — find places near any stop
+- **Place geocoding** — locate coordinates for any place name
+- **Itinerary parsing** — convert free-form text into structured stops
 
 ### Bookings
 - Track flights, hotels, and car rentals with confirmation codes
@@ -122,9 +132,11 @@ Solo travelers and couples who want powerful planning tools without subscription
 - Export trip as a rich PDF itinerary (cover page, bookings, budget, days, checklists)
 - Share trip as plain text via Messages, email, or any app
 - Add trip days to Apple Calendar with stop details
+- Export/import `.tripwit` files for backup or sharing
 
 ### Sync
 - iCloud sync across all your Apple devices
+- CloudKit-powered collaborative sharing with other users
 
 ### Visited & Ratings
 - Mark stops as visited with 1-5 star ratings
@@ -135,13 +147,13 @@ Solo travelers and couples who want powerful planning tools without subscription
 | Layer | Technology |
 |-------|-----------|
 | UI | SwiftUI |
-| Data | SwiftData + CloudKit |
+| Data | Core Data + CloudKit (NSPersistentCloudKitContainer) |
 | Maps | MapKit |
 | AI | Apple Intelligence (FoundationModels) |
 | Weather | Open-Meteo API |
 | Calendar | EventKit |
 | Architecture | MVVM with @Observable |
-| Min Target | iOS 17.0 |
+| Min Target | iOS 18.0 |
 | Swift | 6.2 (strict concurrency) |
 
 ## Project Structure
@@ -154,12 +166,13 @@ TripWit/
 │   │   └── Services/           <- PhotoMatcher, GeoUtils, ItineraryEngine
 │   └── Tests/TripCoreTests/    <- Unit tests
 ├── TripWit/                     <- SwiftUI app
-│   ├── Data/                   <- SwiftData entities + DataManager
-│   ├── Services/               <- CalendarService, WeatherService, TravelTime, PDF, TextExporter
+│   ├── Data/                   <- Core Data entities, PersistenceController, DataManager
+│   ├── Services/               <- CalendarService, WeatherService, TravelTime, PDF, TextExporter, CloudKitSharingService
 │   ├── Views/                  <- All screens
-│   └── Views/Components/       <- Reusable UI components
+│   └── Views/Components/       <- Reusable UI components (CloudSharingView, WeatherSection, etc.)
 ├── TripWitTests/                <- App-level tests
-└── Scripts/                    <- CLI validation scripts
+├── Scripts/                    <- CLI validation scripts
+└── project.yml                 <- XcodeGen project spec
 ```
 
 ## Building
@@ -183,4 +196,4 @@ xcodegen generate
 
 ## License
 
-Private -- All rights reserved.
+Private — All rights reserved.
