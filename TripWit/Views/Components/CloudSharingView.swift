@@ -184,6 +184,36 @@ enum CloudSharingPresenter {
 
                     shareLog.info("[SHARE] Share URL: \(finalURL.absoluteString)")
 
+                    // Verify the share is actually on CloudKit servers before
+                    // presenting the link. The local store has the URL but the
+                    // CKShare record may not have been exported yet.
+                    loadingAlert.message = "Syncing share to iCloud..."
+                    var shareIsLive = false
+                    for verifyAttempt in 1...8 {
+                        do {
+                            try await verifyShareOnServer(url: finalURL, container: persistence.cloudContainer)
+                            shareLog.info("[SHARE] Share verified on server (attempt \(verifyAttempt))")
+                            shareIsLive = true
+                            break
+                        } catch {
+                            shareLog.info("[SHARE] Share not yet on server (attempt \(verifyAttempt)/8): \(error.localizedDescription)")
+                            if verifyAttempt < 8 {
+                                loadingAlert.message = "Waiting for iCloud sync... (\(verifyAttempt)/8)"
+                                try? await Task.sleep(for: .seconds(3))
+                            }
+                        }
+                    }
+
+                    guard shareIsLive else {
+                        shareLog.error("[SHARE] Share never appeared on server after 24s")
+                        loadingAlert.dismiss(animated: true) {
+                            showError(NSError(domain: "TripWit", code: -4,
+                                userInfo: [NSLocalizedDescriptionKey: "The share was created but couldn't sync to iCloud. Check your internet connection and try again."]),
+                                from: presenter)
+                        }
+                        return
+                    }
+
                     // Wrap in tripwit:// scheme — prevents Messages from detecting
                     // it as a CloudKit collaboration URL (which causes the spinner).
                     // Use strict encoding: urlQueryAllowed minus '#' and '&' which would
@@ -399,6 +429,41 @@ enum CloudSharingPresenter {
         objc_setAssociatedObject(controller, &SharingDelegate.associatedKey, delegate, .OBJC_ASSOCIATION_RETAIN)
         shareLog.info("[SHARE] Presenting UICloudSharingController for share management")
         presenter.present(controller, animated: true)
+    }
+
+    /// Verify a share URL is resolvable on CloudKit servers.
+    /// Throws if the share can't be found (not yet exported).
+    private static func verifyShareOnServer(url: URL, container: CKContainer) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let operation = CKFetchShareMetadataOperation(shareURLs: [url])
+            operation.shouldFetchRootRecord = false  // We only need to know it exists
+
+            var perShareError: Error?
+
+            operation.perShareMetadataResultBlock = { _, result in
+                switch result {
+                case .success:
+                    break  // Share exists on server
+                case .failure(let error):
+                    perShareError = error
+                }
+            }
+
+            operation.fetchShareMetadataResultBlock = { result in
+                switch result {
+                case .success:
+                    if let error = perShareError {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
+                    }
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            container.add(operation)
+        }
     }
 
     @MainActor private static func showError(_ error: Error, from presenter: UIViewController) {
