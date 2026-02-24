@@ -102,9 +102,34 @@ struct TripWitApp: App {
             }
 
             do {
-                // Step 1: Fetch the share metadata from the URL
-                let metadata = try await fetchShareMetadata(from: shareURL)
-                log("1. Metadata fetched")
+                // Step 1: Fetch the share metadata from the URL.
+                // The sharer's device may not have exported the CKShare to CloudKit yet,
+                // so we retry a few times with increasing delays before giving up.
+                var metadata: CKShare.Metadata?
+                var lastFetchError: Error?
+                for attempt in 1...4 {
+                    do {
+                        metadata = try await fetchShareMetadata(from: shareURL)
+                        log("1. Metadata fetched (attempt \(attempt))")
+                        break
+                    } catch {
+                        lastFetchError = error
+                        let nsErr = error as NSError
+                        let isNotFound = nsErr.domain == CKError.errorDomain && nsErr.code == CKError.unknownItem.rawValue
+                        if isNotFound && attempt < 4 {
+                            let delay = attempt * 3  // 3s, 6s, 9s
+                            log("1. Share not found on server yet (attempt \(attempt)/4), retrying in \(delay)s...")
+                            try? await Task.sleep(for: .seconds(delay))
+                        } else {
+                            throw error
+                        }
+                    }
+                }
+                guard let metadata else {
+                    throw lastFetchError ?? NSError(domain: "TripWit", code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "Could not find the share. The sharer may need to wait a moment for it to sync."])
+                }
+                log("   Share fetched successfully")
                 log("   Share ID: \(metadata.share.recordID.recordName)")
                 log("   Zone: \(metadata.share.recordID.zoneID.zoneName)")
                 log("   Owner: \(metadata.share.recordID.zoneID.ownerName)")
