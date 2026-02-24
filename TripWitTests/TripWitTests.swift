@@ -1,11 +1,20 @@
 import Testing
+import CoreData
 import Foundation
 import TripCore
 
 @testable import TripWit
 
+/// Creates an in-memory Core Data stack for testing.
+private func makeTestContext() -> NSManagedObjectContext {
+    let controller = PersistenceController(inMemory: true)
+    return controller.viewContext
+}
+
 @Test func tripEntityCanBeCreated() {
-    let trip = TripEntity(
+    let context = makeTestContext()
+    let trip = TripEntity.create(
+        in: context,
         name: "Test Trip",
         destination: "Test City",
         startDate: Date(),
@@ -13,18 +22,20 @@ import TripCore
         status: .planning,
         notes: "Test notes"
     )
-    #expect(trip.name == "Test Trip")
+    #expect(trip.wrappedName == "Test Trip")
     #expect(trip.destination == "Test City")
     #expect(trip.status == .planning)
     #expect(trip.notes == "Test notes")
 }
 
 @Test func tripEntityComputedProperties() {
+    let context = makeTestContext()
     let calendar = Calendar.current
     let start = calendar.date(from: DateComponents(year: 2026, month: 6, day: 1))!
     let end = calendar.date(from: DateComponents(year: 2026, month: 6, day: 5))!
 
-    let trip = TripEntity(
+    let trip = TripEntity.create(
+        in: context,
         name: "Duration Test",
         destination: "Somewhere",
         startDate: start,
@@ -34,7 +45,9 @@ import TripCore
 }
 
 @Test func stopEntityCategoryRoundTrips() {
-    let stop = StopEntity(
+    let context = makeTestContext()
+    let stop = StopEntity.create(
+        in: context,
         name: "Test Stop",
         latitude: 35.6762,
         longitude: 139.6503,
@@ -49,15 +62,18 @@ import TripCore
 }
 
 @Test func dayEntityFormattedDate() {
+    let context = makeTestContext()
     let calendar = Calendar.current
     let date = calendar.date(from: DateComponents(year: 2026, month: 3, day: 15))!
-    let day = DayEntity(date: date, dayNumber: 1)
+    let day = DayEntity.create(in: context, date: date, dayNumber: 1)
     #expect(!day.formattedDate.isEmpty)
     #expect(day.dayNumber == 1)
 }
 
 @Test func stopEntityVisitedDefaults() {
-    let stop = StopEntity(
+    let context = makeTestContext()
+    let stop = StopEntity.create(
+        in: context,
         name: "Visit Test",
         latitude: 40.7128,
         longitude: -74.0060,
@@ -69,7 +85,9 @@ import TripCore
 }
 
 @Test func stopEntityVisitedToggle() {
-    let stop = StopEntity(
+    let context = makeTestContext()
+    let stop = StopEntity.create(
+        in: context,
         name: "Toggle Test",
         latitude: 48.8566,
         longitude: 2.3522,
@@ -88,8 +106,10 @@ import TripCore
 }
 
 @Test func stopEntityVisitedInit() {
+    let context = makeTestContext()
     let now = Date()
-    let stop = StopEntity(
+    let stop = StopEntity.create(
+        in: context,
         name: "Pre-visited",
         latitude: 51.5074,
         longitude: -0.1278,
@@ -103,7 +123,9 @@ import TripCore
 }
 
 @Test func tripStatusConversion() {
-    let trip = TripEntity(
+    let context = makeTestContext()
+    let trip = TripEntity.create(
+        in: context,
         name: "Status Test",
         destination: "Nowhere",
         startDate: Date(),

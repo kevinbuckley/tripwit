@@ -39,19 +39,68 @@ enum CloudSharingPresenter {
         }
 
         if let existingShare = sharingService.existingShare(for: trip) {
-            shareLog.info("[SHARE] Presenting custom sheet for EXISTING share (avoids iMessage spinner)")
-            presentExistingShareSheet(
-                trip: trip,
-                share: existingShare,
-                persistence: persistence,
-                from: topVC
-            )
+            if existingShare.url != nil {
+                shareLog.info("[SHARE] Presenting custom sheet for EXISTING share (avoids iMessage spinner)")
+                presentExistingShareSheet(
+                    trip: trip,
+                    share: existingShare,
+                    persistence: persistence,
+                    from: topVC
+                )
+            } else {
+                // Share exists but has no URL — stale or failed to sync.
+                // Purge it and create a fresh one.
+                shareLog.warning("[SHARE] Existing share has no URL — purging stale share and recreating")
+                purgeStaleShareAndRecreate(
+                    trip: trip,
+                    share: existingShare,
+                    persistence: persistence,
+                    from: topVC
+                )
+            }
         } else {
             shareLog.info("[SHARE] Creating NEW share, then presenting custom share sheet")
             createAndPresentCustomSheet(
                 trip: trip,
                 persistence: persistence,
                 from: topVC
+            )
+        }
+    }
+
+    // MARK: - Stale Share Recovery
+
+    /// The existing CKShare has no URL (server never assigned one). This happens when:
+    ///   • A share was created before the CloudKit schema was deployed to production
+    ///   • A transient network failure prevented the server from finalizing the share
+    /// Fix: purge the stale share zone and start fresh.
+    @MainActor private static func purgeStaleShareAndRecreate(
+        trip: TripEntity,
+        share: CKShare,
+        persistence: PersistenceController,
+        from presenter: UIViewController
+    ) {
+        Task { @MainActor in
+            do {
+                // Remove the broken share from the persistent store
+                if let store = persistence.privatePersistentStore {
+                    try await persistence.container.purgeObjectsAndRecordsInZone(
+                        with: share.recordID.zoneID,
+                        in: store
+                    )
+                    shareLog.info("[SHARE] Purged stale share zone \(share.recordID.zoneID.zoneName)")
+                    // Refresh so Core Data sees the share is gone
+                    persistence.viewContext.refreshAllObjects()
+                }
+            } catch {
+                shareLog.error("[SHARE] Failed to purge stale share: \(error.localizedDescription)")
+            }
+
+            // Now create a fresh share
+            createAndPresentCustomSheet(
+                trip: trip,
+                persistence: persistence,
+                from: presenter
             )
         }
     }

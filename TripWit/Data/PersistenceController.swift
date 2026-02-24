@@ -142,7 +142,32 @@ final class PersistenceController: ObservableObject {
             name: NSPersistentCloudKitContainer.eventChangedNotification,
             object: container
         )
+
+        // Push the Core Data model to CloudKit development schema.
+        // This ensures all entities/attributes exist in CloudKit before deploying to production.
+        // Only runs in debug builds; set shouldInitializeSchema = false after deploying.
+        #if DEBUG
+        if !inMemory {
+            initializeCloudKitSchemaIfNeeded()
+        }
+        #endif
     }
+
+    #if DEBUG
+    /// Pushes the Core Data model to the CloudKit development schema.
+    /// After running once, go to CloudKit Dashboard → Schema → Deploy to Production.
+    private func initializeCloudKitSchemaIfNeeded() {
+        let key = "hasInitializedCloudKitSchema_v68"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        do {
+            try container.initializeCloudKitSchema()
+            UserDefaults.standard.set(true, forKey: key)
+            pcLog.info("[CK-SCHEMA] Successfully initialized CloudKit schema")
+        } catch {
+            pcLog.error("[CK-SCHEMA] Failed to initialize schema: \(error.localizedDescription)")
+        }
+    }
+    #endif
 
     /// Capture every NSPersistentCloudKitContainer sync event for diagnostics.
     @objc private func handleCloudKitEvent(_ notification: Notification) {
