@@ -184,31 +184,62 @@ enum CloudSharingPresenter {
 
                     shareLog.info("[SHARE] Share URL: \(finalURL.absoluteString)")
 
+                    // Clear sync events so we only see events from this share creation.
+                    await MainActor.run { persistence.syncEvents.removeAll() }
+
+                    // Force a viewContext save to trigger export
+                    await MainActor.run {
+                        if persistence.viewContext.hasChanges {
+                            try? persistence.viewContext.save()
+                        }
+                    }
+
                     // Verify the share is actually on CloudKit servers before
                     // presenting the link. The local store has the URL but the
                     // CKShare record may not have been exported yet.
                     loadingAlert.message = "Syncing share to iCloud..."
                     var shareIsLive = false
-                    for verifyAttempt in 1...8 {
+                    for verifyAttempt in 1...10 {
                         do {
                             try await verifyShareOnServer(url: finalURL, container: persistence.cloudContainer)
                             shareLog.info("[SHARE] Share verified on server (attempt \(verifyAttempt))")
                             shareIsLive = true
                             break
                         } catch {
-                            shareLog.info("[SHARE] Share not yet on server (attempt \(verifyAttempt)/8): \(error.localizedDescription)")
-                            if verifyAttempt < 8 {
-                                loadingAlert.message = "Waiting for iCloud sync... (\(verifyAttempt)/8)"
+                            shareLog.info("[SHARE] Share not yet on server (attempt \(verifyAttempt)/10): \(error.localizedDescription)")
+
+                            // Check if an export event failed — surface the actual error
+                            let exportErrors = await MainActor.run {
+                                persistence.syncEvents.filter { $0.type == "export" && !$0.succeeded }
+                            }
+                            if let exportError = exportErrors.last {
+                                let msg = exportError.error ?? "Unknown export error"
+                                shareLog.error("[SHARE] CloudKit export FAILED: \(msg)")
+                                loadingAlert.dismiss(animated: true) {
+                                    showError(NSError(domain: "TripWit", code: -5,
+                                        userInfo: [NSLocalizedDescriptionKey: "iCloud failed to sync the share:\n\n\(msg)\n\nTry deleting this trip's share and recreating it, or check Settings → Share Diagnostics."]),
+                                        from: presenter)
+                                }
+                                return
+                            }
+
+                            if verifyAttempt < 10 {
+                                loadingAlert.message = "Waiting for iCloud sync... (\(verifyAttempt)/10)"
                                 try? await Task.sleep(for: .seconds(3))
                             }
                         }
                     }
 
                     guard shareIsLive else {
-                        shareLog.error("[SHARE] Share never appeared on server after 24s")
+                        // Gather any sync events for diagnostics
+                        let events = await MainActor.run { persistence.syncEvents }
+                        let eventSummary = events.isEmpty
+                            ? "No CloudKit sync events fired — export may be stuck."
+                            : events.map { "\($0.type): \($0.succeeded ? "OK" : "FAIL") \($0.error ?? "")" }.joined(separator: "\n")
+                        shareLog.error("[SHARE] Share never appeared on server. Events:\n\(eventSummary)")
                         loadingAlert.dismiss(animated: true) {
                             showError(NSError(domain: "TripWit", code: -4,
-                                userInfo: [NSLocalizedDescriptionKey: "The share was created but couldn't sync to iCloud. Check your internet connection and try again."]),
+                                userInfo: [NSLocalizedDescriptionKey: "The share couldn't sync to iCloud after 30 seconds.\n\n\(eventSummary)\n\nCheck your internet connection and try again."]),
                                 from: presenter)
                         }
                         return
