@@ -5,6 +5,11 @@ import os.log
 
 private let appLog = Logger(subsystem: "com.kevinbuckley.travelplanner", category: "App")
 
+/// Tracks whether a share acceptance is already in progress to prevent double-firing.
+/// Both the SceneDelegate path and the onOpenURL path can trigger share acceptance;
+/// this flag prevents concurrent operations that crash Core Data.
+private var shareAcceptInProgress = false
+
 @main
 struct TripWitApp: App {
 
@@ -52,6 +57,12 @@ struct TripWitApp: App {
     /// Accept a CloudKit share from a wrapped URL.
     /// Extracts the real share.icloud.com URL, fetches metadata, and accepts the share.
     private func handleShareURL(_ url: URL) {
+        // Prevent double-firing if the SceneDelegate path is also handling this
+        guard !shareAcceptInProgress else {
+            appLog.info("[SHARE-ACCEPT] Skipping — acceptance already in progress via SceneDelegate")
+            return
+        }
+
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let rawParam = components.queryItems?.first(where: { $0.name == "url" })?.value
         else {
@@ -77,14 +88,11 @@ struct TripWitApp: App {
         }
 
         appLog.info("[SHARE-ACCEPT] Extracted share URL: \(shareURL.absoluteString)")
-
-        // Show a loading indicator (we'll use an alert for simplicity)
-        shareAcceptAlert = ShareAcceptAlert(
-            title: "Joining Trip...",
-            message: "Connecting to the shared trip. This may take a moment — hang tight!"
-        )
+        shareAcceptInProgress = true
 
         Task {
+            defer { shareAcceptInProgress = false }
+
             // Collect diagnostic info as we go — will show in final alert
             var diag: [String] = []
 
@@ -134,7 +142,7 @@ struct TripWitApp: App {
                     let req = TripEntity.fetchRequest() as! NSFetchRequest<TripEntity>
                     return (try? persistence.viewContext.count(for: req)) ?? 0
                 }
-                log("4. Store counts before sync:")
+                log("4. Store counts:")
                 log("   Private store: \(privateCount) trips")
                 log("   Shared store: \(sharedCount) trips")
                 log("   viewContext: \(viewContextCount) trips")
@@ -173,29 +181,23 @@ struct TripWitApp: App {
                     log("6. fetchShares failed: \(error.localizedDescription)")
                 }
 
-                // Step 3c: Reload shared store
-                await persistence.refreshCloudKitSync()
-                log("7. Shared store reloaded")
+                // NOTE: Do NOT call refreshCloudKitSync() here — it removes/re-adds the
+                // shared store, which crashes if any view is concurrently accessing entities.
+                // NSPersistentCloudKitContainer will import shared records automatically.
 
-                // Wait and check sync events + store counts
+                // Wait for CloudKit to sync the shared records into Core Data
                 try? await Task.sleep(for: .seconds(5))
 
                 let sharedCountAfter = persistence.sharedStoreTripCount()
-                let viewContextAfter = await MainActor.run { () -> Int in
-                    persistence.viewContext.refreshAllObjects()
-                    let req = TripEntity.fetchRequest() as! NSFetchRequest<TripEntity>
-                    return (try? persistence.viewContext.count(for: req)) ?? 0
-                }
-                log("8. After 5s wait:")
+                log("7. After 5s wait:")
                 log("   Shared store: \(sharedCountAfter) trips")
-                log("   viewContext: \(viewContextAfter) trips")
 
                 // Capture sync events
                 let events = await MainActor.run { persistence.syncEvents }
                 if events.isEmpty {
-                    log("9. Sync events: NONE (NSPersistentCloudKitContainer never fired)")
+                    log("8. Sync events: NONE (NSPersistentCloudKitContainer never fired)")
                 } else {
-                    log("9. Sync events: \(events.count)")
+                    log("8. Sync events: \(events.count)")
                     for event in events {
                         let status = event.succeeded ? "OK" : "FAIL"
                         let errStr = event.error.map { " — \($0)" } ?? ""
@@ -203,28 +205,27 @@ struct TripWitApp: App {
                     }
                 }
 
-                // Poll a bit more
-                var tripArrived = sharedCountAfter > 0 || viewContextAfter > viewContextCount
+                // Poll for trip arrival
+                var tripArrived = sharedCountAfter > 0
                 if !tripArrived {
                     for pollAttempt in 1...10 {
                         try? await Task.sleep(for: .seconds(2))
                         let current = persistence.sharedStoreTripCount()
                         if current > 0 {
                             tripArrived = true
-                            log("10. Trip appeared after poll \(pollAttempt)! (\(current) in shared store)")
+                            log("9. Trip appeared after poll \(pollAttempt)! (\(current) in shared store)")
                             break
                         }
                     }
                     if !tripArrived {
-                        log("10. Trip did NOT appear after 20s additional polling")
+                        log("9. Trip did NOT appear after 20s additional polling")
                     }
                 } else {
-                    log("10. Trip already present!")
+                    log("9. Trip already present!")
                 }
 
-                // Final summary
+                // Final summary — show result alert
                 await MainActor.run {
-                    persistence.viewContext.refreshAllObjects()
                     let diagText = diag.joined(separator: "\n")
                     if tripArrived {
                         shareAcceptAlert = ShareAcceptAlert(
@@ -234,7 +235,7 @@ struct TripWitApp: App {
                     } else {
                         shareAcceptAlert = ShareAcceptAlert(
                             title: "Trip Not Syncing",
-                            message: "The share was accepted but the trip hasn't appeared. Go to Settings → Share Diagnostics for more info.\n\n--- Debug ---\n\(diagText)"
+                            message: "The share was accepted but the trip hasn't appeared yet. Try pulling down to refresh your trips list, or check Settings → Share Diagnostics.\n\n--- Debug ---\n\(diagText)"
                         )
                     }
                 }
@@ -355,23 +356,34 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 class SceneDelegate: NSObject, UIWindowSceneDelegate {
 
-    /// This is still needed for cases where the OS intercepts a share.icloud.com
-    /// URL directly (e.g. from older invitations or if someone manually shares the raw URL).
+    /// This is called when the OS intercepts a share.icloud.com URL directly
+    /// (e.g. from older invitations, raw URLs, or when iMessage extracts the
+    /// CloudKit share URL from our tripwit:// wrapper).
     func windowScene(
         _ windowScene: UIWindowScene,
         userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata
     ) {
         appLog.info("[SHARE-ACCEPT] System accepted share via userDidAcceptCloudKitShareWith")
+
+        // Mark as in-progress so handleShareURL doesn't also run
+        shareAcceptInProgress = true
+
         let persistence = PersistenceController.shared
-        let sharingService = CloudKitSharingService(persistence: persistence)
         Task {
+            defer { shareAcceptInProgress = false }
             do {
-                try await sharingService.acceptShare(cloudKitShareMetadata)
-                appLog.info("[SHARE-ACCEPT] Share accepted via SceneDelegate, refreshing viewContext")
-                try? await Task.sleep(for: .seconds(2))
-                await MainActor.run {
-                    persistence.viewContext.refreshAllObjects()
+                guard let store = persistence.sharedPersistentStore else {
+                    appLog.warning("[SHARE-ACCEPT] No shared store — cannot accept share")
+                    return
                 }
+                try await persistence.container.acceptShareInvitations(
+                    from: [cloudKitShareMetadata],
+                    into: store
+                )
+                appLog.info("[SHARE-ACCEPT] Share accepted via SceneDelegate")
+                // Don't call refreshAllObjects() — it faults all objects and can crash
+                // views that are currently rendering. Let NSPersistentCloudKitContainer
+                // sync naturally via automaticallyMergesChangesFromParent.
             } catch {
                 appLog.error("[SHARE-ACCEPT] Failed to accept CloudKit share: \(error)")
             }

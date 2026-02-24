@@ -227,14 +227,10 @@ struct TripListView: View {
             listLog.error("[REFRESH] Failed to fetch shared zones: \(error.localizedDescription)")
         }
 
-        // Step 2: Reload the shared store to force Core Data to re-import.
-        await persistence.refreshCloudKitSync()
-
-        // Step 3: Wait for import, then refresh the view context.
+        // Step 2: Wait for CloudKit to process, then let Core Data merge naturally.
+        // NOTE: Do NOT call refreshCloudKitSync() — removing/re-adding the shared store
+        // can crash if views are concurrently accessing entities from that store.
         try? await Task.sleep(for: .seconds(3))
-        await MainActor.run {
-            persistence.viewContext.refreshAllObjects()
-        }
         listLog.info("[REFRESH] Refresh complete")
         isRefreshing = false
     }

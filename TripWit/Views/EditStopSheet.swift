@@ -21,6 +21,7 @@ struct EditStopSheet: View {
     @State private var longitude: Double
     @State private var locationName: String
     @State private var locationCity: String
+    @State private var destinationRegion: MKCoordinateRegion?
 
     init(stop: StopEntity) {
         self.stop = stop
@@ -43,6 +44,19 @@ struct EditStopSheet: View {
 
     private var hasLocation: Bool {
         latitude != 0 || longitude != 0
+    }
+
+    /// Best available region for biasing location search results
+    private var searchRegion: MKCoordinateRegion? {
+        // Prefer day's geocoded location (most specific)
+        if let day = stop.day, day.locationLatitude != 0 || day.locationLongitude != 0 {
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: day.locationLatitude, longitude: day.locationLongitude),
+                span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+            )
+        }
+        // Fall back to geocoded trip destination
+        return destinationRegion
     }
 
     var body: some View {
@@ -76,7 +90,8 @@ struct EditStopSheet: View {
                         selectedName: $locationName,
                         selectedLatitude: $latitude,
                         selectedLongitude: $longitude,
-                        selectedCity: $locationCity
+                        selectedCity: $locationCity,
+                        searchRegion: searchRegion
                     )
                     .listRowInsets(EdgeInsets())
                 } header: {
@@ -111,6 +126,9 @@ struct EditStopSheet: View {
                     Text("Notes")
                 }
             }
+            .task {
+                await geocodeDestination()
+            }
             .navigationTitle("Edit Stop")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -127,6 +145,20 @@ struct EditStopSheet: View {
                     .disabled(!isValid)
                 }
             }
+        }
+    }
+
+    private func geocodeDestination() async {
+        // Skip if day already has coordinates (searchRegion will use those instead)
+        guard let day = stop.day, day.locationLatitude == 0 && day.locationLongitude == 0 else { return }
+        guard let destination = day.trip?.destination, !destination.isEmpty else { return }
+        let geocoder = CLGeocoder()
+        if let placemarks = try? await geocoder.geocodeAddressString(destination),
+           let location = placemarks.first?.location {
+            destinationRegion = MKCoordinateRegion(
+                center: location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+            )
         }
     }
 

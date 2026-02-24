@@ -25,6 +25,9 @@ struct LocationSearchView: View {
     var selectedPhone: Binding<String>?
     var selectedWebsite: Binding<String>?
 
+    /// Optional region hint — biases results toward this area (e.g. trip destination)
+    var searchRegion: MKCoordinateRegion?
+
     @State private var searchText = ""
     @State private var searchResults: [LocationSearchResult] = []
     @State private var isSearching = false
@@ -247,6 +250,9 @@ struct LocationSearchView: View {
         searchError = nil
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
+        if let region = searchRegion {
+            request.region = region
+        }
 
         let search = MKLocalSearch(request: request)
         do {

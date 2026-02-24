@@ -27,6 +27,7 @@ struct AddStopSheet: View {
     @State private var useDepartureTime = false
     @State private var departureTime = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var showingAISuggest = false
+    @State private var destinationRegion: MKCoordinateRegion?
 
     // Only require a name — location is optional for planning
     private var isValid: Bool {
@@ -35,6 +36,19 @@ struct AddStopSheet: View {
 
     private var hasLocation: Bool {
         latitude != 0 || longitude != 0
+    }
+
+    /// Best available region for biasing location search results
+    private var searchRegion: MKCoordinateRegion? {
+        // Prefer day's geocoded location (most specific)
+        if day.locationLatitude != 0 || day.locationLongitude != 0 {
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: day.locationLatitude, longitude: day.locationLongitude),
+                span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+            )
+        }
+        // Fall back to geocoded trip destination
+        return destinationRegion
     }
 
     var body: some View {
@@ -65,6 +79,9 @@ struct AddStopSheet: View {
             }
             .sheet(isPresented: $showingAISuggest) {
                 aiSuggestSheet
+            }
+            .task {
+                await geocodeDestination()
             }
         }
     }
@@ -139,7 +156,8 @@ struct AddStopSheet: View {
                 selectedCity: $locationCity,
                 selectedAddress: $placeAddress,
                 selectedPhone: $placePhone,
-                selectedWebsite: $placeWebsite
+                selectedWebsite: $placeWebsite,
+                searchRegion: searchRegion
             )
             .listRowInsets(EdgeInsets())
         } header: {
@@ -238,6 +256,20 @@ struct AddStopSheet: View {
                     locationName = placeName
                 }
             }
+        }
+    }
+
+    private func geocodeDestination() async {
+        // Skip if day already has coordinates (searchRegion will use those instead)
+        guard day.locationLatitude == 0 && day.locationLongitude == 0 else { return }
+        guard let destination = day.trip?.destination, !destination.isEmpty else { return }
+        let geocoder = CLGeocoder()
+        if let placemarks = try? await geocoder.geocodeAddressString(destination),
+           let location = placemarks.first?.location {
+            destinationRegion = MKCoordinateRegion(
+                center: location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+            )
         }
     }
 
