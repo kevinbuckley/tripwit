@@ -42,7 +42,7 @@ targets:
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "TripWit can add your trip days to your calendar so you can see your itinerary alongside other events."
         INFOPLIST_KEY_CFBundleShortVersionString: "1.2"
         MARKETING_VERSION: "1.2"
-        CURRENT_PROJECT_VERSION: "77"
+        CURRENT_PROJECT_VERSION: "78"
   TripWitTests:
     type: bundle.unit-test
     platform: iOS
