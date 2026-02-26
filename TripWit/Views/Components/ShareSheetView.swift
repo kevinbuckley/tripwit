@@ -19,8 +19,9 @@ enum ShareSheet {
     }
 
     @MainActor static func shareTripFile(_ fileURL: URL, tripName: String) {
+        let message = "Check out my trip \"\(tripName)\"! Open the attached file in TripWit to view the full itinerary."
         let source = TripFileActivitySource(fileURL: fileURL, tripName: tripName)
-        presentActivity(items: [source])
+        presentActivity(items: [message, source])
     }
 
     @MainActor private static func presentActivity(items: [Any]) {
