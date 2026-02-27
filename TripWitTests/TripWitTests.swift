@@ -2036,4 +2036,128 @@ private func makeTripWithDays(
     #expect(results.count == 1)
 }
 
+// MARK: - 21. Collaborative Checklist Sync
+
+@Test func checklistSyncRoundTripViaTransfer() throws {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Checklist Trip", destination: "Test", startDate: date(2026, 4, 1), endDate: date(2026, 4, 1))
+
+    // Create a list with mixed checked/unchecked items
+    let list = TripListEntity.create(in: context, name: "Packing List", icon: "bag")
+    list.trip = trip
+    let item1 = TripListItemEntity.create(in: context, text: "Passport", sortOrder: 0)
+    item1.isChecked = true
+    item1.list = list
+    let item2 = TripListItemEntity.create(in: context, text: "Sunscreen", sortOrder: 1)
+    item2.isChecked = false
+    item2.list = list
+    let item3 = TripListItemEntity.create(in: context, text: "Camera", sortOrder: 2)
+    item3.isChecked = true
+    item3.list = list
+    try? context.save()
+
+    // Export → decode round-trip
+    let fileURL = try TripShareService.exportTrip(trip)
+    let transfer = try TripShareService.decodeTrip(from: fileURL)
+
+    // Verify checklist state preserved in transfer
+    let listT = transfer.lists.first!
+    #expect(listT.items.count == 3)
+    let sorted = listT.items.sorted { $0.sortOrder < $1.sortOrder }
+    #expect(sorted[0].text == "Passport")
+    #expect(sorted[0].isChecked == true)
+    #expect(sorted[1].text == "Sunscreen")
+    #expect(sorted[1].isChecked == false)
+    #expect(sorted[2].text == "Camera")
+    #expect(sorted[2].isChecked == true)
+
+    // Import into fresh context and verify
+    let context2 = makeTestContext()
+    let imported = TripShareService.importTrip(transfer, into: context2)
+    let importedList = imported.listsArray.first!
+    let importedItems = importedList.itemsArray
+    #expect(importedItems.count == 3)
+    let checkedItems = importedItems.filter(\.isChecked)
+    #expect(checkedItems.count == 2)
+    let uncheckedItems = importedItems.filter { !$0.isChecked }
+    #expect(uncheckedItems.count == 1)
+    #expect(uncheckedItems.first?.wrappedText == "Sunscreen")
+}
+
+@Test func stopTodoCompletionSyncRoundTrip() throws {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Todo Trip", destination: "Test", startDate: date(2026, 4, 2), endDate: date(2026, 4, 2))
+    let day = trip.daysArray.first!
+    let stop = manager.addStop(to: day, name: "Museum", latitude: 0, longitude: 0, category: .attraction)
+
+    // Create todos with mixed completion
+    let todo1 = StopTodoEntity.create(in: context, text: "Buy tickets", sortOrder: 0)
+    todo1.isCompleted = true
+    todo1.stop = stop
+    let todo2 = StopTodoEntity.create(in: context, text: "Check hours", sortOrder: 1)
+    todo2.isCompleted = false
+    todo2.stop = stop
+    try? context.save()
+
+    // Export → decode → import round-trip
+    let fileURL = try TripShareService.exportTrip(trip)
+    let transfer = try TripShareService.decodeTrip(from: fileURL)
+
+    let context2 = makeTestContext()
+    let imported = TripShareService.importTrip(transfer, into: context2)
+    let importedStop = imported.daysArray.first!.stopsArray.first!
+    let importedTodos = importedStop.todosArray
+    #expect(importedTodos.count == 2)
+
+    let completed = importedTodos.filter(\.isCompleted)
+    #expect(completed.count == 1)
+    #expect(completed.first?.wrappedText == "Buy tickets")
+
+    let incomplete = importedTodos.filter { !$0.isCompleted }
+    #expect(incomplete.count == 1)
+    #expect(incomplete.first?.wrappedText == "Check hours")
+}
+
+@Test func multipleListsSyncRoundTrip() throws {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Multi List", destination: "Test", startDate: date(2026, 4, 3), endDate: date(2026, 4, 3))
+
+    // Create two lists
+    let packingList = TripListEntity.create(in: context, name: "Packing", icon: "bag", sortOrder: 0)
+    packingList.trip = trip
+    let packItem = TripListItemEntity.create(in: context, text: "Jacket", sortOrder: 0)
+    packItem.isChecked = true
+    packItem.list = packingList
+
+    let todoList = TripListEntity.create(in: context, name: "To Do", icon: "checklist", sortOrder: 1)
+    todoList.trip = trip
+    let todoItem1 = TripListItemEntity.create(in: context, text: "Book restaurant", sortOrder: 0)
+    todoItem1.isChecked = false
+    todoItem1.list = todoList
+    let todoItem2 = TripListItemEntity.create(in: context, text: "Print map", sortOrder: 1)
+    todoItem2.isChecked = true
+    todoItem2.list = todoList
+    try? context.save()
+
+    let fileURL = try TripShareService.exportTrip(trip)
+    let transfer = try TripShareService.decodeTrip(from: fileURL)
+    let context2 = makeTestContext()
+    let imported = TripShareService.importTrip(transfer, into: context2)
+
+    #expect(imported.listsArray.count == 2)
+
+    let importedPacking = imported.listsArray.first(where: { $0.wrappedName == "Packing" })!
+    #expect(importedPacking.itemsArray.count == 1)
+    #expect(importedPacking.itemsArray.first?.isChecked == true)
+
+    let importedTodo = imported.listsArray.first(where: { $0.wrappedName == "To Do" })!
+    #expect(importedTodo.itemsArray.count == 2)
+    let checkedTodos = importedTodo.itemsArray.filter(\.isChecked)
+    #expect(checkedTodos.count == 1)
+    #expect(checkedTodos.first?.wrappedText == "Print map")
+}
+
 } // end TripWitTests suite
