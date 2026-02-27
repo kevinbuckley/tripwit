@@ -58,12 +58,14 @@ echo ""
 echo "▶ Step 4: App tests (xcodebuild test)"
 cd "$PROJECT_ROOT"
 APP_TEST_OUT=$(xcodebuild test -scheme TripWit -destination "$SIMDEVICE" -only-testing:TripWitTests 2>&1)
-APP_TEST_EXIT=$?
-if [ $APP_TEST_EXIT -eq 0 ]; then
+# Check Swift Testing output for actual test failures (more reliable than
+# xcodebuild exit code, which can be non-zero due to Core Data warnings)
+REAL_FAILURES=$(echo "$APP_TEST_OUT" | grep -c "^✘ Test .* failed after")
+if [ "$REAL_FAILURES" -eq 0 ] && echo "$APP_TEST_OUT" | grep -q "Suite TripWitTests"; then
     PASS=$((PASS + 1)); green "  ✓ App tests passed"
 else
     FAIL=$((FAIL + 1)); red "  ✗ App tests FAILED"
-    echo "$APP_TEST_OUT" | grep -E "FAIL|error:|Test Case.*failed" | head -10
+    echo "$APP_TEST_OUT" | grep "^✘" | head -10
 fi
 
 # ── SUMMARY ─────────────────────────────────────────────

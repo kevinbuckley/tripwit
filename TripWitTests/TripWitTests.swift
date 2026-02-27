@@ -1541,4 +1541,76 @@ private func makeTripWithDays(
     #expect(lines[2].contains("0.00"))
 }
 
+// MARK: - 12. Trip Conflict Detection
+
+@Test func conflictDetectsOverlap() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    manager.createTrip(name: "Trip A", destination: "Paris", startDate: date(2026, 6, 5), endDate: date(2026, 6, 10))
+
+    // Overlapping range: June 8-12
+    let conflicts = manager.findConflictingTrips(startDate: date(2026, 6, 8), endDate: date(2026, 6, 12))
+    #expect(conflicts.count == 1)
+    #expect(conflicts.first?.wrappedName == "Trip A")
+}
+
+@Test func conflictDetectsNoOverlap() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    manager.createTrip(name: "Trip A", destination: "Paris", startDate: date(2026, 6, 1), endDate: date(2026, 6, 5))
+
+    // Non-overlapping: June 10-15
+    let conflicts = manager.findConflictingTrips(startDate: date(2026, 6, 10), endDate: date(2026, 6, 15))
+    #expect(conflicts.isEmpty)
+}
+
+@Test func conflictDetectsAdjacentDays() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    manager.createTrip(name: "Trip A", destination: "Paris", startDate: date(2026, 6, 1), endDate: date(2026, 6, 5))
+
+    // Adjacent: starts day after Trip A ends — no overlap
+    let conflicts = manager.findConflictingTrips(startDate: date(2026, 6, 6), endDate: date(2026, 6, 10))
+    #expect(conflicts.isEmpty)
+
+    // Touching: starts on same day Trip A ends — overlap
+    let touching = manager.findConflictingTrips(startDate: date(2026, 6, 5), endDate: date(2026, 6, 10))
+    #expect(touching.count == 1)
+}
+
+@Test func conflictExcludesSpecifiedTrip() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let tripA = manager.createTrip(name: "Trip A", destination: "Paris", startDate: date(2026, 6, 1), endDate: date(2026, 6, 10))
+    manager.createTrip(name: "Trip B", destination: "London", startDate: date(2026, 6, 5), endDate: date(2026, 6, 15))
+
+    // Both overlap with June 5-10, but exclude Trip A
+    let conflicts = manager.findConflictingTrips(startDate: date(2026, 6, 5), endDate: date(2026, 6, 10), excluding: tripA)
+    #expect(conflicts.count == 1)
+    #expect(conflicts.first?.wrappedName == "Trip B")
+}
+
+@Test func conflictMultipleOverlaps() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    manager.createTrip(name: "Trip A", destination: "Paris", startDate: date(2026, 6, 1), endDate: date(2026, 6, 10))
+    manager.createTrip(name: "Trip B", destination: "London", startDate: date(2026, 6, 8), endDate: date(2026, 6, 15))
+    manager.createTrip(name: "Trip C", destination: "Tokyo", startDate: date(2026, 7, 1), endDate: date(2026, 7, 5))
+
+    // June 5-12 overlaps A and B but not C
+    let conflicts = manager.findConflictingTrips(startDate: date(2026, 6, 5), endDate: date(2026, 6, 12))
+    #expect(conflicts.count == 2)
+    let names = conflicts.map(\.wrappedName).sorted()
+    #expect(names == ["Trip A", "Trip B"])
+}
+
+@Test func hasConflictingTripsBoolean() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    manager.createTrip(name: "Existing", destination: "Paris", startDate: date(2026, 6, 1), endDate: date(2026, 6, 5))
+
+    #expect(manager.hasConflictingTrips(startDate: date(2026, 6, 3), endDate: date(2026, 6, 8)) == true)
+    #expect(manager.hasConflictingTrips(startDate: date(2026, 7, 1), endDate: date(2026, 7, 5)) == false)
+}
+
 } // end TripWitTests suite

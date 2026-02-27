@@ -455,6 +455,29 @@ final class DataManager {
         return clone
     }
 
+    // MARK: - Conflict Detection
+
+    /// Returns trips that overlap with the given date range, excluding `excludeTrip` if provided.
+    func findConflictingTrips(startDate: Date, endDate: Date, excluding excludeTrip: TripEntity? = nil) -> [TripEntity] {
+        let calendar = Calendar.current
+        let newStart = calendar.startOfDay(for: startDate)
+        let newEnd = calendar.startOfDay(for: endDate)
+
+        return fetchTrips().filter { trip in
+            if let excludeTrip, trip.objectID == excludeTrip.objectID { return false }
+            guard let tripStart = trip.startDate, let tripEnd = trip.endDate else { return false }
+            let existingStart = calendar.startOfDay(for: tripStart)
+            let existingEnd = calendar.startOfDay(for: tripEnd)
+            // Overlap: newStart <= existingEnd AND newEnd >= existingStart
+            return newStart <= existingEnd && newEnd >= existingStart
+        }
+    }
+
+    /// Checks if any existing trips conflict with the given range.
+    func hasConflictingTrips(startDate: Date, endDate: Date, excluding excludeTrip: TripEntity? = nil) -> Bool {
+        !findConflictingTrips(startDate: startDate, endDate: endDate, excluding: excludeTrip).isEmpty
+    }
+
     // MARK: - CSV Export
 
     /// Generates CSV data for a trip's expenses.
