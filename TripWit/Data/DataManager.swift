@@ -551,6 +551,37 @@ final class DataManager {
         return value
     }
 
+    // MARK: - Search & Filter
+
+    /// Filter stops within a trip by search query and/or category.
+    /// Empty query matches all stops. nil category matches all categories.
+    static func filterStops(
+        in trip: TripEntity,
+        query: String = "",
+        category: StopCategory? = nil
+    ) -> [StopEntity] {
+        let allStops = trip.daysArray
+            .sorted { $0.dayNumber < $1.dayNumber }
+            .flatMap(\.stopsArray)
+
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        return allStops.filter { stop in
+            // Category filter
+            if let category, stop.category != category { return false }
+
+            // Text search (name, notes, address)
+            if !trimmedQuery.isEmpty {
+                let nameMatch = stop.wrappedName.lowercased().contains(trimmedQuery)
+                let notesMatch = stop.wrappedNotes.lowercased().contains(trimmedQuery)
+                let addressMatch = (stop.address ?? "").lowercased().contains(trimmedQuery)
+                if !nameMatch && !notesMatch && !addressMatch { return false }
+            }
+
+            return true
+        }
+    }
+
     // MARK: - Sample Data
 
     func loadSampleDataIfEmpty() {

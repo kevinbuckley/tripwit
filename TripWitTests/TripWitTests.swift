@@ -1699,4 +1699,98 @@ private func makeTripWithDays(
     #expect(DataManager.completionScore(for: trip) == 1.0)
 }
 
+// MARK: - 14. Stop Search & Filter
+
+@Test func filterStopsByQuery() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Trip", destination: "Paris", startDate: date(2026, 6, 1), endDate: date(2026, 6, 3))
+    let days = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
+
+    manager.addStop(to: days[0], name: "Eiffel Tower", latitude: 48.85, longitude: 2.29, category: .attraction)
+    manager.addStop(to: days[0], name: "Louvre Museum", latitude: 48.86, longitude: 2.33, category: .attraction)
+    manager.addStop(to: days[1], name: "Café de Flore", latitude: 48.85, longitude: 2.33, category: .restaurant)
+    manager.addStop(to: days[2], name: "Notre Dame", latitude: 48.85, longitude: 2.35, category: .attraction, notes: "Beautiful tower view")
+
+    let results = DataManager.filterStops(in: trip, query: "tower")
+    #expect(results.count == 2) // "Eiffel Tower" + "Notre Dame" (has "tower" in notes)
+    #expect(results.contains(where: { $0.wrappedName == "Eiffel Tower" }))
+    #expect(results.contains(where: { $0.wrappedName == "Notre Dame" }))
+}
+
+@Test func filterStopsByCategory() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Trip", destination: "Rome", startDate: date(2026, 7, 1), endDate: date(2026, 7, 2))
+    let days = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
+
+    manager.addStop(to: days[0], name: "Colosseum", latitude: 41.89, longitude: 12.49, category: .attraction)
+    manager.addStop(to: days[0], name: "Trattoria", latitude: 41.90, longitude: 12.49, category: .restaurant)
+    manager.addStop(to: days[1], name: "Vatican", latitude: 41.90, longitude: 12.45, category: .attraction)
+
+    let attractions = DataManager.filterStops(in: trip, category: .attraction)
+    #expect(attractions.count == 2)
+    #expect(attractions.allSatisfy { $0.category == .attraction })
+
+    let restaurants = DataManager.filterStops(in: trip, category: .restaurant)
+    #expect(restaurants.count == 1)
+    #expect(restaurants[0].wrappedName == "Trattoria")
+}
+
+@Test func filterStopsByCategoryAndQuery() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Trip", destination: "London", startDate: date(2026, 8, 1), endDate: date(2026, 8, 2))
+    let days = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
+
+    manager.addStop(to: days[0], name: "Tower Bridge", latitude: 51.50, longitude: -0.07, category: .attraction)
+    manager.addStop(to: days[0], name: "Tower Restaurant", latitude: 51.51, longitude: -0.07, category: .restaurant)
+    manager.addStop(to: days[1], name: "Big Ben", latitude: 51.50, longitude: -0.12, category: .attraction)
+
+    // "Tower" + attraction → only Tower Bridge
+    let results = DataManager.filterStops(in: trip, query: "Tower", category: .attraction)
+    #expect(results.count == 1)
+    #expect(results[0].wrappedName == "Tower Bridge")
+}
+
+@Test func filterStopsEmptyQueryReturnsAll() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Trip", destination: "Test", startDate: date(2026, 9, 1), endDate: date(2026, 9, 1))
+    let day = trip.daysArray.first!
+
+    manager.addStop(to: day, name: "A", latitude: 0, longitude: 0, category: .other)
+    manager.addStop(to: day, name: "B", latitude: 0, longitude: 0, category: .attraction)
+
+    let results = DataManager.filterStops(in: trip)
+    #expect(results.count == 2)
+}
+
+@Test func filterStopsByAddress() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Trip", destination: "NYC", startDate: date(2026, 10, 1), endDate: date(2026, 10, 1))
+    let day = trip.daysArray.first!
+
+    let stop = manager.addStop(to: day, name: "Restaurant", latitude: 40.71, longitude: -74.00, category: .restaurant)
+    stop.address = "123 Broadway, New York"
+    try? context.save()
+
+    let results = DataManager.filterStops(in: trip, query: "broadway")
+    #expect(results.count == 1)
+    #expect(results[0].wrappedName == "Restaurant")
+}
+
+@Test func filterStopsCaseInsensitive() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Trip", destination: "Test", startDate: date(2026, 11, 1), endDate: date(2026, 11, 1))
+    let day = trip.daysArray.first!
+
+    manager.addStop(to: day, name: "EIFFEL TOWER", latitude: 0, longitude: 0, category: .attraction)
+
+    let results = DataManager.filterStops(in: trip, query: "eiffel tower")
+    #expect(results.count == 1)
+}
+
 } // end TripWitTests suite
