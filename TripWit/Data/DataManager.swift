@@ -567,6 +567,40 @@ final class DataManager {
         return value
     }
 
+    // MARK: - Trip Sorting
+
+    enum TripSortOption: String, CaseIterable {
+        case startDateDescending
+        case startDateAscending
+        case nameAscending
+        case nameDescending
+        case destinationAscending
+        case destinationDescending
+        case durationDescending
+        case durationAscending
+    }
+
+    static func sortTrips(_ trips: [TripEntity], by option: TripSortOption) -> [TripEntity] {
+        switch option {
+        case .startDateDescending:
+            return trips.sorted { ($0.startDate ?? .distantPast) > ($1.startDate ?? .distantPast) }
+        case .startDateAscending:
+            return trips.sorted { ($0.startDate ?? .distantPast) < ($1.startDate ?? .distantPast) }
+        case .nameAscending:
+            return trips.sorted { $0.wrappedName.localizedCaseInsensitiveCompare($1.wrappedName) == .orderedAscending }
+        case .nameDescending:
+            return trips.sorted { $0.wrappedName.localizedCaseInsensitiveCompare($1.wrappedName) == .orderedDescending }
+        case .destinationAscending:
+            return trips.sorted { $0.wrappedDestination.localizedCaseInsensitiveCompare($1.wrappedDestination) == .orderedAscending }
+        case .destinationDescending:
+            return trips.sorted { $0.wrappedDestination.localizedCaseInsensitiveCompare($1.wrappedDestination) == .orderedDescending }
+        case .durationDescending:
+            return trips.sorted { $0.durationInDays > $1.durationInDays }
+        case .durationAscending:
+            return trips.sorted { $0.durationInDays < $1.durationInDays }
+        }
+    }
+
     // MARK: - Trip Statistics
 
     struct TripStatistics: Equatable {

@@ -1699,7 +1699,63 @@ private func makeTripWithDays(
     #expect(DataManager.completionScore(for: trip) == 1.0)
 }
 
-// MARK: - 14. Batch Mark Stops as Visited
+// MARK: - 14. Trip Sorting
+
+@Test func sortTripsByStartDateDescending() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let t1 = manager.createTrip(name: "Early", destination: "A", startDate: date(2026, 1, 1), endDate: date(2026, 1, 3))
+    let t2 = manager.createTrip(name: "Late", destination: "B", startDate: date(2026, 6, 1), endDate: date(2026, 6, 3))
+    let t3 = manager.createTrip(name: "Mid", destination: "C", startDate: date(2026, 3, 1), endDate: date(2026, 3, 3))
+
+    let sorted = DataManager.sortTrips([t1, t2, t3], by: .startDateDescending)
+    #expect(sorted.map(\.wrappedName) == ["Late", "Mid", "Early"])
+}
+
+@Test func sortTripsByStartDateAscending() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let t1 = manager.createTrip(name: "Late", destination: "A", startDate: date(2026, 6, 1), endDate: date(2026, 6, 3))
+    let t2 = manager.createTrip(name: "Early", destination: "B", startDate: date(2026, 1, 1), endDate: date(2026, 1, 3))
+
+    let sorted = DataManager.sortTrips([t1, t2], by: .startDateAscending)
+    #expect(sorted.map(\.wrappedName) == ["Early", "Late"])
+}
+
+@Test func sortTripsByNameAscending() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let t1 = manager.createTrip(name: "Zulu Trip", destination: "A", startDate: date(2026, 1, 1), endDate: date(2026, 1, 1))
+    let t2 = manager.createTrip(name: "Alpha Trip", destination: "B", startDate: date(2026, 2, 1), endDate: date(2026, 2, 1))
+    let t3 = manager.createTrip(name: "Mike Trip", destination: "C", startDate: date(2026, 3, 1), endDate: date(2026, 3, 1))
+
+    let sorted = DataManager.sortTrips([t1, t2, t3], by: .nameAscending)
+    #expect(sorted.map(\.wrappedName) == ["Alpha Trip", "Mike Trip", "Zulu Trip"])
+}
+
+@Test func sortTripsByDestination() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let t1 = manager.createTrip(name: "Trip 1", destination: "Tokyo", startDate: date(2026, 1, 1), endDate: date(2026, 1, 1))
+    let t2 = manager.createTrip(name: "Trip 2", destination: "Berlin", startDate: date(2026, 2, 1), endDate: date(2026, 2, 1))
+    let t3 = manager.createTrip(name: "Trip 3", destination: "Paris", startDate: date(2026, 3, 1), endDate: date(2026, 3, 1))
+
+    let sorted = DataManager.sortTrips([t1, t2, t3], by: .destinationAscending)
+    #expect(sorted.map(\.wrappedDestination) == ["Berlin", "Paris", "Tokyo"])
+}
+
+@Test func sortTripsByDuration() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let t1 = manager.createTrip(name: "Short", destination: "A", startDate: date(2026, 1, 1), endDate: date(2026, 1, 2))   // 2 days
+    let t2 = manager.createTrip(name: "Long", destination: "B", startDate: date(2026, 2, 1), endDate: date(2026, 2, 10))   // 10 days
+    let t3 = manager.createTrip(name: "Medium", destination: "C", startDate: date(2026, 3, 1), endDate: date(2026, 3, 5))  // 5 days
+
+    let sorted = DataManager.sortTrips([t1, t2, t3], by: .durationDescending)
+    #expect(sorted.map(\.wrappedName) == ["Long", "Medium", "Short"])
+}
+
+// MARK: - 15. Batch Mark Stops as Visited
 
 @Test func batchSetVisitedMarksAll() {
     let context = makeTestContext()
