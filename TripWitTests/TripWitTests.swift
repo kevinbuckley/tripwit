@@ -1699,7 +1699,91 @@ private func makeTripWithDays(
     #expect(DataManager.completionScore(for: trip) == 1.0)
 }
 
-// MARK: - 14. Stop Search & Filter
+// MARK: - 14. Trip Statistics
+
+@Test func tripStatisticsBasic() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Stats Trip", destination: "Rome", startDate: date(2026, 5, 1), endDate: date(2026, 5, 3))
+    let days = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
+
+    manager.addStop(to: days[0], name: "Colosseum", latitude: 41.89, longitude: 12.49, category: .attraction)
+    manager.addStop(to: days[0], name: "Pasta Place", latitude: 41.90, longitude: 12.49, category: .restaurant)
+    manager.addStop(to: days[1], name: "Vatican", latitude: 41.90, longitude: 12.45, category: .attraction)
+    // day 3 is empty
+
+    let stats = DataManager.tripStatistics(for: trip)
+    #expect(stats.totalStops == 3)
+    #expect(stats.visitedStops == 0)
+    #expect(stats.totalDays == 3)
+    #expect(stats.daysWithStops == 2)
+    #expect(stats.emptyDays == 1)
+    #expect(stats.averageStopsPerDay == 1.0)
+    #expect(stats.completionPercentage == 0.0)
+}
+
+@Test func tripStatisticsCategoryBreakdown() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Categories", destination: "Test", startDate: date(2026, 5, 10), endDate: date(2026, 5, 11))
+    let day = trip.daysArray.first!
+
+    manager.addStop(to: day, name: "Museum", latitude: 0, longitude: 0, category: .attraction)
+    manager.addStop(to: day, name: "Cafe", latitude: 0, longitude: 0, category: .restaurant)
+    manager.addStop(to: day, name: "Gallery", latitude: 0, longitude: 0, category: .attraction)
+    manager.addStop(to: day, name: "Hotel", latitude: 0, longitude: 0, category: .accommodation)
+
+    let stats = DataManager.tripStatistics(for: trip)
+    #expect(stats.categoryBreakdown[.attraction] == 2)
+    #expect(stats.categoryBreakdown[.restaurant] == 1)
+    #expect(stats.categoryBreakdown[.accommodation] == 1)
+    #expect(stats.categoryBreakdown[.transport] == nil)
+}
+
+@Test func tripStatisticsWithVisitedAndBudget() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Budget Trip", destination: "Berlin", startDate: date(2026, 6, 1), endDate: date(2026, 6, 2))
+    let days = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
+
+    let stop1 = manager.addStop(to: days[0], name: "Gate", latitude: 52.51, longitude: 13.37, category: .attraction)
+    manager.addStop(to: days[1], name: "Museum", latitude: 52.52, longitude: 13.39, category: .attraction)
+
+    // Mark one visited
+    manager.toggleVisited(stop1)
+
+    // Set budget and add expenses
+    trip.budgetAmount = 500.0
+    try? context.save()
+    manager.addExpense(to: trip, title: "Dinner", amount: 45.50, category: .food)
+    manager.addExpense(to: trip, title: "Taxi", amount: 22.00, category: .transport)
+
+    let stats = DataManager.tripStatistics(for: trip)
+    #expect(stats.visitedStops == 1)
+    #expect(stats.completionPercentage == 0.5)
+    #expect(stats.totalExpenses == 67.50)
+    #expect(stats.budgetRemaining == 432.50)
+    #expect(stats.totalBookings == 0)
+}
+
+@Test func tripStatisticsEmptyTrip() {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+    let trip = manager.createTrip(name: "Empty", destination: "Nowhere", startDate: date(2026, 7, 1), endDate: date(2026, 7, 1))
+
+    let stats = DataManager.tripStatistics(for: trip)
+    #expect(stats.totalStops == 0)
+    #expect(stats.visitedStops == 0)
+    #expect(stats.totalDays == 1)
+    #expect(stats.daysWithStops == 0)
+    #expect(stats.emptyDays == 1)
+    #expect(stats.averageStopsPerDay == 0)
+    #expect(stats.completionPercentage == 0)
+    #expect(stats.budgetRemaining == nil)
+    #expect(stats.categoryBreakdown.isEmpty)
+}
+
+// MARK: - 15. Stop Search & Filter
 
 @Test func filterStopsByQuery() {
     let context = makeTestContext()

@@ -551,6 +551,56 @@ final class DataManager {
         return value
     }
 
+    // MARK: - Trip Statistics
+
+    struct TripStatistics: Equatable {
+        var totalStops: Int
+        var visitedStops: Int
+        var totalDays: Int
+        var daysWithStops: Int
+        var emptyDays: Int
+        var totalBookings: Int
+        var totalExpenses: Double
+        var budgetRemaining: Double?
+        var categoryBreakdown: [StopCategory: Int]
+        var averageStopsPerDay: Double
+        var completionPercentage: Double  // stops visited / total stops
+    }
+
+    static func tripStatistics(for trip: TripEntity) -> TripStatistics {
+        let days = trip.daysArray
+        let allStops = days.flatMap(\.stopsArray)
+        let visitedCount = allStops.filter(\.isVisited).count
+        let daysWithStops = days.filter { !$0.stopsArray.isEmpty }.count
+        let totalExpenseAmount = trip.expensesArray.reduce(0.0) { $0 + $1.amount }
+
+        var categoryBreakdown: [StopCategory: Int] = [:]
+        for stop in allStops {
+            categoryBreakdown[stop.category, default: 0] += 1
+        }
+
+        let budgetRemaining: Double? = trip.budgetAmount > 0
+            ? trip.budgetAmount - totalExpenseAmount
+            : nil
+
+        let avgStops = days.isEmpty ? 0 : Double(allStops.count) / Double(days.count)
+        let completionPct = allStops.isEmpty ? 0 : Double(visitedCount) / Double(allStops.count)
+
+        return TripStatistics(
+            totalStops: allStops.count,
+            visitedStops: visitedCount,
+            totalDays: days.count,
+            daysWithStops: daysWithStops,
+            emptyDays: days.count - daysWithStops,
+            totalBookings: trip.bookingsArray.count,
+            totalExpenses: totalExpenseAmount,
+            budgetRemaining: budgetRemaining,
+            categoryBreakdown: categoryBreakdown,
+            averageStopsPerDay: avgStops,
+            completionPercentage: completionPct
+        )
+    }
+
     // MARK: - Search & Filter
 
     /// Filter stops within a trip by search query and/or category.
