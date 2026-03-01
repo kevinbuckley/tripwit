@@ -22,13 +22,13 @@ struct TripMapView: View {
     }
 
     private var displayTrip: TripEntity? {
-        // Active trip takes priority
-        if let active = validTrips.first(where: { $0.status == .active }) {
+        // Active trip (today within date range) takes priority
+        if let active = validTrips.first(where: { $0.isActive }) {
             return active
         }
         // Next upcoming trip (earliest future start date)
         let upcoming = validTrips
-            .filter { $0.status == .planning && $0.wrappedStartDate > Date() }
+            .filter { $0.isFuture }
             .sorted { $0.wrappedStartDate < $1.wrappedStartDate }
         if let next = upcoming.first {
             return next
@@ -69,7 +69,7 @@ struct TripMapView: View {
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            if let trip = displayTrip, trip.status == .active {
+            if let trip = displayTrip, trip.isActive {
                 ActiveTripDashboard(trip: trip)
             }
 

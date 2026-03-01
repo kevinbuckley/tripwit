@@ -361,12 +361,12 @@ private func makeTripWithDays(
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
     let decoded = try decoder.decode(TripTransfer.self, from: data)
-    #expect(decoded.schemaVersion == 1)
+    #expect(decoded.schemaVersion == 2)
 }
 
 @Test func transferEmptyCollections() throws {
     let transfer = TripTransfer(
-        schemaVersion: 1,
+        schemaVersion: 2,
         name: "Empty", destination: "Nowhere",
         startDate: Date(), endDate: Date(),
         statusRaw: "planning", notes: "",
@@ -536,7 +536,7 @@ private func makeTripWithDays(
 
     let data = try Data(contentsOf: fileURL)
     let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-    #expect(json["schemaVersion"] as? Int == 1)
+    #expect(json["schemaVersion"] as? Int == 2)
     #expect(json["name"] as? String == "Format Test")
 
     try? FileManager.default.removeItem(at: fileURL)
@@ -2278,6 +2278,471 @@ private func makeTripWithDays(
     for i in 0..<(reminders.count - 1) {
         #expect(reminders[i].fireDate <= reminders[i + 1].fireDate)
     }
+}
+
+// MARK: - Display Status (Date-Derived)
+
+@Test("displayStatus returns .active for trip whose date range includes today")
+func displayStatusActive() {
+    let context = makeTestContext()
+    let today = Date()
+    let start = calendar.date(byAdding: .day, value: -1, to: today)!
+    let end = calendar.date(byAdding: .day, value: 2, to: today)!
+    let (trip, _) = makeTripWithDays(in: context, start: start, end: end)
+
+    #expect(trip.displayStatus == .active)
+}
+
+@Test("displayStatus returns .planning for future trip")
+func displayStatusFuture() {
+    let context = makeTestContext()
+    let start = calendar.date(byAdding: .day, value: 30, to: Date())!
+    let end = calendar.date(byAdding: .day, value: 35, to: Date())!
+    let (trip, _) = makeTripWithDays(in: context, start: start, end: end)
+
+    #expect(trip.displayStatus == .planning)
+}
+
+@Test("displayStatus returns .completed for past trip")
+func displayStatusPast() {
+    let context = makeTestContext()
+    let start = date(2024, 1, 1)
+    let end = date(2024, 1, 5)
+    let (trip, _) = makeTripWithDays(in: context, start: start, end: end)
+
+    #expect(trip.displayStatus == .completed)
+}
+
+@Test("displayStatus ignores stored statusRaw and uses dates")
+func displayStatusIgnoresStoredStatus() {
+    let context = makeTestContext()
+    let today = Date()
+    let start = calendar.date(byAdding: .day, value: -1, to: today)!
+    let end = calendar.date(byAdding: .day, value: 2, to: today)!
+    let (trip, _) = makeTripWithDays(in: context, start: start, end: end)
+
+    // Force stored status to planning — displayStatus should still say active
+    trip.statusRaw = "planning"
+    #expect(trip.displayStatus == .active)
+}
+
+@Test("displayStatus returns .planning for trip without custom dates")
+func displayStatusWithoutDates() {
+    let context = makeTestContext()
+    let trip = TripEntity(context: context)
+    trip.id = UUID()
+    trip.name = "No Dates Trip"
+    trip.destination = "Somewhere"
+    trip.hasCustomDates = false
+    trip.startDate = Date()
+    trip.endDate = Date()
+    trip.createdAt = Date()
+    trip.updatedAt = Date()
+    trip.budgetAmount = 0
+    trip.budgetCurrencyCode = "USD"
+    try? context.save()
+
+    #expect(trip.displayStatus == .planning)
+}
+
+// MARK: - Booking Fields (Unified Stops)
+
+@Test("Booking fields default to nil on plain stops")
+func bookingFieldsDefaultNil() {
+    let context = makeTestContext()
+    let stop = StopEntity.create(in: context, name: "Museum", latitude: 0, longitude: 0, category: .attraction)
+    try? context.save()
+
+    #expect(stop.confirmationCode == nil)
+    #expect(stop.checkOutDate == nil)
+    #expect(stop.airline == nil)
+    #expect(stop.flightNumber == nil)
+    #expect(stop.departureAirport == nil)
+    #expect(stop.arrivalAirport == nil)
+    #expect(stop.hasBookingDetails == false)
+}
+
+@Test("Accommodation stop with checkOutDate has correct nightCount")
+func accommodationNightCount() {
+    let context = makeTestContext()
+    let (trip, days) = makeTripWithDays(in: context, start: date(2025, 6, 1), end: date(2025, 6, 5))
+    let day1 = days[0]
+
+    let stop = StopEntity.create(in: context, name: "Hotel A", latitude: 35.6, longitude: 139.7, category: .accommodation)
+    stop.confirmationCode = "ABC123"
+    stop.checkOutDate = date(2025, 6, 4)
+    stop.day = day1
+    try? context.save()
+
+    #expect(stop.hasBookingDetails == true)
+    #expect(stop.isMultiDayAccommodation == true)
+    #expect(stop.nightCount == 3)
+    #expect(stop.wrappedConfirmationCode == "ABC123")
+}
+
+@Test("Transport stop with flight details has hasBookingDetails == true")
+func transportBookingDetails() {
+    let context = makeTestContext()
+    let stop = StopEntity.create(in: context, name: "Flight to Tokyo", latitude: 0, longitude: 0, category: .transport)
+    stop.confirmationCode = "XYZ789"
+    stop.airline = "ANA"
+    stop.flightNumber = "NH105"
+    stop.departureAirport = "LAX"
+    stop.arrivalAirport = "NRT"
+    try? context.save()
+
+    #expect(stop.hasBookingDetails == true)
+    #expect(stop.airline == "ANA")
+    #expect(stop.flightNumber == "NH105")
+    #expect(stop.departureAirport == "LAX")
+    #expect(stop.arrivalAirport == "NRT")
+}
+
+@Test("Accommodation without checkOutDate is single-day (nightCount == nil)")
+func accommodationSingleDay() {
+    let context = makeTestContext()
+    let (_, days) = makeTripWithDays(in: context, start: date(2025, 6, 1), end: date(2025, 6, 3))
+
+    let stop = StopEntity.create(in: context, name: "Hostel B", latitude: 48.8, longitude: 2.3, category: .accommodation)
+    stop.day = days[0]
+    try? context.save()
+
+    #expect(stop.isMultiDayAccommodation == false)
+    #expect(stop.nightCount == nil)
+}
+
+@Test("StopTransfer round-trip preserves booking fields")
+func stopTransferRoundTrip() throws {
+    let transfer = StopTransfer(
+        name: "Hotel Test",
+        latitude: 35.6,
+        longitude: 139.7,
+        arrivalTime: nil,
+        departureTime: nil,
+        categoryRaw: "accommodation",
+        notes: "",
+        sortOrder: 0,
+        isVisited: false,
+        visitedAt: nil,
+        rating: 0,
+        address: nil,
+        phone: nil,
+        website: nil,
+        comments: [],
+        links: [],
+        todos: [],
+        confirmationCode: "CONF123",
+        checkOutDate: date(2025, 7, 5),
+        airline: nil,
+        flightNumber: nil,
+        departureAirport: nil,
+        arrivalAirport: nil
+    )
+
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let data = try encoder.encode(transfer)
+
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let decoded = try decoder.decode(StopTransfer.self, from: data)
+
+    #expect(decoded.confirmationCode == "CONF123")
+    #expect(decoded.checkOutDate != nil)
+    #expect(decoded.airline == nil)
+}
+
+@Test("Old StopTransfer JSON (pre-v2) decodes with nil booking defaults")
+func oldStopTransferDecodes() throws {
+    // JSON with v1 fields but no booking fields — simulates a pre-v2 file
+    let json = """
+    {
+        "name": "Old Stop",
+        "latitude": 0,
+        "longitude": 0,
+        "categoryRaw": "attraction",
+        "notes": "",
+        "sortOrder": 0,
+        "isVisited": false,
+        "rating": 0,
+        "comments": [],
+        "links": [],
+        "todos": []
+    }
+    """
+    let data = Data(json.utf8)
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let decoded = try decoder.decode(StopTransfer.self, from: data)
+
+    #expect(decoded.name == "Old Stop")
+    #expect(decoded.confirmationCode == nil)
+    #expect(decoded.checkOutDate == nil)
+    #expect(decoded.airline == nil)
+    #expect(decoded.flightNumber == nil)
+    #expect(decoded.departureAirport == nil)
+    #expect(decoded.arrivalAirport == nil)
+}
+
+// MARK: - Exhaustive Round-Trip Coverage
+
+/// Verifies that EVERY field stored in the .tripwit format survives a full
+/// export → decode → import cycle without loss or mutation.
+/// If you add a new field to the schema, add a corresponding assertion here.
+@Test func fullTripExportImportPreservesEverything() throws {
+    let context = makeTestContext()
+    let manager = DataManager(context: context)
+
+    // ── Trip ──────────────────────────────────────────────────────────────
+    let start  = date(2026, 9, 10)
+    let end    = date(2026, 9, 14)
+    let trip   = manager.createTrip(
+        name:        "Everything Trip",
+        destination: "Kyoto, Japan",
+        startDate:   start,
+        endDate:     end,
+        notes:       "Full round-trip test"
+    )
+    trip.statusRaw       = "active"
+    trip.hasCustomDates  = true
+    trip.budgetAmount    = 2500.0
+    trip.budgetCurrencyCode = "JPY"
+
+    // ── Day with coordinates & notes ─────────────────────────────────────
+    let days = trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
+    let day1 = days[0]
+    day1.notes             = "Day one notes"
+    day1.location          = "Fushimi, Kyoto"
+    day1.locationLatitude  = 34.9671
+    day1.locationLongitude = 135.7727
+
+    // ── Stop with every possible field ───────────────────────────────────
+    let arrTime = calendar.date(from: DateComponents(year: 2026, month: 9, day: 10, hour: 9,  minute: 0))!
+    let depTime = calendar.date(from: DateComponents(year: 2026, month: 9, day: 10, hour: 11, minute: 30))!
+    let stop = manager.addStop(
+        to:       day1,
+        name:     "Fushimi Inari Taisha",
+        latitude: 34.9671,
+        longitude: 135.7727,
+        category: .attraction,
+        notes:    "Thousands of torii gates"
+    )
+    stop.arrivalTime   = arrTime
+    stop.departureTime = depTime
+    stop.sortOrder     = 3
+    stop.isVisited     = true
+    stop.visitedAt     = date(2026, 9, 10)
+    stop.rating        = 5
+    stop.address       = "68 Fukakusa Yabunouchicho, Fushimi"
+    stop.phone         = "+81 75-641-7331"
+    stop.website       = "https://inari.jp"
+    // Booking fields on stop
+    stop.confirmationCode = "INARI-99"
+    stop.checkOutDate     = date(2026, 9, 12)
+    stop.airline          = "Japan Airlines"
+    stop.flightNumber     = "JL007"
+    stop.departureAirport = "LAX"
+    stop.arrivalAirport   = "KIX"
+
+    // Stop todo (completed)
+    let todo1 = StopTodoEntity.create(in: context, text: "Get the stamp", sortOrder: 0)
+    todo1.isCompleted = true
+    todo1.stop = stop
+    // Stop todo (not completed)
+    let todo2 = StopTodoEntity.create(in: context, text: "Buy omamori", sortOrder: 1)
+    todo2.isCompleted = false
+    todo2.stop = stop
+
+    // Stop link
+    let link = StopLinkEntity.create(in: context, title: "Official site", url: "https://inari.jp/en/", sortOrder: 7)
+    link.stop = stop
+
+    // Stop comment with a specific createdAt
+    let commentDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1, hour: 14, minute: 0))!
+    let comment = CommentEntity.create(in: context, text: "One of the best places in Kyoto")
+    comment.createdAt = commentDate
+    comment.stop = stop
+
+    // ── Legacy Booking ────────────────────────────────────────────────────
+    let depT = calendar.date(from: DateComponents(year: 2026, month: 9, day: 10, hour: 10))!
+    let arrT = calendar.date(from: DateComponents(year: 2026, month: 9, day: 10, hour: 15))!
+    let booking = BookingEntity.create(
+        in: context,
+        type: .flight,
+        title: "JL 7 to KIX",
+        confirmationCode: "JLCONF",
+        notes: "Window seat",
+        sortOrder: 0
+    )
+    booking.airline          = "Japan Airlines"
+    booking.flightNumber     = "JL007"
+    booking.departureAirport = "LAX"
+    booking.arrivalAirport   = "KIX"
+    booking.departureTime    = depT
+    booking.arrivalTime      = arrT
+    booking.trip             = trip
+
+    let hotel = BookingEntity.create(
+        in: context,
+        type: .hotel,
+        title: "Kyoto Inn",
+        confirmationCode: "HTLCONF",
+        notes: "Late check-in requested"
+    )
+    hotel.hotelName    = "Kyoto Grand Inn"
+    hotel.hotelAddress = "1 Kawaramachi, Kyoto"
+    hotel.checkInDate  = date(2026, 9, 10)
+    hotel.checkOutDate = date(2026, 9, 14)
+    hotel.trip         = trip
+
+    // ── Packing List ──────────────────────────────────────────────────────
+    let list = TripListEntity.create(in: context, name: "Packing", icon: "bag.fill", sortOrder: 2)
+    list.trip = trip
+    let item1 = TripListItemEntity.create(in: context, text: "Passport",  sortOrder: 0)
+    item1.isChecked = true
+    item1.list = list
+    let item2 = TripListItemEntity.create(in: context, text: "Rail Pass", sortOrder: 1)
+    item2.isChecked = false
+    item2.list = list
+
+    // ── Expense ───────────────────────────────────────────────────────────
+    let expenseCreatedAt = calendar.date(from: DateComponents(year: 2026, month: 7, day: 15, hour: 9))!
+    let expense = manager.addExpense(
+        to: trip,
+        title: "Train ticket",
+        amount: 1200.0,
+        category: .transport
+    )
+    expense.currencyCode  = "JPY"
+    expense.notes         = "Shinkansen"
+    expense.sortOrder     = 4
+    expense.createdAt     = expenseCreatedAt   // will be lost without the fix
+
+    try? context.save()
+
+    // ── Export → Import ───────────────────────────────────────────────────
+    let fileURL = try TripShareService.exportTrip(trip)
+    defer { try? FileManager.default.removeItem(at: fileURL) }
+    let transfer = try TripShareService.decodeTrip(from: fileURL)
+    let ctx2 = makeTestContext()
+    let imp = TripShareService.importTrip(transfer, into: ctx2)
+
+    // ── Trip fields ───────────────────────────────────────────────────────
+    #expect(imp.wrappedName           == "Everything Trip")
+    #expect(imp.wrappedDestination    == "Kyoto, Japan")
+    #expect(imp.wrappedNotes          == "Full round-trip test")
+    #expect(imp.wrappedStatusRaw      == "active")
+    #expect(imp.hasCustomDates        == true)
+    #expect(imp.budgetAmount          == 2500.0)
+    #expect(imp.wrappedBudgetCurrencyCode == "JPY")
+    #expect(imp.wrappedStartDate.timeIntervalSince1970 == start.timeIntervalSince1970)
+    #expect(imp.wrappedEndDate.timeIntervalSince1970   == end.timeIntervalSince1970)
+
+    // ── Day fields ────────────────────────────────────────────────────────
+    let impDays = imp.daysArray.sorted { $0.dayNumber < $1.dayNumber }
+    #expect(impDays.count == 5)
+    let impDay1 = impDays[0]
+    #expect(impDay1.wrappedNotes          == "Day one notes")
+    #expect(impDay1.wrappedLocation       == "Fushimi, Kyoto")
+    #expect(impDay1.locationLatitude      == 34.9671)
+    #expect(impDay1.locationLongitude     == 135.7727)
+    #expect(impDay1.dayNumber             == 1)
+
+    // ── Stop fields ───────────────────────────────────────────────────────
+    #expect(impDay1.stopsArray.count == 1)
+    let s = impDay1.stopsArray.first!
+    #expect(s.wrappedName      == "Fushimi Inari Taisha")
+    #expect(s.latitude         == 34.9671)
+    #expect(s.longitude        == 135.7727)
+    #expect(s.category         == .attraction)
+    #expect(s.wrappedNotes     == "Thousands of torii gates")
+    #expect(s.sortOrder        == 3)
+    #expect(s.isVisited        == true)
+    #expect(s.visitedAt?.timeIntervalSince1970 == date(2026, 9, 10).timeIntervalSince1970)
+    #expect(s.rating           == 5)
+    #expect(s.address          == "68 Fukakusa Yabunouchicho, Fushimi")
+    #expect(s.phone            == "+81 75-641-7331")
+    #expect(s.website          == "https://inari.jp")
+    #expect(s.arrivalTime?.timeIntervalSince1970   == arrTime.timeIntervalSince1970)
+    #expect(s.departureTime?.timeIntervalSince1970 == depTime.timeIntervalSince1970)
+
+    // Stop booking fields
+    #expect(s.confirmationCode == "INARI-99")
+    #expect(s.checkOutDate?.timeIntervalSince1970 == date(2026, 9, 12).timeIntervalSince1970)
+    #expect(s.airline          == "Japan Airlines")
+    #expect(s.flightNumber     == "JL007")
+    #expect(s.departureAirport == "LAX")
+    #expect(s.arrivalAirport   == "KIX")
+
+    // ── Stop todos ────────────────────────────────────────────────────────
+    let todos = s.todosArray.sorted { $0.sortOrder < $1.sortOrder }
+    #expect(todos.count == 2)
+    #expect(todos[0].wrappedText   == "Get the stamp")
+    #expect(todos[0].isCompleted   == true)
+    #expect(todos[0].sortOrder     == 0)
+    #expect(todos[1].wrappedText   == "Buy omamori")
+    #expect(todos[1].isCompleted   == false)
+    #expect(todos[1].sortOrder     == 1)
+
+    // ── Stop links ────────────────────────────────────────────────────────
+    let links = s.linksArray
+    #expect(links.count == 1)
+    #expect(links[0].wrappedTitle  == "Official site")
+    #expect(links[0].wrappedURL    == "https://inari.jp/en/")
+    #expect(links[0].sortOrder     == 7)
+
+    // ── Stop comments ─────────────────────────────────────────────────────
+    let comments = s.commentsArray
+    #expect(comments.count == 1)
+    #expect(comments[0].wrappedText == "One of the best places in Kyoto")
+    #expect(comments[0].createdAt?.timeIntervalSince1970 == commentDate.timeIntervalSince1970)
+
+    // ── Legacy bookings ───────────────────────────────────────────────────
+    let bks = imp.bookingsArray.sorted { $0.sortOrder < $1.sortOrder }
+    #expect(bks.count == 2)
+    let flight = bks.first(where: { $0.wrappedTypeRaw == "flight" })!
+    #expect(flight.wrappedTitle          == "JL 7 to KIX")
+    #expect(flight.wrappedConfirmationCode == "JLCONF")
+    #expect(flight.wrappedNotes          == "Window seat")
+    #expect(flight.airline               == "Japan Airlines")
+    #expect(flight.flightNumber          == "JL007")
+    #expect(flight.departureAirport      == "LAX")
+    #expect(flight.arrivalAirport        == "KIX")
+    #expect(flight.departureTime?.timeIntervalSince1970 == depT.timeIntervalSince1970)
+    #expect(flight.arrivalTime?.timeIntervalSince1970   == arrT.timeIntervalSince1970)
+    let htl = bks.first(where: { $0.wrappedTypeRaw == "hotel" })!
+    #expect(htl.wrappedTitle      == "Kyoto Inn")
+    #expect(htl.wrappedConfirmationCode == "HTLCONF")
+    #expect(htl.wrappedNotes      == "Late check-in requested")
+    #expect(htl.hotelName         == "Kyoto Grand Inn")
+    #expect(htl.hotelAddress      == "1 Kawaramachi, Kyoto")
+    #expect(htl.checkInDate?.timeIntervalSince1970  == date(2026, 9, 10).timeIntervalSince1970)
+    #expect(htl.checkOutDate?.timeIntervalSince1970 == date(2026, 9, 14).timeIntervalSince1970)
+
+    // ── Packing list ──────────────────────────────────────────────────────
+    #expect(imp.listsArray.count == 1)
+    let impList = imp.listsArray.first!
+    #expect(impList.wrappedName == "Packing")
+    #expect(impList.wrappedIcon == "bag.fill")
+    #expect(impList.sortOrder   == 2)
+    let impItems = impList.itemsArray.sorted { $0.sortOrder < $1.sortOrder }
+    #expect(impItems.count == 2)
+    #expect(impItems[0].wrappedText == "Passport")
+    #expect(impItems[0].isChecked   == true)
+    #expect(impItems[0].sortOrder   == 0)
+    #expect(impItems[1].wrappedText == "Rail Pass")
+    #expect(impItems[1].isChecked   == false)
+    #expect(impItems[1].sortOrder   == 1)
+
+    // ── Expense (including createdAt fix) ─────────────────────────────────
+    #expect(imp.expensesArray.count == 1)
+    let e = imp.expensesArray.first!
+    #expect(e.wrappedTitle     == "Train ticket")
+    #expect(e.amount           == 1200.0)
+    #expect(e.wrappedCurrencyCode == "JPY")
+    #expect(e.wrappedNotes     == "Shinkansen")
+    #expect(e.sortOrder        == 4)
+    #expect(e.createdAt?.timeIntervalSince1970 == expenseCreatedAt.timeIntervalSince1970)
 }
 
 } // end TripWitTests suite

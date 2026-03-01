@@ -14,11 +14,11 @@ struct EditTripSheet: View {
     @State private var startDate: Date
     @State private var endDate: Date
     @State private var notes: String
-    @State private var status: TripStatus
     @State private var showingDateChangeWarning = false
     @State private var dateChangeWarningMessage = ""
     @State private var budgetText: String
     @State private var budgetCurrency: String
+    @State private var showingPasteItinerary = false
 
     private static let currencyOptions = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "MXN", "CNY", "KRW", "THB", "INR", "BRL"]
 
@@ -29,7 +29,6 @@ struct EditTripSheet: View {
         _startDate = State(initialValue: trip.startDate ?? Date())
         _endDate = State(initialValue: trip.endDate ?? Date())
         _notes = State(initialValue: trip.notes ?? "")
-        _status = State(initialValue: trip.status)
         _budgetText = State(initialValue: trip.budgetAmount > 0 ? String(format: "%.0f", trip.budgetAmount) : "")
         _budgetCurrency = State(initialValue: trip.budgetCurrencyCode ?? "USD")
     }
@@ -58,16 +57,6 @@ struct EditTripSheet: View {
                 }
 
                 Section {
-                    Picker("Status", selection: $status) {
-                        Text("Planning").tag(TripStatus.planning)
-                        Text("Active").tag(TripStatus.active)
-                        Text("Completed").tag(TripStatus.completed)
-                    }
-                } header: {
-                    Text("Status")
-                }
-
-                Section {
                     HStack {
                         Text(currencySymbol)
                             .foregroundStyle(.secondary)
@@ -92,6 +81,20 @@ struct EditTripSheet: View {
                 } header: {
                     Text("Notes")
                 }
+
+                Section {
+                    Button {
+                        showingPasteItinerary = true
+                    } label: {
+                        Label("Paste Itinerary", systemImage: "doc.on.clipboard")
+                            .foregroundStyle(.purple)
+                    }
+                } footer: {
+                    Text("Import stops from ChatGPT, a blog, or any text.")
+                }
+            }
+            .sheet(isPresented: $showingPasteItinerary) {
+                PasteItinerarySheet(trip: trip)
             }
             .navigationTitle("Edit Trip")
             .navigationBarTitleDisplayMode(.inline)
@@ -158,7 +161,6 @@ struct EditTripSheet: View {
         trip.startDate = startDate
         trip.endDate = endDate
         trip.notes = notes.trimmingCharacters(in: .whitespaces)
-        trip.status = status
         trip.budgetAmount = Double(budgetText) ?? 0
         trip.budgetCurrencyCode = budgetCurrency
 

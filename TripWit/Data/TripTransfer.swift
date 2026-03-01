@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Trip Transfer (Codable serialization for .tripwit file sharing)
 
 struct TripTransfer: Codable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     var schemaVersion: Int
     var name: String
@@ -54,6 +54,13 @@ struct StopTransfer: Codable {
     // Added in schema v1 — defaults ensure old files without these fields still decode
     var links: [StopLinkTransfer] = []
     var todos: [StopTodoTransfer] = []
+    // Added in schema v2 — booking fields for unified stops
+    var confirmationCode: String? = nil
+    var checkOutDate: Date? = nil
+    var airline: String? = nil
+    var flightNumber: String? = nil
+    var departureAirport: String? = nil
+    var arrivalAirport: String? = nil
 }
 
 struct CommentTransfer: Codable {

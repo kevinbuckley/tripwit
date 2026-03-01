@@ -19,19 +19,15 @@ struct TripListView: View {
     }
 
     private var activeTrips: [TripEntity] {
-        validTrips.filter { $0.status == .active }
+        validTrips.filter { $0.hasCustomDates && $0.isActive }
     }
 
     private var upcomingTrips: [TripEntity] {
-        validTrips.filter { $0.status == .planning && $0.isFuture }
+        validTrips.filter { ($0.hasCustomDates && $0.isFuture) || !$0.hasCustomDates }
     }
 
     private var pastTrips: [TripEntity] {
-        validTrips.filter { $0.status == .completed }
-    }
-
-    private var planningCurrentTrips: [TripEntity] {
-        validTrips.filter { $0.status == .planning && !$0.isFuture }
+        validTrips.filter { $0.hasCustomDates && $0.isPast }
     }
 
     var body: some View {
@@ -127,17 +123,16 @@ struct TripListView: View {
                 }
             }
 
-            if !upcomingTrips.isEmpty || !planningCurrentTrips.isEmpty {
-                let combined = planningCurrentTrips + upcomingTrips
+            if !upcomingTrips.isEmpty {
                 Section {
-                    ForEach(combined) { trip in
+                    ForEach(upcomingTrips) { trip in
                         NavigationLink(destination: TripDetailView(trip: trip)) {
                             tripRow(trip)
                         }
                     }
                     .onDelete { offsets in
                         if let index = offsets.first {
-                            tripToDelete = combined[index]
+                            tripToDelete = upcomingTrips[index]
                         }
                     }
                 } header: {

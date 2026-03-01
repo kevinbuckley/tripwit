@@ -50,7 +50,13 @@ struct TripShareService {
                             },
                             todos: stop.todosArray.map { t in
                                 StopTodoTransfer(text: t.wrappedText, isCompleted: t.isCompleted, sortOrder: Int(t.sortOrder))
-                            }
+                            },
+                            confirmationCode: stop.confirmationCode,
+                            checkOutDate: stop.checkOutDate,
+                            airline: stop.airline,
+                            flightNumber: stop.flightNumber,
+                            departureAirport: stop.departureAirport,
+                            arrivalAirport: stop.arrivalAirport
                         )
                     }
                 )
@@ -170,6 +176,12 @@ struct TripShareService {
                     website: stopT.website
                 )
                 stop.rating = Int32(stopT.rating)
+                stop.confirmationCode = stopT.confirmationCode
+                stop.checkOutDate = stopT.checkOutDate
+                stop.airline = stopT.airline
+                stop.flightNumber = stopT.flightNumber
+                stop.departureAirport = stopT.departureAirport
+                stop.arrivalAirport = stopT.arrivalAirport
                 stop.day = day
 
                 for commentT in stopT.comments {
@@ -253,6 +265,8 @@ struct TripShareService {
                 notes: expT.notes,
                 sortOrder: expT.sortOrder
             )
+            // Restore original createdAt so the expense keeps its correct timestamp
+            expense.createdAt = expT.createdAt
             expense.trip = trip
         }
 

@@ -46,6 +46,12 @@
         <attribute name="address" optional="YES" attributeType="String"/>
         <attribute name="phone" optional="YES" attributeType="String"/>
         <attribute name="website" optional="YES" attributeType="String"/>
+        <attribute name="confirmationCode" optional="YES" attributeType="String"/>
+        <attribute name="checkOutDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="airline" optional="YES" attributeType="String"/>
+        <attribute name="flightNumber" optional="YES" attributeType="String"/>
+        <attribute name="departureAirport" optional="YES" attributeType="String"/>
+        <attribute name="arrivalAirport" optional="YES" attributeType="String"/>
         <relationship name="day" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="DayEntity" inverseName="stops" inverseEntity="DayEntity"/>
         <relationship name="comments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CommentEntity" inverseName="stop" inverseEntity="CommentEntity"/>
         <relationship name="links" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="StopLinkEntity" inverseName="stop" inverseEntity="StopLinkEntity"/>

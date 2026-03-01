@@ -46,7 +46,7 @@ struct ContentView: View {
                             case "tripdetail":
                                 selectedTab = 1
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    if let first = allTrips.first(where: { $0.status == .active }) ?? allTrips.first {
+                                    if let first = allTrips.first(where: { $0.isActive }) ?? allTrips.first {
                                         tripsNavPath.append(first.id)
                                     }
                                 }

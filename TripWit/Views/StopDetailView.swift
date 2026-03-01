@@ -143,6 +143,11 @@ struct StopDetailView: View {
                 Text("Details")
             }
 
+            // Booking info section
+            if stop.hasBookingDetails {
+                bookingInfoSection
+            }
+
             if !stop.wrappedNotes.isEmpty {
                 Section {
                     Text(stop.wrappedNotes)
@@ -235,6 +240,42 @@ struct StopDetailView: View {
         guard let day = stop.day else { return [] }
         return day.stopsArray.filter {
             $0.id != stop.id && ($0.latitude != 0 || $0.longitude != 0)
+        }
+    }
+
+    // MARK: - Booking Info
+
+    private var bookingInfoSection: some View {
+        Section {
+            if !stop.wrappedConfirmationCode.isEmpty {
+                LabeledContent("Confirmation") {
+                    Text(stop.wrappedConfirmationCode)
+                        .font(.subheadline.monospaced())
+                        .textSelection(.enabled)
+                }
+            }
+            if stop.category == .accommodation {
+                if let checkOut = stop.checkOutDate {
+                    LabeledContent("Check-out", value: checkOut, format: .dateTime.month().day().year())
+                }
+                if let nights = stop.nightCount {
+                    LabeledContent("Duration", value: "\(nights) night\(nights == 1 ? "" : "s")")
+                }
+            }
+            if stop.category == .transport {
+                if let airline = stop.airline, !airline.isEmpty {
+                    LabeledContent("Airline", value: airline)
+                }
+                if let flight = stop.flightNumber, !flight.isEmpty {
+                    LabeledContent("Flight", value: flight)
+                }
+                if let dep = stop.departureAirport, !dep.isEmpty,
+                   let arr = stop.arrivalAirport, !arr.isEmpty {
+                    LabeledContent("Route", value: "\(dep) → \(arr)")
+                }
+            }
+        } header: {
+            Text("Booking Info")
         }
     }
 

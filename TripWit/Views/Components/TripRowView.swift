@@ -32,7 +32,7 @@ struct TripRowView: View {
                 Text(trip.wrappedName)
                     .font(.headline)
                 Spacer()
-                StatusBadge(status: trip.status)
+                StatusBadge(status: trip.displayStatus)
             }
 
             HStack(spacing: 4) {

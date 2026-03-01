@@ -13,14 +13,9 @@ struct TripDetailView: View {
     @State private var showingEditTrip = false
     @State private var showingAddStop = false
     @State private var selectedDayForStop: DayEntity?
-    @State private var showingStartConfirmation = false
-    @State private var showingCompleteConfirmation = false
-    @State private var showingAddBooking = false
     @State private var travelTimeService = TravelTimeService()
+    @State private var weatherService = WeatherService()
     @State private var stopToDelete: StopEntity?
-    @State private var bookingToDelete: BookingEntity?
-    @State private var showingPasteItinerary = false
-    @State private var showingImportBooking = false
     @State private var dayForLocationEdit: DayEntity?
     @State private var dayForNotesEdit: DayEntity?
     @State private var editingDayNotes: String = ""
@@ -88,16 +83,6 @@ struct TripDetailView: View {
         List {
             headerSection
 
-            statusActionSection
-
-            if !trip.isPast {
-                WeatherSection(trip: trip)
-            }
-
-            bookingsSection
-
-            pasteItinerarySection
-
             if !sortedDays.isEmpty {
                 let segments = locationSegments
                 let isMultiCity = segments.count > 1
@@ -120,6 +105,15 @@ struct TripDetailView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(trip.wrappedName)
         .navigationBarTitleDisplayMode(.large)
+        .task(id: trip.objectID) {
+            if !trip.isPast {
+                await weatherService.fetchWeather(
+                    destination: weatherLocation,
+                    startDate: trip.wrappedStartDate,
+                    endDate: trip.wrappedEndDate
+                )
+            }
+        }
         .alert("Calendar", isPresented: $showingCalendarResult) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -132,15 +126,6 @@ struct TripDetailView: View {
         }
         .sheet(item: $selectedDayForStop) { day in
             AddStopSheet(day: day)
-        }
-        .sheet(isPresented: $showingAddBooking) {
-            AddBookingSheet(trip: trip)
-        }
-        .sheet(isPresented: $showingPasteItinerary) {
-            PasteItinerarySheet(trip: trip)
-        }
-        .sheet(isPresented: $showingImportBooking) {
-            ImportBookingSheet(trip: trip)
         }
         .sheet(item: $dayForLocationEdit) { day in
             SetDayLocationSheet(day: day, trip: trip)
@@ -172,24 +157,6 @@ struct TripDetailView: View {
                 Text("Set a description for Day \(day.dayNumber)")
             }
         }
-        .alert("Start Trip?", isPresented: $showingStartConfirmation) {
-            Button("Start", role: .none) {
-                trip.status = .active
-                DataManager(context: viewContext).updateTrip(trip)
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This will mark your trip as active.")
-        }
-        .alert("Complete Trip?", isPresented: $showingCompleteConfirmation) {
-            Button("Complete", role: .none) {
-                trip.status = .completed
-                DataManager(context: viewContext).updateTrip(trip)
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This will mark your trip as completed.")
-        }
         .alert("Delete Stop?", isPresented: Binding(
             get: { stopToDelete != nil },
             set: { if !$0 { stopToDelete = nil } }
@@ -204,24 +171,6 @@ struct TripDetailView: View {
         } message: {
             if let stop = stopToDelete {
                 Text("Are you sure you want to delete \"\(stop.wrappedName)\"? This cannot be undone.")
-            }
-        }
-        .alert("Delete Booking?", isPresented: Binding(
-            get: { bookingToDelete != nil },
-            set: { if !$0 { bookingToDelete = nil } }
-        )) {
-            Button("Delete", role: .destructive) {
-                if let booking = bookingToDelete {
-                    viewContext.delete(booking)
-                    trip.updatedAt = Date()
-                    try? viewContext.save()
-                    bookingToDelete = nil
-                }
-            }
-            Button("Cancel", role: .cancel) { bookingToDelete = nil }
-        } message: {
-            if let booking = bookingToDelete {
-                Text("Are you sure you want to delete \"\(booking.wrappedTitle)\"?")
             }
         }
     }
@@ -354,7 +303,7 @@ struct TripDetailView: View {
                         }
                     }
                     Spacer()
-                    StatusBadge(status: trip.status)
+                    StatusBadge(status: trip.displayStatus)
                 }
 
                 HStack(spacing: 16) {
@@ -388,172 +337,61 @@ struct TripDetailView: View {
         }
     }
 
-    // MARK: - Status Actions
+    // MARK: - Weather (per-day)
 
-    @ViewBuilder
-    private var statusActionSection: some View {
-        if trip.status == .planning {
-            Section {
-                Button {
-                    showingStartConfirmation = true
-                } label: {
-                    Label("Start Trip", systemImage: "play.fill")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
-                }
-                .tint(.green)
-            }
-        } else if trip.status == .active {
-            Section {
-                Button {
-                    showingCompleteConfirmation = true
-                } label: {
-                    Label("Complete Trip", systemImage: "checkmark.circle.fill")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
-                }
-                .tint(.orange)
-            }
+    /// Location used for weather fetch — first day with a location, else trip destination.
+    private var weatherLocation: String {
+        if let firstLoc = sortedDays.first(where: { !$0.wrappedLocation.isEmpty })?.wrappedLocation {
+            return firstLoc
+        }
+        return trip.wrappedDestination
+    }
+
+    /// Finds the weather forecast whose date matches a given day.
+    private func forecast(for day: DayEntity) -> WeatherService.DayForecast? {
+        guard let dayDate = day.date else { return nil }
+        return weatherService.forecasts.first {
+            Calendar.current.isDate($0.date, inSameDayAs: dayDate)
         }
     }
 
-    // MARK: - Bookings Section
-
-    private var sortedBookings: [BookingEntity] {
-        trip.bookingsArray.sorted { $0.sortOrder < $1.sortOrder }
-    }
-
-    private var bookingsSection: some View {
-        Section {
-            if sortedBookings.isEmpty {
-                HStack {
-                    Spacer()
-                    VStack(spacing: 6) {
-                        Image(systemName: "suitcase")
-                            .font(.title2)
-                            .foregroundStyle(.secondary)
-                        Text("No bookings yet")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 8)
-                    Spacer()
-                }
-            } else {
-                ForEach(sortedBookings) { booking in
-                    NavigationLink(destination: BookingDetailView(booking: booking)) {
-                        bookingRow(booking)
-                    }
-                }
-                .onDelete { offsets in
-                    if let index = offsets.first {
-                        bookingToDelete = sortedBookings[index]
-                    }
-                }
-                            }
-
-            Button {
-                showingAddBooking = true
-            } label: {
-                Label("Add Booking", systemImage: "plus.circle")
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
-            }
-
-            Button {
-                showingImportBooking = true
-            } label: {
-                Label("Import from Email", systemImage: "envelope.open")
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
-            }
-        } header: {
-            HStack {
-                Text("Flights & Hotels")
+    @ViewBuilder
+    private func weatherRow(for day: DayEntity) -> some View {
+        if let fc = forecast(for: day) {
+            HStack(spacing: 6) {
+                Image(systemName: WeatherService.weatherIcon(for: fc.conditionCode))
+                    .font(.caption)
+                    .foregroundStyle(weatherIconColor(for: fc.conditionCode))
+                Text(WeatherService.weatherDescription(for: fc.conditionCode))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(trip.bookingsArray.count)")
+                Text("\(Int(fc.highTemp))° / \(Int(fc.lowTemp))°")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if fc.precipProbability > 0 {
+                    HStack(spacing: 2) {
+                        Image(systemName: "drop.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.blue)
+                        Text("\(fc.precipProbability)%")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.blue)
+                    }
+                }
             }
         }
     }
 
-    private func bookingRow(_ booking: BookingEntity) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: booking.bookingType.icon)
-                .font(.body)
-                .foregroundStyle(bookingIconColor(booking))
-                .frame(width: 32, height: 32)
-                .background(bookingIconColor(booking).opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(booking.wrappedTitle)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                bookingSubtitle(booking)
-            }
-
-            Spacer()
-
-            if !booking.wrappedConfirmationCode.isEmpty {
-                Text(booking.wrappedConfirmationCode)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-            }
+    private func weatherIconColor(for code: Int) -> Color {
+        switch WeatherService.weatherColor(for: code) {
+        case "yellow": return .yellow
+        case "orange": return .orange
+        case "blue": return .blue
+        case "cyan": return .cyan
+        case "purple": return .purple
+        default: return .gray
         }
-        .padding(.vertical, 2)
-    }
-
-    @ViewBuilder
-    private func bookingSubtitle(_ booking: BookingEntity) -> some View {
-        switch booking.bookingType {
-        case .flight:
-            if let dep = booking.departureAirport, let arr = booking.arrivalAirport {
-                Text("\(dep) → \(arr)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else if let airline = booking.airline {
-                Text(airline)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        case .hotel:
-            if let checkIn = booking.checkInDate, let checkOut = booking.checkOutDate {
-                let nights = Calendar.current.dateComponents([.day], from: checkIn, to: checkOut).day ?? 0
-                Text("\(nights) night\(nights == 1 ? "" : "s")")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        case .carRental:
-            if let pickup = booking.departureTime {
-                Text("Pickup: \(pickup, style: .date)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        case .other:
-            EmptyView()
-        }
-    }
-
-    private func bookingIconColor(_ booking: BookingEntity) -> Color {
-        switch booking.bookingType {
-        case .flight: .blue
-        case .hotel: .purple
-        case .carRental: .orange
-        case .other: .gray
-        }
-    }
-
-    private func deleteBookings(at offsets: IndexSet) {
-        let bookings = sortedBookings
-        for index in offsets {
-            viewContext.delete(bookings[index])
-        }
-        trip.updatedAt = Date()
-        try? viewContext.save()
     }
 
     // MARK: - Location Header
@@ -591,6 +429,33 @@ struct TripDetailView: View {
             }
             .padding(.vertical, 4)
         }
+    }
+
+    // MARK: - Active Accommodation
+
+    /// Finds an accommodation stop from another day whose stay spans this day.
+    private func activeAccommodation(for day: DayEntity) -> StopEntity? {
+        guard let dayDate = day.date else { return nil }
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: dayDate)
+
+        for otherDay in sortedDays where otherDay.id != day.id {
+            guard let otherDate = otherDay.date else { continue }
+            let otherStart = calendar.startOfDay(for: otherDate)
+            // Only look at days before this one
+            guard otherStart < dayStart else { continue }
+
+            for stop in otherDay.stopsArray {
+                guard stop.category == .accommodation,
+                      let checkOut = stop.checkOutDate else { continue }
+                let checkOutStart = calendar.startOfDay(for: checkOut)
+                // This day is between check-in (exclusive) and check-out (exclusive)
+                if dayStart > otherStart && dayStart < checkOutStart {
+                    return stop
+                }
+            }
+        }
+        return nil
     }
 
     // MARK: - Day Notes
@@ -680,6 +545,13 @@ struct TripDetailView: View {
         return Section {
             dayNotesRow(day)
 
+            weatherRow(for: day)
+
+            // "Staying at" banner for multi-day accommodation
+            if let accommodation = activeAccommodation(for: day) {
+                stayingAtRow(accommodation)
+            }
+
             // Daily distance/time summary
             daySummaryRow(locatedStops: locatedStops)
 
@@ -758,6 +630,24 @@ struct TripDetailView: View {
                 }
             }
         }
+    }
+
+    private func stayingAtRow(_ accommodation: StopEntity) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "bed.double.fill")
+                .font(.caption)
+                .foregroundStyle(.purple)
+            Text("Staying at \(accommodation.wrappedName)")
+                .font(.caption)
+                .foregroundStyle(.purple)
+            if let nights = accommodation.nightCount {
+                Text("(\(nights) night\(nights == 1 ? "" : "s"))")
+                    .font(.caption)
+                    .foregroundStyle(.purple.opacity(0.7))
+            }
+            Spacer()
+        }
+        .padding(.vertical, 2)
     }
 
     // MARK: - Daily Summary
@@ -896,37 +786,6 @@ struct TripDetailView: View {
     }
 
     // MARK: - Paste Itinerary
-
-    private var pasteItinerarySection: some View {
-        Section {
-            Button {
-                showingPasteItinerary = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "doc.on.clipboard.fill")
-                        .font(.title3)
-                        .foregroundStyle(.purple)
-                        .frame(width: 32, height: 32)
-                        .background(Color.purple.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Paste Itinerary")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                        Text("Import stops from ChatGPT, a blog, or any text")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "doc.on.clipboard")
-                        .foregroundStyle(.purple)
-                }
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(.plain)
-        }
-    }
 
     // MARK: - Open Day in Apple Maps
 

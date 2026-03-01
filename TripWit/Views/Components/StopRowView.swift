@@ -46,6 +46,18 @@ struct StopRowView: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
+    private var bookingSubtitle: String? {
+        if stop.category == .accommodation, let nights = stop.nightCount {
+            return "\(nights) night\(nights == 1 ? "" : "s")"
+        }
+        if stop.category == .transport,
+           let dep = stop.departureAirport, !dep.isEmpty,
+           let arr = stop.arrivalAirport, !arr.isEmpty {
+            return "\(dep) → \(arr)"
+        }
+        return nil
+    }
+
     private var stopLabels: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
@@ -57,8 +69,21 @@ struct StopRowView: View {
                         .font(.caption2)
                         .foregroundStyle(.green)
                 }
+                if !stop.wrappedConfirmationCode.isEmpty {
+                    Text(stop.wrappedConfirmationCode)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Color(.systemGray5))
+                        .clipShape(Capsule())
+                }
             }
-            if let timeText = timeRangeText {
+            if let subtitle = bookingSubtitle {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(stop.category == .accommodation ? .purple : .blue)
+            } else if let timeText = timeRangeText {
                 Text(timeText)
                     .font(.caption)
                     .foregroundStyle(.secondary)

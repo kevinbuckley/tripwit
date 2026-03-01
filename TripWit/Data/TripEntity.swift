@@ -50,6 +50,13 @@ extension TripEntity {
         return (components.day ?? 0) + 1
     }
 
+    var displayStatus: TripStatus {
+        guard hasCustomDates else { return .planning }
+        if isActive { return .active }
+        if isPast { return .completed }
+        return .planning
+    }
+
     var isActive: Bool {
         let now = Date()
         let calendar = Calendar.current

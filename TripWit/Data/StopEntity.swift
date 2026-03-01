@@ -19,6 +19,12 @@ public class StopEntity: NSManagedObject {
     @NSManaged public var address: String?
     @NSManaged public var phone: String?
     @NSManaged public var website: String?
+    @NSManaged public var confirmationCode: String?
+    @NSManaged public var checkOutDate: Date?
+    @NSManaged public var airline: String?
+    @NSManaged public var flightNumber: String?
+    @NSManaged public var departureAirport: String?
+    @NSManaged public var arrivalAirport: String?
     @NSManaged public var day: DayEntity?
     @NSManaged public var comments: NSSet?
     @NSManaged public var links: NSSet?
@@ -32,6 +38,29 @@ extension StopEntity {
     var wrappedName: String { name ?? "" }
     var wrappedCategoryRaw: String { categoryRaw ?? "other" }
     var wrappedNotes: String { notes ?? "" }
+    var wrappedConfirmationCode: String { confirmationCode ?? "" }
+
+    /// Whether this stop has booking-level details attached.
+    var hasBookingDetails: Bool {
+        !wrappedConfirmationCode.isEmpty
+        || checkOutDate != nil
+        || (airline != nil && !airline!.isEmpty)
+        || (flightNumber != nil && !flightNumber!.isEmpty)
+    }
+
+    /// Whether this accommodation spans multiple days.
+    var isMultiDayAccommodation: Bool {
+        category == .accommodation && checkOutDate != nil
+    }
+
+    /// Number of nights for a multi-day accommodation.
+    var nightCount: Int? {
+        guard category == .accommodation,
+              let checkOut = checkOutDate,
+              let dayDate = day?.date else { return nil }
+        let nights = Calendar.current.dateComponents([.day], from: dayDate, to: checkOut).day ?? 0
+        return nights > 0 ? nights : nil
+    }
 
     var category: StopCategory {
         get { StopCategory(rawValue: wrappedCategoryRaw) ?? .other }

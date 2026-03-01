@@ -22,6 +22,17 @@ struct EditStopSheet: View {
     @State private var locationName: String
     @State private var locationCity: String
     @State private var destinationRegion: MKCoordinateRegion?
+    @State private var tripCountry: String = ""
+    @State private var countryRegion: MKCoordinateRegion?
+
+    // Booking fields (contextual, shown based on category)
+    @State private var confirmationCode: String
+    @State private var useCheckOutDate: Bool
+    @State private var checkOutDate: Date
+    @State private var airlineName: String
+    @State private var flightNumberText: String
+    @State private var departureAirportText: String
+    @State private var arrivalAirportText: String
 
     init(stop: StopEntity) {
         self.stop = stop
@@ -36,6 +47,13 @@ struct EditStopSheet: View {
         _longitude = State(initialValue: stop.longitude)
         _locationName = State(initialValue: stop.name ?? "")
         _locationCity = State(initialValue: "")
+        _confirmationCode = State(initialValue: stop.confirmationCode ?? "")
+        _useCheckOutDate = State(initialValue: stop.checkOutDate != nil)
+        _checkOutDate = State(initialValue: stop.checkOutDate ?? Date())
+        _airlineName = State(initialValue: stop.airline ?? "")
+        _flightNumberText = State(initialValue: stop.flightNumber ?? "")
+        _departureAirportText = State(initialValue: stop.departureAirport ?? "")
+        _arrivalAirportText = State(initialValue: stop.arrivalAirport ?? "")
     }
 
     private var isValid: Bool {
@@ -46,17 +64,58 @@ struct EditStopSheet: View {
         latitude != 0 || longitude != 0
     }
 
-    /// Best available region for biasing location search results
+    /// Best available region for biasing location search results.
+    /// Walks a 5-level fallback chain from most-specific to most-broad.
     private var searchRegion: MKCoordinateRegion? {
-        // Prefer day's geocoded location (most specific)
-        if let day = stop.day, day.locationLatitude != 0 || day.locationLongitude != 0 {
+        guard let day = stop.day else { return destinationRegion ?? countryRegion }
+
+        // 1. Day's geocoded coordinates
+        if day.locationLatitude != 0 || day.locationLongitude != 0 {
             return MKCoordinateRegion(
                 center: CLLocationCoordinate2D(latitude: day.locationLatitude, longitude: day.locationLongitude),
                 span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
             )
         }
-        // Fall back to geocoded trip destination
-        return destinationRegion
+
+        // 2. Centroid of other stops on this day (exclude self to avoid stale coords)
+        let dayStops = day.stopsArray.filter { $0.id != stop.id && ($0.latitude != 0 || $0.longitude != 0) }
+        if !dayStops.isEmpty {
+            let avgLat = dayStops.map(\.latitude).reduce(0, +) / Double(dayStops.count)
+            let avgLon = dayStops.map(\.longitude).reduce(0, +) / Double(dayStops.count)
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: avgLat, longitude: avgLon),
+                span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+            )
+        }
+
+        // 3. Nearest other day with day-level coordinates; otherwise centroid of all trip stops
+        if let trip = day.trip {
+            let nearbyDay = trip.daysArray
+                .filter { $0.dayNumber != day.dayNumber && ($0.locationLatitude != 0 || $0.locationLongitude != 0) }
+                .min(by: { abs($0.dayNumber - day.dayNumber) < abs($1.dayNumber - day.dayNumber) })
+            if let nd = nearbyDay {
+                return MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: nd.locationLatitude, longitude: nd.locationLongitude),
+                    span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
+                )
+            }
+            let allStops = trip.daysArray.flatMap(\.stopsArray)
+                .filter { $0.id != stop.id && ($0.latitude != 0 || $0.longitude != 0) }
+            if !allStops.isEmpty {
+                let avgLat = allStops.map(\.latitude).reduce(0, +) / Double(allStops.count)
+                let avgLon = allStops.map(\.longitude).reduce(0, +) / Double(allStops.count)
+                return MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: avgLat, longitude: avgLon),
+                    span: MKCoordinateSpan(latitudeDelta: 0.3, longitudeDelta: 0.3)
+                )
+            }
+        }
+
+        // 4. Geocoded trip destination (moderate span)
+        if let region = destinationRegion { return region }
+
+        // 5. Country-level broad fallback
+        return countryRegion
     }
 
     var body: some View {
@@ -91,7 +150,9 @@ struct EditStopSheet: View {
                         selectedLatitude: $latitude,
                         selectedLongitude: $longitude,
                         selectedCity: $locationCity,
-                        searchRegion: searchRegion
+                        searchRegion: searchRegion,
+                        category: category,
+                        tripCountry: tripCountry.isEmpty ? nil : tripCountry
                     )
                     .listRowInsets(EdgeInsets())
                 } header: {
@@ -118,6 +179,8 @@ struct EditStopSheet: View {
                 } header: {
                     Text("Times")
                 }
+
+                bookingFieldsSection
 
                 Section {
                     TextField("Notes", text: $notes, axis: .vertical)
@@ -149,16 +212,53 @@ struct EditStopSheet: View {
     }
 
     private func geocodeDestination() async {
-        // Skip if day already has coordinates (searchRegion will use those instead)
-        guard let day = stop.day, day.locationLatitude == 0 && day.locationLongitude == 0 else { return }
-        guard let destination = day.trip?.destination, !destination.isEmpty else { return }
+        guard let destination = stop.day?.trip?.destination, !destination.isEmpty else { return }
         let geocoder = CLGeocoder()
-        if let placemarks = try? await geocoder.geocodeAddressString(destination),
-           let location = placemarks.first?.location {
-            destinationRegion = MKCoordinateRegion(
+        guard let placemarks = try? await geocoder.geocodeAddressString(destination),
+              let placemark = placemarks.first,
+              let location = placemark.location else { return }
+
+        destinationRegion = MKCoordinateRegion(
+            center: location.coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+        )
+        // Extract country for query enrichment and broad fallback region
+        if let country = placemark.country {
+            tripCountry = country
+            countryRegion = MKCoordinateRegion(
                 center: location.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+                span: MKCoordinateSpan(latitudeDelta: 10.0, longitudeDelta: 10.0)
             )
+        }
+    }
+
+    @ViewBuilder
+    private var bookingFieldsSection: some View {
+        if category == .accommodation {
+            Section {
+                TextField("Confirmation Code", text: $confirmationCode)
+                    .textInputAutocapitalization(.characters)
+                Toggle("Set Check-out Date", isOn: $useCheckOutDate)
+                if useCheckOutDate {
+                    DatePicker("Check-out", selection: $checkOutDate, displayedComponents: [.date])
+                }
+            } header: {
+                Text("Booking Details")
+            }
+        } else if category == .transport {
+            Section {
+                TextField("Confirmation Code", text: $confirmationCode)
+                    .textInputAutocapitalization(.characters)
+                TextField("Airline", text: $airlineName)
+                TextField("Flight Number", text: $flightNumberText)
+                    .textInputAutocapitalization(.characters)
+                TextField("From Airport (e.g. LAX)", text: $departureAirportText)
+                    .textInputAutocapitalization(.characters)
+                TextField("To Airport (e.g. NRT)", text: $arrivalAirportText)
+                    .textInputAutocapitalization(.characters)
+            } header: {
+                Text("Flight Details")
+            }
         }
     }
 
@@ -172,6 +272,16 @@ struct EditStopSheet: View {
         stop.departureTime = useDepartureTime ? departureTime : nil
         stop.latitude = latitude
         stop.longitude = longitude
+
+        // Booking fields — nil-out empty strings
+        let trimmedCode = confirmationCode.trimmingCharacters(in: .whitespaces)
+        stop.confirmationCode = trimmedCode.isEmpty ? nil : trimmedCode
+        stop.checkOutDate = (category == .accommodation && useCheckOutDate) ? checkOutDate : nil
+        stop.airline = airlineName.isEmpty ? nil : airlineName
+        stop.flightNumber = flightNumberText.isEmpty ? nil : flightNumberText
+        stop.departureAirport = departureAirportText.isEmpty ? nil : departureAirportText
+        stop.arrivalAirport = arrivalAirportText.isEmpty ? nil : arrivalAirportText
+
         stop.day?.trip?.updatedAt = Date()
         try? viewContext.save()
 
