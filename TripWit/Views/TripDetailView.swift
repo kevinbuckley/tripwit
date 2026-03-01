@@ -550,6 +550,16 @@ struct TripDetailView: View {
             // "Staying at" banner for multi-day accommodation
             if let accommodation = activeAccommodation(for: day) {
                 stayingAtRow(accommodation)
+                // Travel time from hotel to first located stop on this day
+                if let firstStop = sortedStops.first(where: { $0.latitude != 0 || $0.longitude != 0 }),
+                   (accommodation.latitude != 0 || accommodation.longitude != 0) {
+                    TravelTimeRow(
+                        estimate: travelTimeService.estimate(from: accommodation.id ?? UUID(), to: firstStop.id ?? UUID())
+                    )
+                    .task {
+                        await travelTimeService.calculateTravelTime(from: accommodation, to: firstStop)
+                    }
+                }
             }
 
             // Daily distance/time summary

@@ -14,6 +14,8 @@ struct StopDetailView: View {
     @State private var showingRatingSheet = false
     @State private var pendingRating: Int = 0
     @State private var newCommentText = ""
+    @State private var editingComment: CommentEntity? = nil
+    @State private var editingCommentText: String = ""
     @State private var newLinkURL = ""
     @State private var newLinkTitle = ""
     @State private var showingAddLink = false
@@ -589,18 +591,57 @@ struct StopDetailView: View {
         }
     }
 
+    @ViewBuilder
     private func commentRow(_ comment: CommentEntity) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(comment.wrappedText)
-                .font(.body)
-            Text(comment.wrappedCreatedAt, style: .relative)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            + Text(" ago")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+        if editingComment === comment {
+            // Inline edit mode
+            HStack(alignment: .top, spacing: 10) {
+                TextField("Comment", text: $editingCommentText, axis: .vertical)
+                    .lineLimit(1...6)
+                    .font(.body)
+                VStack(spacing: 6) {
+                    Button("Save") {
+                        saveComment()
+                    }
+                    .font(.caption.weight(.semibold))
+                    .disabled(editingCommentText.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button("Cancel") {
+                        editingComment = nil
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 2)
+        } else {
+            // Display mode — tap to edit
+            VStack(alignment: .leading, spacing: 4) {
+                Text(comment.wrappedText)
+                    .font(.body)
+                Text(comment.wrappedCreatedAt, style: .relative)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                + Text(" ago")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                editingCommentText = comment.wrappedText
+                editingComment = comment
+            }
         }
-        .padding(.vertical, 2)
+    }
+
+    private func saveComment() {
+        guard let comment = editingComment else { return }
+        let trimmed = editingCommentText.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        comment.text = trimmed
+        stop.day?.trip?.updatedAt = Date()
+        try? viewContext.save()
+        editingComment = nil
     }
 
     private func addComment() {
