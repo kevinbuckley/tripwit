@@ -2787,4 +2787,73 @@ func oldStopTransferDecodes() throws {
     #expect(QuickActionService.type(for: item) == nil)
 }
 
+// MARK: - Handoff / NSUserActivity
+
+@Test func handoffActivityTypeConstants() {
+    #expect(HandoffManager.viewTripActivityType == "com.kevinbuckley.travelplanner.viewTrip")
+    #expect(HandoffManager.viewStopActivityType == "com.kevinbuckley.travelplanner.viewStop")
+}
+
+@Test func handoffUserInfoForTrip() async throws {
+    let ctx = makeTestContext()
+    let dm  = DataManager(context: ctx)
+    let trip = try dm.createTrip(name: "Japan", destination: "Tokyo",
+                                 startDate: date(2026, 4, 1), endDate: date(2026, 4, 7))
+    let info = HandoffManager.userInfo(for: trip)
+
+    #expect((info[HandoffManager.Key.tripID] as? String) == trip.id?.uuidString)
+    #expect((info[HandoffManager.Key.tripName] as? String) == "Japan")
+    #expect(info[HandoffManager.Key.stopID] == nil)
+}
+
+@Test func handoffUserInfoForStop() async throws {
+    let ctx = makeTestContext()
+    let dm  = DataManager(context: ctx)
+    let trip = try dm.createTrip(name: "Japan", destination: "Tokyo",
+                                 startDate: date(2026, 4, 1), endDate: date(2026, 4, 7))
+    let day  = trip.daysArray.first!
+    let stop = dm.addStop(to: day, name: "Shinjuku",
+                          latitude: 35.69, longitude: 139.69, category: .attraction)
+    let info = HandoffManager.userInfo(forStop: stop, in: trip)
+
+    #expect((info[HandoffManager.Key.tripID] as? String) == trip.id?.uuidString)
+    #expect((info[HandoffManager.Key.stopID] as? String) == stop.id?.uuidString)
+    #expect((info[HandoffManager.Key.stopName] as? String) == "Shinjuku")
+}
+
+@Test func handoffTripIDRoundtrip() async throws {
+    let ctx = makeTestContext()
+    let dm  = DataManager(context: ctx)
+    let trip = try dm.createTrip(name: "Italy", destination: "Rome",
+                                 startDate: date(2026, 5, 1), endDate: date(2026, 5, 5))
+
+    let activity = NSUserActivity(activityType: HandoffManager.viewTripActivityType)
+    activity.userInfo = HandoffManager.userInfo(for: trip)
+
+    let restored = HandoffManager.tripID(from: activity)
+    #expect(restored == trip.id)
+}
+
+@Test func handoffUnrelatedActivityReturnsNil() {
+    let activity = NSUserActivity(activityType: "com.apple.safari.browsing")
+    activity.userInfo = [HandoffManager.Key.tripID: "some-id"]
+    #expect(HandoffManager.tripID(from: activity) == nil)
+}
+
+@Test func handoffStopIDFromWrongActivityTypeReturnsNil() async throws {
+    let ctx = makeTestContext()
+    let dm  = DataManager(context: ctx)
+    let trip = try dm.createTrip(name: "France", destination: "Paris",
+                                 startDate: date(2026, 6, 1), endDate: date(2026, 6, 4))
+    let day  = trip.daysArray.first!
+    let stop = dm.addStop(to: day, name: "Eiffel Tower",
+                          latitude: 48.85, longitude: 2.29, category: .attraction)
+
+    // Using viewTrip type instead of viewStop — stopID should not be extracted
+    let activity = NSUserActivity(activityType: HandoffManager.viewTripActivityType)
+    activity.userInfo = HandoffManager.userInfo(forStop: stop, in: trip)
+
+    #expect(HandoffManager.stopID(from: activity) == nil)
+}
+
 } // end TripWitTests suite
