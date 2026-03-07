@@ -314,27 +314,17 @@ struct StopDetailView: View {
                 .foregroundStyle(.red)
             }
 
-            // Star rating display / editor
-            HStack(spacing: 4) {
-                ForEach(1...5, id: \.self) { star in
-                    Button {
-                        stop.rating = Int32(star)
-                        stop.day?.trip?.updatedAt = Date()
-                        try? viewContext.save()
-                    } label: {
-                        Image(systemName: star <= Int(stop.rating) ? "star.fill" : "star")
-                            .font(.title3)
-                            .foregroundStyle(star <= stop.rating ? .yellow : Color(.systemGray4))
-                    }
-                    .buttonStyle(.plain)
+            // Star rating — animated, haptic, togglable
+            StopRatingView(
+                rating: Binding(
+                    get: { stop.rating },
+                    set: { stop.rating = $0 }
+                ),
+                onChange: {
+                    stop.day?.trip?.updatedAt = Date()
+                    try? viewContext.save()
                 }
-                if stop.rating > 0 {
-                    Text("\(stop.rating)/5")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.leading, 4)
-                }
-            }
+            )
         }
     }
 

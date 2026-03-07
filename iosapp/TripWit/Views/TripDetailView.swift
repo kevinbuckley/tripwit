@@ -25,6 +25,7 @@ struct TripDetailView: View {
     @State private var draggingStopID: String?
     @State private var dropTargetDayID: UUID?
     @State private var showConfetti = false
+    @State private var showingStats = false
 
     private var sortedDays: [DayEntity] {
         trip.daysArray.sorted { $0.dayNumber < $1.dayNumber }
@@ -141,6 +142,9 @@ struct TripDetailView: View {
         .sheet(isPresented: $showingEditTrip) {
             EditTripSheet(trip: trip)
         }
+        .sheet(isPresented: $showingStats) {
+            TripStatsView(trip: trip)
+        }
         .sheet(item: $selectedDayForStop) { day in
             AddStopSheet(day: day)
         }
@@ -198,6 +202,14 @@ struct TripDetailView: View {
     private var tripToolbar: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             HStack(spacing: 16) {
+                // Stats button
+                Button {
+                    showingStats = true
+                } label: {
+                    Image(systemName: "chart.bar.xaxis")
+                }
+                .accessibilityLabel("Trip stats")
+
                 Menu {
                     Button {
                         shareTripFile()
@@ -323,6 +335,7 @@ struct TripDetailView: View {
                                 .font(.subheadline)
                                 .foregroundStyle(.tertiary)
                         }
+                        TripCountdownBadge(trip: trip)
                     }
                     Spacer()
                     StatusBadge(status: trip.displayStatus)

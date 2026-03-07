@@ -51,6 +51,8 @@ struct TripRowView: View {
                 Text(trip.wrappedDestination)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                Spacer()
+                TripCountdownBadge(trip: trip)
             }
 
             if trip.hasCustomDates {

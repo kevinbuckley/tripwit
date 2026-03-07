@@ -3428,4 +3428,70 @@ private struct MockStepStore: StepCountStoreProtocol {
     #expect(data.durationText  == "1 day")
 }
 
+// MARK: - TripCountdownState
+
+// All tests pin `now` to 2026-06-15 so results don't depend on the system clock.
+private let refNow = date(2026, 6, 15)
+
+@Test func countdownSingleDayActive() {
+    // start == end == today  →  Day 1 of 1
+    let state = TripCountdownState.compute(
+        startDate: refNow, endDate: refNow, now: refNow)
+    #expect(state == .activeDay(current: 1, total: 1))
+}
+
+@Test func countdownFutureManyDays() {
+    // 40 days away
+    let start = date(2026, 7, 25)
+    let end   = date(2026, 7, 31)
+    let state = TripCountdownState.compute(startDate: start, endDate: end, now: refNow)
+    #expect(state == .countdown(days: 40))
+}
+
+@Test func countdownFutureOneDay() {
+    let state = TripCountdownState.compute(
+        startDate: date(2026, 6, 16), endDate: date(2026, 6, 20), now: refNow)
+    #expect(state == .countdown(days: 1))
+}
+
+@Test func countdownActiveFirstDay() {
+    // today == start  →  Day 1 of 7
+    let state = TripCountdownState.compute(
+        startDate: refNow, endDate: date(2026, 6, 21), now: refNow)
+    #expect(state == .activeDay(current: 1, total: 7))
+}
+
+@Test func countdownActiveMidTrip() {
+    // started 2 days ago, 4 days left  →  Day 3 of 7
+    let state = TripCountdownState.compute(
+        startDate: date(2026, 6, 13), endDate: date(2026, 6, 19), now: refNow)
+    #expect(state == .activeDay(current: 3, total: 7))
+}
+
+@Test func countdownActiveLastDay() {
+    // today == end  →  Day 7 of 7
+    let state = TripCountdownState.compute(
+        startDate: date(2026, 6, 9), endDate: refNow, now: refNow)
+    #expect(state == .activeDay(current: 7, total: 7))
+}
+
+@Test func countdownCompletedYesterday() {
+    let end   = date(2026, 6, 14)
+    let state = TripCountdownState.compute(
+        startDate: date(2026, 6, 8), endDate: end, now: refNow)
+    if case .completed(let d) = state {
+        #expect(Calendar.current.isDate(d, inSameDayAs: end))
+    } else {
+        Issue.record("Expected .completed, got \(state)")
+    }
+}
+
+@Test func countdownCompletedWeeksAgo() {
+    let state = TripCountdownState.compute(
+        startDate: date(2026, 1, 1), endDate: date(2026, 1, 7), now: refNow)
+    if case .completed = state { } else {
+        Issue.record("Expected .completed for a past trip, got \(state)")
+    }
+}
+
 } // end TripWitTests suite
