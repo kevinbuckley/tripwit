@@ -2979,6 +2979,31 @@ func oldStopTransferDecodes() throws {
     FocusFilterStore.clear()
 }
 
+// MARK: - Background Task Manager
+
+@Test func backgroundTaskIdentifiers() {
+    #expect(BackgroundTaskManager.appRefreshID == "com.kevinbuckley.travelplanner.appRefresh")
+    #expect(BackgroundTaskManager.processingID == "com.kevinbuckley.travelplanner.processing")
+}
+
+@Test func backgroundTaskAllIdentifiers() {
+    let ids = BackgroundTaskManager.allIdentifiers
+    #expect(ids.count == 2)
+    #expect(ids.contains(BackgroundTaskManager.appRefreshID))
+    #expect(ids.contains(BackgroundTaskManager.processingID))
+}
+
+@Test func backgroundTaskIdentifiersAreUnique() {
+    let ids = BackgroundTaskManager.allIdentifiers
+    #expect(Set(ids).count == ids.count)
+}
+
+@Test func backgroundTaskIdentifiersHaveBundlePrefix() {
+    for id in BackgroundTaskManager.allIdentifiers {
+        #expect(id.hasPrefix("com.kevinbuckley.travelplanner."))
+    }
+}
+
 // MARK: - Notification Scheduler (pure-logic helpers)
 
 @Test func notificationIDFormat() {
