@@ -143,6 +143,7 @@ final class DataManager {
         )
         generateDays(for: trip)
         try? context.save()
+        SpotlightService.indexTrip(trip)
         Task { @MainActor in HapticsManager.shared.success() }
         return trip
     }
@@ -150,9 +151,11 @@ final class DataManager {
     func updateTrip(_ trip: TripEntity) {
         trip.updatedAt = Date()
         try? context.save()
+        SpotlightService.indexTrip(trip)
     }
 
     func deleteTrip(_ trip: TripEntity) {
+        SpotlightService.deindexTrip(trip)
         context.delete(trip)
         try? context.save()
         Task { @MainActor in HapticsManager.shared.warning() }
@@ -283,6 +286,7 @@ final class DataManager {
         // Touch the trip so @ObservedObject triggers a refresh in TripDetailView
         day.trip?.updatedAt = Date()
         try? context.save()
+        if let trip = day.trip { SpotlightService.indexTrip(trip) }
         Task { @MainActor in HapticsManager.shared.medium() }
         return stop
     }

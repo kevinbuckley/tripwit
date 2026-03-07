@@ -73,6 +73,7 @@
 		D425F56FC9FE4EEFE5FF4031 /* BudgetSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04DCE988463BE5D893BBC13 /* BudgetSection.swift */; };
 		D96D37515EECACC2787DD2E3 /* TripEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9C6DC9D0449296850746B3 /* TripEntity.swift */; };
 		DBCAD678DFA1961D7C05E859 /* TripListsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1445D05E3F466F0B5C40621D /* TripListsSection.swift */; };
+		DD7535079E68D6F550605EFB /* SpotlightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B40A6327715B5DF26B872E /* SpotlightService.swift */; };
 		E0CBA36615DA7532886C66EC /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134DD99877C00A27A1D008C9 /* WeatherService.swift */; };
 		E841B4A446679E67973D047A /* StopLinkEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19E1AEE43975C31D6B8ED002 /* StopLinkEntity.swift */; };
 		F3AC4B8676C86D8377E25351 /* SetDayLocationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155FBF2BB32B8FF18C635CB7 /* SetDayLocationSheet.swift */; };
@@ -113,6 +114,7 @@
 		489F11EF79C7B7EFCC1A8A98 /* TripDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripDetailView.swift; sourceTree = "<group>"; };
 		496576544ABD5801501C0655 /* EditStopSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditStopSheet.swift; sourceTree = "<group>"; };
 		499C19DA9722B0C112A79EF4 /* TripListItemEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripListItemEntity.swift; sourceTree = "<group>"; };
+		49B40A6327715B5DF26B872E /* SpotlightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightService.swift; sourceTree = "<group>"; };
 		4C08995903B5D11C594285BE /* NearbyAISuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyAISuggestSheet.swift; sourceTree = "<group>"; };
 		4EEA216B7AE0F95EFD9834BF /* TripWit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TripWit.entitlements; sourceTree = "<group>"; };
 		5D1D5FB45A49A830E3BB786F /* TripWitTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TripWitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -294,6 +296,7 @@
 				E337C2AC0CCEF8ECF25F1CD9 /* HapticsManager.swift */,
 				9DABD113547EC1C4A0292219 /* LocationManager.swift */,
 				EC799D5C572DB7286BD59B6B /* PhotoLibraryService.swift */,
+				49B40A6327715B5DF26B872E /* SpotlightService.swift */,
 				5F3158948D83F1A1ADDC0E4E /* TravelTimeService.swift */,
 				E13EC5B226316CB524317DFE /* TripPDFGenerator.swift */,
 				37A75DD34EC45535866604DB /* TripShareService.swift */,
@@ -469,6 +472,7 @@
 				F3AC4B8676C86D8377E25351 /* SetDayLocationSheet.swift in Sources */,
 				5FDA0EF0A34DC97FFBE07062 /* SettingsView.swift in Sources */,
 				53F4D48DF116D248FF462733 /* ShareSheetView.swift in Sources */,
+				DD7535079E68D6F550605EFB /* SpotlightService.swift in Sources */,
 				61AE20B22FA0FD5C974EAB42 /* StatusBadge.swift in Sources */,
 				7BB302F750F24E205A93E10E /* StopDetailView.swift in Sources */,
 				530E8B6FD3EFD7491264BECF /* StopEntity.swift in Sources */,
