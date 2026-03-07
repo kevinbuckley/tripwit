@@ -861,7 +861,7 @@
 				CODE_SIGN_ENTITLEMENTS = TripWit/TripWit.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 90;
+				CURRENT_PROJECT_VERSION = 91;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TripWit/Info.plist;
@@ -870,6 +870,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "TripWit can add your trip days to your calendar so you can see your itinerary alongside other events.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "TripWit reads your step count to show daily activity totals for each day of your trip.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "TripWit does not write health data.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TripWit uses your location to quickly add stops near you and track your trip.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "TripWit matches your photos to trip stops based on location and time.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -897,7 +898,7 @@
 				CODE_SIGN_ENTITLEMENTS = TripWit/TripWit.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 90;
+				CURRENT_PROJECT_VERSION = 91;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TripWit/Info.plist;
@@ -906,6 +907,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "TripWit can add your trip days to your calendar so you can see your itinerary alongside other events.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "TripWit reads your step count to show daily activity totals for each day of your trip.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "TripWit does not write health data.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TripWit uses your location to quickly add stops near you and track your trip.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "TripWit matches your photos to trip stops based on location and time.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
