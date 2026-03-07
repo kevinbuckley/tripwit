@@ -8,14 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		01404F8C70E683BDAF8F032E /* TripWitApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD87138A48497EB0FC01EFA9 /* TripWitApp.swift */; };
+		02EF1CE4B04E4C0AE6A80B09 /* HandoffManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D370E577FB3D0F10991BD8 /* HandoffManager.swift */; };
 		057EB65A26A8DB190F0ABBE8 /* TripWitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A9CBB9A16E076E9DB841EEB /* TripWitWidget.swift */; };
 		0838D012ED7DABF8056ECBF4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D4C3C2959621FF5A15D86478 /* PrivacyInfo.xcprivacy */; };
 		0A090E7387021F2AA1B1C7CC /* EditStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496576544ABD5801501C0655 /* EditStopSheet.swift */; };
+		0AC4A29C338093F857C43146 /* NotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0CF38E430CFEFF2095740D3 /* NotificationScheduler.swift */; };
 		0CE66023352A29276EB7DDBD /* StopPhotosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F5D5E91603815A3AE8C4B5 /* StopPhotosView.swift */; };
 		0DD73F8EE3034502CC03D643 /* BookingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0CE3337636477126BD88F3 /* BookingDetailView.swift */; };
 		0FE1131926C8AF675382350B /* TripCore in Frameworks */ = {isa = PBXBuildFile; productRef = C4C82DAF0A53C481CC9AC821 /* TripCore */; };
 		1234B896C9EE49105792A1E3 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF69C164B3B3F8F2B17B2F8E /* PersistenceController.swift */; };
 		128645170B0771EBFDD74469 /* TripActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BA5B8C9DE418591785D4009 /* TripActivityAttributes.swift */; };
+		134A7AFFAE96D54D78043BBD /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EDCD08E4FFE88F74220423A /* DeepLinkRouter.swift */; };
 		17B2DB0DC0821AD7FDD66970 /* WishlistItemEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25CB227A8806CFB9DD77D99A /* WishlistItemEntity.swift */; };
 		184C1DFD60D43E7B1AEABF12 /* CalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE34DE8873A15664A1FE5036 /* CalendarService.swift */; };
 		195A8712A98C6D51A1C0947D /* TripWitShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 805C248A975255478C8D7ECC /* TripWitShortcuts.swift */; };
@@ -23,6 +26,7 @@
 		1AEAC417AD3AC97602CF35CF /* TripLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46F7AE38406A750A66DF0BE /* TripLiveActivity.swift */; };
 		1F8B61B9BAB402261D0E91BA /* AITripPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F08BA542E3AC1315B797717 /* AITripPlanner.swift */; };
 		23895AC86C9186F5600B4019 /* TripListEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B37F4E6179C53E0C2B9C342E /* TripListEntity.swift */; };
+		253BAA7F1A880ABAE44218F3 /* TripWitFocusFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F631B64FFDD09ABC4EEAE79D /* TripWitFocusFilter.swift */; };
 		28AAB4E4DCDBAA80AC0EE3D5 /* TripDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 489F11EF79C7B7EFCC1A8A98 /* TripDetailView.swift */; };
 		2FCF95918C477A146CB366E1 /* LocationSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91DFBC7C57F1052E530CCD94 /* LocationSearchView.swift */; };
 		3D91BC7475EEA61B5C54A592 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 98319918A46BDE692A6D3EF9 /* Assets.xcassets */; };
@@ -33,12 +37,14 @@
 		4A3903477725CF3C8FD5946C /* EditBookingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B7DB2F06E1AE7C1A21FA2F /* EditBookingSheet.swift */; };
 		4A4F05855371EB5B115A0BED /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DABD113547EC1C4A0292219 /* LocationManager.swift */; };
 		4C67288258C595DAC00D4F2D /* AddTripSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 099030F95935418EA3D8CB1C /* AddTripSheet.swift */; };
+		52E926BDF916B1D502AD4D45 /* TipJarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC54C5ED479F576659FF4D9 /* TipJarService.swift */; };
 		530E8B6FD3EFD7491264BECF /* StopEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0F778B90FB32B88C4392AE /* StopEntity.swift */; };
 		53F4D48DF116D248FF462733 /* ShareSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8311EA2CAE8CD21D86330370 /* ShareSheetView.swift */; };
 		5430F48E58F1AD31CD71640C /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BBD5E6F556E76E373F9044 /* DataManager.swift */; };
 		5820E9DB75699DA1351A278F /* AddStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F79604E063472D9C68CCAA0 /* AddStopSheet.swift */; };
 		5F068A242A74C18A5662CA49 /* StopRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B74D269AC7D8A28E91D801 /* StopRowView.swift */; };
 		5FDA0EF0A34DC97FFBE07062 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F5D920CC422FF9F5AAA8A1 /* SettingsView.swift */; };
+		60E9CA76126D14A162549C50 /* BackgroundTaskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D3BBE2E612FAE2E78BFDFE /* BackgroundTaskManager.swift */; };
 		61AE20B22FA0FD5C974EAB42 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F674602649A5F720D5C99BF5 /* StatusBadge.swift */; };
 		6AF1C171CBF65014BF00DA6A /* TripCore in Frameworks */ = {isa = PBXBuildFile; productRef = AE3E93BF74A4B3E4DCD746FE /* TripCore */; };
 		6C581DC04B31C08FC494283F /* TripShareService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A75DD34EC45535866604DB /* TripShareService.swift */; };
@@ -51,6 +57,7 @@
 		7FE854E84459E57E3364C3F1 /* NearbyAISuggestSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C08995903B5D11C594285BE /* NearbyAISuggestSheet.swift */; };
 		803F8E120A2DD05BF65484C5 /* LocateStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA19F821877A0CD6B3C5B38 /* LocateStopSheet.swift */; };
 		820A79B414B2C2C13CF10425 /* TripWitWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654930A0211E94AF3F916D3E /* TripWitWidgetBundle.swift */; };
+		88E85411103ACAFAA696BF48 /* QuickActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0F0C32F8E3E90FB643E677 /* QuickActionService.swift */; };
 		8BA441D2E013D4FB282BC47A /* TripListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3500488F3CE7E4DAD0B489C5 /* TripListView.swift */; };
 		9040D5E4E465758E3186916D /* StopTodoEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F934C50FEEEABD297C8E4C0B /* StopTodoEntity.swift */; };
 		90C48036B453F3A995DA0C2B /* HapticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E337C2AC0CCEF8ECF25F1CD9 /* HapticsManager.swift */; };
@@ -65,10 +72,12 @@
 		A273252B84290E9A861138D9 /* TripRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4DAB3A0C2EEAB20209CFC2F /* TripRowView.swift */; };
 		A50563AE2C582C94913871C5 /* AddBookingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81EB122DB8C8105135ECD726 /* AddBookingSheet.swift */; };
 		A7BAB2E9EC464A9325D2BC51 /* FullscreenMapSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08F702CD41111A4F5BF70DD8 /* FullscreenMapSheet.swift */; };
+		A8ACF9503416165B60BED225 /* ReviewRequestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76CA606643A63C59FFDBDFCA /* ReviewRequestService.swift */; };
 		AE25E0184E2C931BCB48C7E3 /* TravelTimeRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4669AA16D36176B2701A7A /* TravelTimeRow.swift */; };
 		AE48BEABBC66383CD55539A0 /* EditTripSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B14F34E615B25E34A5C2753 /* EditTripSheet.swift */; };
 		AE628E72966FA221CAF0A50A /* TravelTimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F3158948D83F1A1ADDC0E4E /* TravelTimeService.swift */; };
 		B14B2E09C87B743491529540 /* WidgetKitReloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B523E65CE312952D56F8C57 /* WidgetKitReloader.swift */; };
+		B69C7743B71634932B77DAFF /* StepCountService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A0C277D57EC17490B6F128 /* StepCountService.swift */; };
 		BDD479B1A3BE8C867FE68460 /* ExpenseEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B046880217F77ECB4AA68A94 /* ExpenseEntity.swift */; };
 		BDD7F40EE8CE0F6734BDA92F /* AISuggestForAddStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63005282A6E08EBC0B04DB6E /* AISuggestForAddStopSheet.swift */; };
 		BE370AD1A27E0E604448055B /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFF544D3CBA03295AFBC6DA /* WelcomeView.swift */; };
@@ -85,6 +94,7 @@
 		DBCAD678DFA1961D7C05E859 /* TripListsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1445D05E3F466F0B5C40621D /* TripListsSection.swift */; };
 		DD7535079E68D6F550605EFB /* SpotlightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B40A6327715B5DF26B872E /* SpotlightService.swift */; };
 		E0CBA36615DA7532886C66EC /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134DD99877C00A27A1D008C9 /* WeatherService.swift */; };
+		E1E16E05360A8FEFFF701316 /* TripWitControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E39081E568FF66EB6E4FA38 /* TripWitControl.swift */; };
 		E841B4A446679E67973D047A /* StopLinkEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19E1AEE43975C31D6B8ED002 /* StopLinkEntity.swift */; };
 		F3AC4B8676C86D8377E25351 /* SetDayLocationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155FBF2BB32B8FF18C635CB7 /* SetDayLocationSheet.swift */; };
 		F77F99826B983B18AF2D5C69 /* QuickAddStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CB4E202061CCBDE17AC6F81 /* QuickAddStopSheet.swift */; };
@@ -129,8 +139,10 @@
 		0B31E47713905F2D6C85C419 /* PasteItinerarySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteItinerarySheet.swift; sourceTree = "<group>"; };
 		0B523E65CE312952D56F8C57 /* WidgetKitReloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetKitReloader.swift; sourceTree = "<group>"; };
 		0BA5B8C9DE418591785D4009 /* TripActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripActivityAttributes.swift; sourceTree = "<group>"; };
+		0EDCD08E4FFE88F74220423A /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		134DD99877C00A27A1D008C9 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
 		1445D05E3F466F0B5C40621D /* TripListsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripListsSection.swift; sourceTree = "<group>"; };
+		14D370E577FB3D0F10991BD8 /* HandoffManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffManager.swift; sourceTree = "<group>"; };
 		155FBF2BB32B8FF18C635CB7 /* SetDayLocationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetDayLocationSheet.swift; sourceTree = "<group>"; };
 		175C42303A00ABED4E87F60A /* DayEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayEntity.swift; sourceTree = "<group>"; };
 		19E1AEE43975C31D6B8ED002 /* StopLinkEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopLinkEntity.swift; sourceTree = "<group>"; };
@@ -141,6 +153,7 @@
 		25CB227A8806CFB9DD77D99A /* WishlistItemEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistItemEntity.swift; sourceTree = "<group>"; };
 		2630FB8DEC06ADE8EDB36B55 /* TripTextExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripTextExporter.swift; sourceTree = "<group>"; };
 		2A9CBB9A16E076E9DB841EEB /* TripWitWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripWitWidget.swift; sourceTree = "<group>"; };
+		2E39081E568FF66EB6E4FA38 /* TripWitControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripWitControl.swift; sourceTree = "<group>"; };
 		2F08BA542E3AC1315B797717 /* AITripPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITripPlanner.swift; sourceTree = "<group>"; };
 		3500488F3CE7E4DAD0B489C5 /* TripListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripListView.swift; sourceTree = "<group>"; };
 		37A75DD34EC45535866604DB /* TripShareService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripShareService.swift; sourceTree = "<group>"; };
@@ -154,6 +167,7 @@
 		49B40A6327715B5DF26B872E /* SpotlightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightService.swift; sourceTree = "<group>"; };
 		4C08995903B5D11C594285BE /* NearbyAISuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyAISuggestSheet.swift; sourceTree = "<group>"; };
 		4EEA216B7AE0F95EFD9834BF /* TripWit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TripWit.entitlements; sourceTree = "<group>"; };
+		5AC54C5ED479F576659FF4D9 /* TipJarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipJarService.swift; sourceTree = "<group>"; };
 		5D1D5FB45A49A830E3BB786F /* TripWitTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TripWitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DB7E1A49343B505D40FAA71 /* TripWit.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TripWit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F3158948D83F1A1ADDC0E4E /* TravelTimeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelTimeService.swift; sourceTree = "<group>"; };
@@ -167,6 +181,7 @@
 		654930A0211E94AF3F916D3E /* TripWitWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripWitWidgetBundle.swift; sourceTree = "<group>"; };
 		67D662B6109483BED9D957A6 /* ActiveTripDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveTripDashboard.swift; sourceTree = "<group>"; };
 		6CB4E202061CCBDE17AC6F81 /* QuickAddStopSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddStopSheet.swift; sourceTree = "<group>"; };
+		76CA606643A63C59FFDBDFCA /* ReviewRequestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewRequestService.swift; sourceTree = "<group>"; };
 		7D9C6DC9D0449296850746B3 /* TripEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripEntity.swift; sourceTree = "<group>"; };
 		805C248A975255478C8D7ECC /* TripWitShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripWitShortcuts.swift; sourceTree = "<group>"; };
 		81EB122DB8C8105135ECD726 /* AddBookingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddBookingSheet.swift; sourceTree = "<group>"; };
@@ -175,12 +190,14 @@
 		91DFBC7C57F1052E530CCD94 /* LocationSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationSearchView.swift; sourceTree = "<group>"; };
 		98319918A46BDE692A6D3EF9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9DABD113547EC1C4A0292219 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		AE0F0C32F8E3E90FB643E677 /* QuickActionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActionService.swift; sourceTree = "<group>"; };
 		AF69C164B3B3F8F2B17B2F8E /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		B046880217F77ECB4AA68A94 /* ExpenseEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseEntity.swift; sourceTree = "<group>"; };
 		B36225DDDC4A3B01D5839BD9 /* WeatherSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSection.swift; sourceTree = "<group>"; };
 		B37F4E6179C53E0C2B9C342E /* TripListEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripListEntity.swift; sourceTree = "<group>"; };
 		BB0F778B90FB32B88C4392AE /* StopEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopEntity.swift; sourceTree = "<group>"; };
 		BFEF3F7D4B07B17C51662D74 /* TripMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripMapView.swift; sourceTree = "<group>"; };
+		C3A0C277D57EC17490B6F128 /* StepCountService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepCountService.swift; sourceTree = "<group>"; };
 		C4264FDEFA61213C9C457ACF /* TripCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TripCore; path = Packages/TripCore; sourceTree = SOURCE_ROOT; };
 		C9C1A9EFD2171291EE287BAE /* AddExpenseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExpenseSheet.swift; sourceTree = "<group>"; };
 		D04DCE988463BE5D893BBC13 /* BudgetSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetSection.swift; sourceTree = "<group>"; };
@@ -190,6 +207,7 @@
 		D9EBD1E9BA18746B495DCA8C /* ImportBookingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportBookingSheet.swift; sourceTree = "<group>"; };
 		D9F5D5E91603815A3AE8C4B5 /* StopPhotosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopPhotosView.swift; sourceTree = "<group>"; };
 		DCD1B1EDF6477288E57B1ED6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E0CF38E430CFEFF2095740D3 /* NotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduler.swift; sourceTree = "<group>"; };
 		E109704EE9428DECD2E9F8B0 /* CategoryPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPicker.swift; sourceTree = "<group>"; };
 		E13EC5B226316CB524317DFE /* TripPDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripPDFGenerator.swift; sourceTree = "<group>"; };
 		E337C2AC0CCEF8ECF25F1CD9 /* HapticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsManager.swift; sourceTree = "<group>"; };
@@ -200,6 +218,8 @@
 		EE0CE3337636477126BD88F3 /* BookingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingDetailView.swift; sourceTree = "<group>"; };
 		EE34DE8873A15664A1FE5036 /* CalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarService.swift; sourceTree = "<group>"; };
 		F5C1DB60E19E03479E51AEFF /* TripTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripTransfer.swift; sourceTree = "<group>"; };
+		F5D3BBE2E612FAE2E78BFDFE /* BackgroundTaskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskManager.swift; sourceTree = "<group>"; };
+		F631B64FFDD09ABC4EEAE79D /* TripWitFocusFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripWitFocusFilter.swift; sourceTree = "<group>"; };
 		F674602649A5F720D5C99BF5 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		F8AB2E32F88534EDB77C1B7C /* SuggestStopsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestStopsSheet.swift; sourceTree = "<group>"; };
 		F934C50FEEEABD297C8E4C0B /* StopTodoEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopTodoEntity.swift; sourceTree = "<group>"; };
@@ -328,6 +348,7 @@
 		86BD377292FBBA871FA59D89 /* Intents */ = {
 			isa = PBXGroup;
 			children = (
+				F631B64FFDD09ABC4EEAE79D /* TripWitFocusFilter.swift */,
 				805C248A975255478C8D7ECC /* TripWitShortcuts.swift */,
 			);
 			path = Intents;
@@ -338,6 +359,7 @@
 			children = (
 				DCD1B1EDF6477288E57B1ED6 /* Info.plist */,
 				D46F7AE38406A750A66DF0BE /* TripLiveActivity.swift */,
+				2E39081E568FF66EB6E4FA38 /* TripWitControl.swift */,
 				3CCBBF0C162EDC1DC1BE51F2 /* TripWitWidget.entitlements */,
 				2A9CBB9A16E076E9DB841EEB /* TripWitWidget.swift */,
 				654930A0211E94AF3F916D3E /* TripWitWidgetBundle.swift */,
@@ -368,11 +390,19 @@
 			isa = PBXGroup;
 			children = (
 				2F08BA542E3AC1315B797717 /* AITripPlanner.swift */,
+				F5D3BBE2E612FAE2E78BFDFE /* BackgroundTaskManager.swift */,
 				EE34DE8873A15664A1FE5036 /* CalendarService.swift */,
+				0EDCD08E4FFE88F74220423A /* DeepLinkRouter.swift */,
+				14D370E577FB3D0F10991BD8 /* HandoffManager.swift */,
 				E337C2AC0CCEF8ECF25F1CD9 /* HapticsManager.swift */,
 				9DABD113547EC1C4A0292219 /* LocationManager.swift */,
+				E0CF38E430CFEFF2095740D3 /* NotificationScheduler.swift */,
 				EC799D5C572DB7286BD59B6B /* PhotoLibraryService.swift */,
+				AE0F0C32F8E3E90FB643E677 /* QuickActionService.swift */,
+				76CA606643A63C59FFDBDFCA /* ReviewRequestService.swift */,
 				49B40A6327715B5DF26B872E /* SpotlightService.swift */,
+				C3A0C277D57EC17490B6F128 /* StepCountService.swift */,
+				5AC54C5ED479F576659FF4D9 /* TipJarService.swift */,
 				5F3158948D83F1A1ADDC0E4E /* TravelTimeService.swift */,
 				E13EC5B226316CB524317DFE /* TripPDFGenerator.swift */,
 				37A75DD34EC45535866604DB /* TripShareService.swift */,
@@ -547,6 +577,7 @@
 				9876140D7BB4ACF6D60EFE19 /* AddExpenseSheet.swift in Sources */,
 				5820E9DB75699DA1351A278F /* AddStopSheet.swift in Sources */,
 				4C67288258C595DAC00D4F2D /* AddTripSheet.swift in Sources */,
+				60E9CA76126D14A162549C50 /* BackgroundTaskManager.swift in Sources */,
 				0DD73F8EE3034502CC03D643 /* BookingDetailView.swift in Sources */,
 				BE4FF4CDFBB6EDA82E787E0E /* BookingEntity.swift in Sources */,
 				D425F56FC9FE4EEFE5FF4031 /* BudgetSection.swift in Sources */,
@@ -556,11 +587,13 @@
 				D37A78FAE3A7BF98BA92E86C /* ContentView.swift in Sources */,
 				5430F48E58F1AD31CD71640C /* DataManager.swift in Sources */,
 				C3215C83418EB06BA5D41B28 /* DayEntity.swift in Sources */,
+				134A7AFFAE96D54D78043BBD /* DeepLinkRouter.swift in Sources */,
 				4A3903477725CF3C8FD5946C /* EditBookingSheet.swift in Sources */,
 				0A090E7387021F2AA1B1C7CC /* EditStopSheet.swift in Sources */,
 				AE48BEABBC66383CD55539A0 /* EditTripSheet.swift in Sources */,
 				BDD479B1A3BE8C867FE68460 /* ExpenseEntity.swift in Sources */,
 				A7BAB2E9EC464A9325D2BC51 /* FullscreenMapSheet.swift in Sources */,
+				02EF1CE4B04E4C0AE6A80B09 /* HandoffManager.swift in Sources */,
 				90C48036B453F3A995DA0C2B /* HapticsManager.swift in Sources */,
 				A1A71D9F72A828FC59267E90 /* ImportBookingSheet.swift in Sources */,
 				954FEFC882CCA47C5F7B57BB /* ImportTripSheet.swift in Sources */,
@@ -569,15 +602,19 @@
 				4A4F05855371EB5B115A0BED /* LocationManager.swift in Sources */,
 				2FCF95918C477A146CB366E1 /* LocationSearchView.swift in Sources */,
 				7FE854E84459E57E3364C3F1 /* NearbyAISuggestSheet.swift in Sources */,
+				0AC4A29C338093F857C43146 /* NotificationScheduler.swift in Sources */,
 				C6606776963776CC2D8C9026 /* PasteItinerarySheet.swift in Sources */,
 				1234B896C9EE49105792A1E3 /* PersistenceController.swift in Sources */,
 				6FAAA5C9F1D2CCCE3142EDCC /* PhotoLibraryService.swift in Sources */,
+				88E85411103ACAFAA696BF48 /* QuickActionService.swift in Sources */,
 				F77F99826B983B18AF2D5C69 /* QuickAddStopSheet.swift in Sources */,
+				A8ACF9503416165B60BED225 /* ReviewRequestService.swift in Sources */,
 				F3AC4B8676C86D8377E25351 /* SetDayLocationSheet.swift in Sources */,
 				5FDA0EF0A34DC97FFBE07062 /* SettingsView.swift in Sources */,
 				53F4D48DF116D248FF462733 /* ShareSheetView.swift in Sources */,
 				DD7535079E68D6F550605EFB /* SpotlightService.swift in Sources */,
 				61AE20B22FA0FD5C974EAB42 /* StatusBadge.swift in Sources */,
+				B69C7743B71634932B77DAFF /* StepCountService.swift in Sources */,
 				7BB302F750F24E205A93E10E /* StopDetailView.swift in Sources */,
 				530E8B6FD3EFD7491264BECF /* StopEntity.swift in Sources */,
 				E841B4A446679E67973D047A /* StopLinkEntity.swift in Sources */,
@@ -586,6 +623,7 @@
 				9040D5E4E465758E3186916D /* StopTodoEntity.swift in Sources */,
 				7D13FD4BE272EA3B03729C41 /* SuggestStopsSheet.swift in Sources */,
 				791FC495C1883417D183C89B /* TimelineStopRow.swift in Sources */,
+				52E926BDF916B1D502AD4D45 /* TipJarService.swift in Sources */,
 				AE25E0184E2C931BCB48C7E3 /* TravelTimeRow.swift in Sources */,
 				AE628E72966FA221CAF0A50A /* TravelTimeService.swift in Sources */,
 				128645170B0771EBFDD74469 /* TripActivityAttributes.swift in Sources */,
@@ -603,6 +641,7 @@
 				C5F24DD8570045CF65849330 /* TripTransfer.swift in Sources */,
 				736E96428B5971C934E1DE8A /* TripWit.xcdatamodeld in Sources */,
 				01404F8C70E683BDAF8F032E /* TripWitApp.swift in Sources */,
+				253BAA7F1A880ABAE44218F3 /* TripWitFocusFilter.swift in Sources */,
 				195A8712A98C6D51A1C0947D /* TripWitShortcuts.swift in Sources */,
 				964DFC40D406BF25AC71B208 /* WeatherSection.swift in Sources */,
 				E0CBA36615DA7532886C66EC /* WeatherService.swift in Sources */,
@@ -619,6 +658,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1AEAC417AD3AC97602CF35CF /* TripLiveActivity.swift in Sources */,
+				E1E16E05360A8FEFFF701316 /* TripWitControl.swift in Sources */,
 				057EB65A26A8DB190F0ABBE8 /* TripWitWidget.swift in Sources */,
 				820A79B414B2C2C13CF10425 /* TripWitWidgetBundle.swift in Sources */,
 				D5CB59877A7A5A4AB7F9C3A9 /* WidgetDataModel.swift in Sources */,
@@ -821,14 +861,15 @@
 				CODE_SIGN_ENTITLEMENTS = TripWit/TripWit.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 87;
+				CURRENT_PROJECT_VERSION = 90;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TripWit/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TripWit;
-				INFOPLIST_KEY_CFBundleShortVersionString = 1.2;
+				INFOPLIST_KEY_CFBundleShortVersionString = 1.3;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "TripWit can add your trip days to your calendar so you can see your itinerary alongside other events.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "TripWit reads your step count to show daily activity totals for each day of your trip.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TripWit uses your location to quickly add stops near you and track your trip.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "TripWit matches your photos to trip stops based on location and time.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -841,7 +882,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -856,14 +897,15 @@
 				CODE_SIGN_ENTITLEMENTS = TripWit/TripWit.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 87;
+				CURRENT_PROJECT_VERSION = 90;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TripWit/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TripWit;
-				INFOPLIST_KEY_CFBundleShortVersionString = 1.2;
+				INFOPLIST_KEY_CFBundleShortVersionString = 1.3;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "TripWit can add your trip days to your calendar so you can see your itinerary alongside other events.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "TripWit reads your step count to show daily activity totals for each day of your trip.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TripWit uses your location to quickly add stops near you and track your trip.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "TripWit matches your photos to trip stops based on location and time.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -876,7 +918,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;

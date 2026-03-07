@@ -3222,4 +3222,114 @@ private func makeWidgetData(
     #expect(built.progressLabel == "1/2")
 }
 
+// MARK: - Step Count Service
+
+// MARK: Mock
+
+private struct MockStepStore: StepCountStoreProtocol {
+    let available: Bool
+    let stepsByDate: [Date: Int]
+
+    var isAvailable: Bool { available }
+
+    func requestAuthorization() async throws {
+        if !available { throw URLError(.cancelled) }
+    }
+
+    func fetchDaySteps(for date: Date) async throws -> Int {
+        let key = Calendar.current.startOfDay(for: date)
+        return stepsByDate[key] ?? 0
+    }
+}
+
+// MARK: DayStepCount pure-value tests
+
+@Test func dayStepCountPercentageHalfway() {
+    let d = DayStepCount(date: Date(), steps: 4_000, goal: 8_000)
+    #expect(abs(d.percentage - 0.5) < 0.0001)
+}
+
+@Test func dayStepCountPercentageClamped() {
+    let d = DayStepCount(date: Date(), steps: 20_000, goal: 8_000)
+    #expect(d.percentage == 1.0)
+}
+
+@Test func dayStepCountPercentageZeroGoal() {
+    let d = DayStepCount(date: Date(), steps: 5_000, goal: 0)
+    #expect(d.percentage == 0)
+}
+
+@Test func dayStepCountGoalMet() {
+    let met    = DayStepCount(date: Date(), steps: 8_000, goal: 8_000)
+    let notMet = DayStepCount(date: Date(), steps: 7_999, goal: 8_000)
+    #expect(met.goalMet)
+    #expect(!notMet.goalMet)
+}
+
+@Test func dayStepCountDefaultGoal() {
+    #expect(DayStepCount.defaultGoal == 8_000)
+}
+
+// MARK: StepCountService logic tests
+
+@Test @MainActor func stepCountServiceStepCountForKnownDate() async {
+    let today = Calendar.current.startOfDay(for: Date())
+    let store = MockStepStore(available: true, stepsByDate: [today: 6_543])
+    let svc   = StepCountService(store: store)
+    svc.authorizationStatus = .authorized
+
+    await svc.fetchSteps(for: [today])
+
+    let result = svc.stepCount(for: today)
+    #expect(result.steps == 6_543)
+    #expect(result.goal  == DayStepCount.defaultGoal)
+}
+
+@Test @MainActor func stepCountServiceReturnsZeroForUnknownDate() {
+    let store = MockStepStore(available: true, stepsByDate: [:])
+    let svc   = StepCountService(store: store)
+    let d     = svc.stepCount(for: Date())
+    #expect(d.steps == 0)
+}
+
+@Test @MainActor func stepCountServiceHasDataAfterFetch() async {
+    let today = Calendar.current.startOfDay(for: Date())
+    let store = MockStepStore(available: true, stepsByDate: [today: 3_000])
+    let svc   = StepCountService(store: store)
+    svc.authorizationStatus = .authorized
+
+    #expect(!svc.hasData(for: today))
+    await svc.fetchSteps(for: [today])
+    #expect(svc.hasData(for: today))
+}
+
+@Test @MainActor func stepCountServiceSkipsFetchWhenUnauthorized() async {
+    let today = Calendar.current.startOfDay(for: Date())
+    let store = MockStepStore(available: true, stepsByDate: [today: 9_999])
+    let svc   = StepCountService(store: store)
+    // authorizationStatus stays .notDetermined — fetch should no-op
+
+    await svc.fetchSteps(for: [today])
+    #expect(!svc.hasData(for: today))
+}
+
+@Test @MainActor func stepCountServiceUnavailableOnSimulator() {
+    let store = MockStepStore(available: false, stepsByDate: [:])
+    let svc   = StepCountService(store: store)
+    #expect(svc.authorizationStatus == .unavailable)
+}
+
+@Test @MainActor func stepCountServiceCustomGoalApplied() async {
+    let today = Calendar.current.startOfDay(for: Date())
+    let store = MockStepStore(available: true, stepsByDate: [today: 5_000])
+    let svc   = StepCountService(store: store)
+    svc.authorizationStatus = .authorized
+    svc.dailyGoal = 10_000
+
+    await svc.fetchSteps(for: [today])
+    let result = svc.stepCount(for: today)
+    #expect(result.goal == 10_000)
+    #expect(abs(result.percentage - 0.5) < 0.0001)
+}
+
 } // end TripWitTests suite
