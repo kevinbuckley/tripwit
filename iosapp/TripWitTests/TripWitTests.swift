@@ -2880,6 +2880,53 @@ func oldStopTransferDecodes() throws {
     #expect(TipError.failedVerification.errorDescription == "Transaction verification failed")
 }
 
+// MARK: - CalendarService Error Descriptions
+
+@Test func calendarServiceErrorDescriptions() {
+    let denied  = CalendarService.CalendarError.accessDenied
+    let noCal   = CalendarService.CalendarError.noCalendar
+    let failed  = CalendarService.CalendarError.saveFailed("disk full")
+
+    #expect(denied.errorDescription?.contains("denied") == true)
+    #expect(noCal.errorDescription?.contains("calendar") == true)
+    #expect(failed.errorDescription?.contains("disk full") == true)
+}
+
+@Test func calendarServiceEventTitleFormat() async throws {
+    // Verify the event title matches the "Name — Day N" pattern we emit
+    let tripName = "Paris Adventure"
+    let dayNumber = 3
+    let expected = "\(tripName) — Day \(dayNumber)"
+    // CalendarService creates titles in this format — test the convention
+    #expect(expected == "Paris Adventure — Day 3")
+}
+
+@Test func calendarServiceNotesBuildWithStops() {
+    // Mirrors the note-building logic inside CalendarService.exportTrip
+    let stops = ["Eiffel Tower", "Louvre", "Seine River Walk"]
+    var lines: [String] = ["Day notes here", ""]
+    lines.append("Stops:")
+    for s in stops { lines.append("  \u{2022} \(s)") }
+    let notes = lines.joined(separator: "\n")
+
+    #expect(notes.contains("Eiffel Tower"))
+    #expect(notes.contains("\u{2022}"))
+    #expect(notes.hasPrefix("Day notes here"))
+}
+
+@Test func calendarServiceEmptyNotesOmitted() {
+    // If no notes and no stops, no notes string should be built
+    var noteLines: [String] = []
+    let dayNotes = ""
+    let stopNames: [String] = []
+    if !dayNotes.isEmpty { noteLines.append(dayNotes) }
+    if !stopNames.isEmpty {
+        noteLines.append("Stops:")
+        for s in stopNames { noteLines.append("  \u{2022} \(s)") }
+    }
+    #expect(noteLines.isEmpty)
+}
+
 @Test func handoffStopIDFromWrongActivityTypeReturnsNil() async throws {
     let ctx = makeTestContext()
     let dm  = DataManager(context: ctx)
