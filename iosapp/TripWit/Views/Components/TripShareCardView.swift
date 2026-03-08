@@ -93,9 +93,11 @@ struct TripShareCardView: View {
 
                 VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 8) {
-                        Image(systemName: "airplane.departure")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.85))
+                        Image("TripWitIcon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 26, height: 26)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         Text(data.destination)
                             .font(.system(size: 21, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
@@ -140,9 +142,12 @@ struct TripShareCardView: View {
 
                 // Branding watermark
                 HStack(spacing: 4) {
-                    Image(systemName: "airplane.circle.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                    Image("TripWitIcon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 12, height: 12)
+                        .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+                        .opacity(0.4)
                     Text("TripWit")
                         .font(.system(size: 10, weight: .semibold, design: .rounded))
                         .foregroundStyle(.tertiary)

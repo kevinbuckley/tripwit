@@ -57,12 +57,20 @@ struct TripCountdownBadge: View {
                 EmptyView()
 
             case .countdown(let days):
-                Label("in \(days) day\(days == 1 ? "" : "s")", systemImage: "airplane.departure")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.blue)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(.blue.opacity(0.10), in: Capsule())
+                Label {
+                    Text("in \(days) day\(days == 1 ? "" : "s")")
+                } icon: {
+                    Image("TripWitIcon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                        .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.blue)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(.blue.opacity(0.10), in: Capsule())
 
             case .activeDay(let current, let total):
                 HStack(spacing: 5) {
