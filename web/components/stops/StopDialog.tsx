@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, MapPin, Star, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Search, X, MapPin, Star, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import type { Stop, StopCategory, StopTodo, StopLink } from "@/lib/types";
 import { CATEGORY_LABELS, newId } from "@/lib/types";
 import { searchPlaces, type NominatimResult } from "@/lib/nominatim";
@@ -22,6 +22,24 @@ const CATEGORIES: StopCategory[] = [
   "other",
 ];
 
+const CATEGORY_ICONS: Record<string, string> = {
+  accommodation: "🏨",
+  restaurant: "🍽️",
+  attraction: "🏛️",
+  transport: "✈️",
+  activity: "🎟️",
+  other: "📍",
+};
+
+const CATEGORY_COLORS_BG: Record<string, string> = {
+  accommodation: "bg-purple-50 border-purple-200 text-purple-700",
+  restaurant: "bg-orange-50 border-orange-200 text-orange-700",
+  attraction: "bg-blue-50 border-blue-200 text-blue-700",
+  transport: "bg-sky-50 border-sky-200 text-sky-700",
+  activity: "bg-green-50 border-green-200 text-green-700",
+  other: "bg-slate-50 border-slate-200 text-slate-600",
+};
+
 function emptyStop(): Stop {
   return {
     id: newId(),
@@ -38,6 +56,34 @@ function emptyStop(): Stop {
     comments: [],
   };
 }
+
+const Label = ({ children }: { children: React.ReactNode }) => (
+  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+    {children}
+  </label>
+);
+
+const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <input
+    {...props}
+    className={cn(
+      "w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400",
+      "focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-3 focus:ring-blue-100 transition-all",
+      props.className
+    )}
+  />
+);
+
+const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
+  <textarea
+    {...props}
+    className={cn(
+      "w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 resize-none",
+      "focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-3 focus:ring-blue-100 transition-all",
+      props.className
+    )}
+  />
+);
 
 export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
   const [form, setForm] = useState<Stop>(() => stop ?? emptyStop());
@@ -65,6 +111,13 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
   }, [searchQuery]);
 
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
   function pickResult(r: NominatimResult) {
     const name = r.display_name.split(",")[0].trim();
     setForm((f) => ({
@@ -78,43 +131,26 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
     setResults([]);
   }
 
-  // ─── Todos ────────────────────────────────────────────────────────────────
   function addTodo() {
     if (!newTodo.trim()) return;
-    const todo: StopTodo = {
-      id: newId(),
-      text: newTodo.trim(),
-      isCompleted: false,
-      sortOrder: form.todos.length,
-    };
+    const todo: StopTodo = { id: newId(), text: newTodo.trim(), isCompleted: false, sortOrder: form.todos.length };
     set("todos", [...form.todos, todo]);
     setNewTodo("");
   }
-
   function toggleTodo(id: string) {
-    set("todos", form.todos.map((t) =>
-      t.id === id ? { ...t, isCompleted: !t.isCompleted } : t
-    ));
+    set("todos", form.todos.map((t) => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t));
   }
-
   function deleteTodo(id: string) {
     set("todos", form.todos.filter((t) => t.id !== id));
   }
 
-  // ─── Links ────────────────────────────────────────────────────────────────
   function addLink() {
     if (!newLinkUrl.trim()) return;
-    const link: StopLink = {
-      id: newId(),
-      title: newLinkTitle.trim() || newLinkUrl.trim(),
-      url: newLinkUrl.trim(),
-      sortOrder: form.links.length,
-    };
+    const link: StopLink = { id: newId(), title: newLinkTitle.trim() || newLinkUrl.trim(), url: newLinkUrl.trim(), sortOrder: form.links.length };
     set("links", [...form.links, link]);
     setNewLinkTitle("");
     setNewLinkUrl("");
   }
-
   function deleteLink(id: string) {
     set("links", form.links.filter((l) => l.id !== id));
   }
@@ -127,49 +163,64 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
 
   const isTransport = form.categoryRaw === "transport";
   const isAccommodation = form.categoryRaw === "accommodation";
+  const hasLocation = form.latitude !== 0 || form.longitude !== 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white z-10">
-          <h2 className="font-semibold text-slate-800">
-            {stop ? "Edit Stop" : "Add Stop"}
-          </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
-            <X className="w-5 h-5" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.35)] w-full max-w-xl max-h-[92vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-sm">
+              {CATEGORY_ICONS[form.categoryRaw]}
+            </div>
+            <h2 className="font-semibold text-slate-900 text-[15px]">
+              {stop ? "Edit Stop" : "Add Stop"}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Name *</label>
-            <input
+            <Label>Name *</Label>
+            <Input
               type="text"
               value={form.name}
               onChange={(e) => set("name", e.target.value)}
               required
               placeholder="e.g. Eiffel Tower"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              autoFocus
             />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
-            <div className="flex flex-wrap gap-2">
+            <Label>Category</Label>
+            <div className="flex flex-wrap gap-1.5">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => set("categoryRaw", cat)}
                   className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all",
                     form.categoryRaw === cat
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-blue-400"
+                      ? CATEGORY_COLORS_BG[cat] + " shadow-sm"
+                      : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
                   )}
                 >
+                  <span>{CATEGORY_ICONS[cat]}</span>
                   {CATEGORY_LABELS[cat]}
                 </button>
               ))}
@@ -178,40 +229,40 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
 
           {/* Location search */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Location</label>
+            <Label>Location</Label>
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
-              <input
+              <Search className="absolute left-3.5 top-3 w-3.5 h-3.5 text-slate-400" />
+              <Input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for a place…"
-                className="w-full border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="pl-9 pr-8"
               />
               {searching && (
-                <div className="absolute right-3 top-2.5 text-xs text-slate-400">…</div>
+                <Loader2 className="absolute right-3 top-3 w-3.5 h-3.5 text-slate-400 animate-spin" />
               )}
             </div>
             {results.length > 0 && (
-              <ul className="mt-1 border border-slate-200 rounded-lg shadow-sm overflow-hidden text-sm">
-                {results.map((r) => (
+              <ul className="mt-1.5 border border-slate-200 rounded-xl shadow-md overflow-hidden bg-white text-sm divide-y divide-slate-50">
+                {results.slice(0, 5).map((r) => (
                   <li key={r.place_id}>
                     <button
                       type="button"
                       onClick={() => pickResult(r)}
-                      className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-start gap-2"
+                      className="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 flex items-start gap-2.5 transition-colors"
                     >
-                      <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />
+                      <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-blue-400" />
                       <span className="text-xs text-slate-700 leading-snug">{r.display_name}</span>
                     </button>
                   </li>
                 ))}
               </ul>
             )}
-            {(form.latitude !== 0 || form.longitude !== 0) && (
-              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
+            {hasLocation && (
+              <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-green-500" />
+                Pinned · {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
               </p>
             )}
           </div>
@@ -219,111 +270,66 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
           {/* Times */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Arrival time</label>
-              <input
+              <Label>Arrival time</Label>
+              <Input
                 type="datetime-local"
                 value={form.arrivalTime?.slice(0, 16) ?? ""}
-                onChange={(e) =>
-                  set("arrivalTime", e.target.value ? new Date(e.target.value).toISOString() : undefined)
-                }
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                onChange={(e) => set("arrivalTime", e.target.value ? new Date(e.target.value).toISOString() : undefined)}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Departure time</label>
-              <input
+              <Label>Departure time</Label>
+              <Input
                 type="datetime-local"
                 value={form.departureTime?.slice(0, 16) ?? ""}
-                onChange={(e) =>
-                  set("departureTime", e.target.value ? new Date(e.target.value).toISOString() : undefined)
-                }
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                onChange={(e) => set("departureTime", e.target.value ? new Date(e.target.value).toISOString() : undefined)}
               />
             </div>
           </div>
 
-          {/* Transport-specific fields */}
+          {/* Transport-specific */}
           {isTransport && (
-            <div className="border border-blue-100 rounded-lg p-3 bg-blue-50 space-y-3">
-              <p className="text-xs font-semibold text-blue-700">Flight Details</p>
+            <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 space-y-3">
+              <p className="text-xs font-semibold text-sky-700 flex items-center gap-1.5">
+                ✈️ Flight Details
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Airline</label>
-                  <input
-                    type="text"
-                    value={form.airline ?? ""}
-                    onChange={(e) => set("airline", e.target.value || undefined)}
-                    placeholder="e.g. Delta"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                  />
+                  <Label>Airline</Label>
+                  <Input type="text" value={form.airline ?? ""} onChange={(e) => set("airline", e.target.value || undefined)} placeholder="e.g. Delta" className="bg-white" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Flight #</label>
-                  <input
-                    type="text"
-                    value={form.flightNumber ?? ""}
-                    onChange={(e) => set("flightNumber", e.target.value || undefined)}
-                    placeholder="e.g. DL234"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                  />
+                  <Label>Flight #</Label>
+                  <Input type="text" value={form.flightNumber ?? ""} onChange={(e) => set("flightNumber", e.target.value || undefined)} placeholder="e.g. DL234" className="bg-white" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">From (airport)</label>
-                  <input
-                    type="text"
-                    value={form.departureAirport ?? ""}
-                    onChange={(e) => set("departureAirport", e.target.value || undefined)}
-                    placeholder="e.g. JFK"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                  />
+                  <Label>From (airport)</Label>
+                  <Input type="text" value={form.departureAirport ?? ""} onChange={(e) => set("departureAirport", e.target.value || undefined)} placeholder="JFK" className="bg-white" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">To (airport)</label>
-                  <input
-                    type="text"
-                    value={form.arrivalAirport ?? ""}
-                    onChange={(e) => set("arrivalAirport", e.target.value || undefined)}
-                    placeholder="e.g. CDG"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                  />
+                  <Label>To (airport)</Label>
+                  <Input type="text" value={form.arrivalAirport ?? ""} onChange={(e) => set("arrivalAirport", e.target.value || undefined)} placeholder="CDG" className="bg-white" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Confirmation code</label>
-                <input
-                  type="text"
-                  value={form.confirmationCode ?? ""}
-                  onChange={(e) => set("confirmationCode", e.target.value || undefined)}
-                  placeholder="e.g. ABC123"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                />
+                <Label>Confirmation code</Label>
+                <Input type="text" value={form.confirmationCode ?? ""} onChange={(e) => set("confirmationCode", e.target.value || undefined)} placeholder="e.g. ABC123" className="bg-white" />
               </div>
             </div>
           )}
 
-          {/* Accommodation-specific fields */}
+          {/* Accommodation-specific */}
           {isAccommodation && (
-            <div className="border border-purple-100 rounded-lg p-3 bg-purple-50 space-y-3">
-              <p className="text-xs font-semibold text-purple-700">Accommodation Details</p>
+            <div className="rounded-xl border border-purple-100 bg-purple-50/60 p-4 space-y-3">
+              <p className="text-xs font-semibold text-purple-700">🏨 Accommodation Details</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Confirmation code</label>
-                  <input
-                    type="text"
-                    value={form.confirmationCode ?? ""}
-                    onChange={(e) => set("confirmationCode", e.target.value || undefined)}
-                    placeholder="e.g. HB123456"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                  />
+                  <Label>Confirmation code</Label>
+                  <Input type="text" value={form.confirmationCode ?? ""} onChange={(e) => set("confirmationCode", e.target.value || undefined)} placeholder="e.g. HB123456" className="bg-white" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Check-out date</label>
-                  <input
-                    type="date"
-                    value={form.checkOutDate ?? ""}
-                    onChange={(e) => set("checkOutDate", e.target.value || undefined)}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                  />
+                  <Label>Check-out date</Label>
+                  <Input type="date" value={form.checkOutDate ?? ""} onChange={(e) => set("checkOutDate", e.target.value || undefined)} className="bg-white" />
                 </div>
               </div>
             </div>
@@ -331,31 +337,15 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
 
           {/* Rating */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Rating</label>
-            <div className="flex items-center gap-1">
+            <Label>Rating</Label>
+            <div className="flex items-center gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => set("rating", form.rating === n ? 0 : n)}
-                  className="p-0.5"
-                >
-                  <Star
-                    className={cn(
-                      "w-5 h-5 transition-colors",
-                      n <= form.rating
-                        ? "text-yellow-400 fill-yellow-400"
-                        : "text-slate-200 hover:text-yellow-300"
-                    )}
-                  />
+                <button key={n} type="button" onClick={() => set("rating", form.rating === n ? 0 : n)} className="p-0.5 transition-transform hover:scale-110 active:scale-95">
+                  <Star className={cn("w-5 h-5 transition-colors", n <= form.rating ? "text-amber-400 fill-amber-400" : "text-slate-200 hover:text-amber-300")} />
                 </button>
               ))}
               {form.rating > 0 && (
-                <button
-                  type="button"
-                  onClick={() => set("rating", 0)}
-                  className="ml-2 text-xs text-slate-400 hover:text-slate-600"
-                >
+                <button type="button" onClick={() => set("rating", 0)} className="ml-1 text-[11px] text-slate-400 hover:text-slate-600 transition-colors">
                   Clear
                 </button>
               )}
@@ -365,59 +355,38 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
           {/* Website / Phone */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Website</label>
-              <input
-                type="url"
-                value={form.website ?? ""}
-                onChange={(e) => set("website", e.target.value || undefined)}
-                placeholder="https://…"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
+              <Label>Website</Label>
+              <Input type="url" value={form.website ?? ""} onChange={(e) => set("website", e.target.value || undefined)} placeholder="https://…" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Phone</label>
-              <input
-                type="tel"
-                value={form.phone ?? ""}
-                onChange={(e) => set("phone", e.target.value || undefined)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
+              <Label>Phone</Label>
+              <Input type="tel" value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value || undefined)} placeholder="+1 234 567 8900" />
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Notes</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => set("notes", e.target.value)}
-              rows={3}
-              placeholder="Any details…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-            />
+            <Label>Notes</Label>
+            <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} placeholder="Any details, tips, or reminders…" />
           </div>
 
           {/* Todos */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-2">To-do list</label>
+            <Label>To-do list</Label>
             {form.todos.length > 0 && (
-              <ul className="mb-2 space-y-1">
+              <ul className="mb-2.5 space-y-1">
                 {form.todos.map((todo) => (
-                  <li key={todo.id} className="flex items-center gap-2 group">
+                  <li key={todo.id} className="flex items-center gap-2.5 group py-1.5 px-2 rounded-lg hover:bg-slate-50">
                     <input
                       type="checkbox"
                       checked={todo.isCompleted}
                       onChange={() => toggleTodo(todo.id)}
-                      className="rounded"
+                      className="rounded text-blue-600 border-slate-300 focus:ring-blue-500"
                     />
                     <span className={cn("flex-1 text-sm", todo.isCompleted && "line-through text-slate-400")}>
                       {todo.text}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => deleteTodo(todo.id)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500"
-                    >
+                    <button type="button" onClick={() => deleteTodo(todo.id)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </li>
@@ -425,19 +394,14 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
               </ul>
             )}
             <div className="flex gap-2">
-              <input
+              <Input
                 type="text"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTodo(); } }}
                 placeholder="Add a to-do…"
-                className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
-              <button
-                type="button"
-                onClick={addTodo}
-                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm"
-              >
+              <button type="button" onClick={addTodo} className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors shrink-0">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -445,25 +409,16 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
 
           {/* Links */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-2">Links</label>
+            <Label>Links</Label>
             {form.links.length > 0 && (
-              <ul className="mb-2 space-y-1">
+              <ul className="mb-2.5 space-y-1">
                 {form.links.map((link) => (
-                  <li key={link.id} className="flex items-center gap-2 group">
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-sm text-blue-500 hover:underline truncate"
-                    >
+                  <li key={link.id} className="flex items-center gap-2.5 group py-1.5 px-2 rounded-lg hover:bg-slate-50">
+                    <ExternalLink className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm text-blue-500 hover:underline truncate">
                       {link.title}
                     </a>
-                    <button
-                      type="button"
-                      onClick={() => deleteLink(link.id)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500"
-                    >
+                    <button type="button" onClick={() => deleteLink(link.id)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </li>
@@ -471,48 +426,38 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
               </ul>
             )}
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={newLinkTitle}
-                onChange={(e) => setNewLinkTitle(e.target.value)}
-                placeholder="Title (optional)"
-                className="w-28 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <input
+              <Input type="text" value={newLinkTitle} onChange={(e) => setNewLinkTitle(e.target.value)} placeholder="Label (optional)" className="w-32" />
+              <Input
                 type="url"
                 value={newLinkUrl}
                 onChange={(e) => setNewLinkUrl(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addLink(); } }}
                 placeholder="https://…"
-                className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
-              <button
-                type="button"
-                onClick={addLink}
-                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm"
-              >
+              <button type="button" onClick={addLink} className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors shrink-0">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
-            >
-              {stop ? "Save" : "Add Stop"}
-            </button>
-          </div>
-        </form>
+        {/* Footer */}
+        <div className="flex justify-end gap-2.5 px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit as unknown as React.MouseEventHandler}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            {stop ? "Save changes" : "Add Stop"}
+          </button>
+        </div>
       </div>
     </div>
   );

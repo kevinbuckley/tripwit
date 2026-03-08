@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Plus, Plane, MapPin, Trash2, Upload, Download, Copy } from "lucide-react";
+import { Plus, Trash2, Upload, Download, Copy, MapPin } from "lucide-react";
 import type { Trip } from "@/lib/types";
 import { cn } from "@/components/ui/cn";
 import { parseTripwitFile } from "@/lib/tripwit-parser";
@@ -18,16 +18,10 @@ interface TripsSidebarProps {
   onDuplicateTrip?: (trip: Trip) => void;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  planning: "bg-blue-100 text-blue-700",
-  active: "bg-green-100 text-green-700",
-  completed: "bg-slate-100 text-slate-600",
-};
-
-const STATUS_ICONS: Record<string, string> = {
-  planning: "📝",
-  active: "🧭",
-  completed: "✅",
+const STATUS_DOT: Record<string, string> = {
+  planning: "bg-blue-400",
+  active: "bg-emerald-400",
+  completed: "bg-slate-500",
 };
 
 function formatTripDates(start: string, end: string): string {
@@ -43,6 +37,24 @@ function formatTripDates(start: string, end: string): string {
   }
 }
 
+const IconBtn = ({
+  onClick,
+  title,
+  children,
+}: {
+  onClick?: () => void;
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <button
+    onClick={onClick}
+    title={title}
+    className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/8 transition-colors"
+  >
+    {children}
+  </button>
+);
+
 export default function TripsSidebar({
   trips,
   selectedTripId,
@@ -57,241 +69,216 @@ export default function TripsSidebar({
   const [importError, setImportError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await importFile(file);
-    e.target.value = "";
-  }
-
   async function importFile(file: File) {
     try {
       const text = await file.text();
-      const json = JSON.parse(text);
-      const trip = parseTripwitFile(json, userId);
+      const trip = parseTripwitFile(JSON.parse(text), userId);
       onImportTrip(trip);
       setImportError(null);
     } catch {
-      setImportError("Could not read .tripwit file.");
+      setImportError("Couldn't read .tripwit file.");
       setTimeout(() => setImportError(null), 3000);
     }
   }
 
-  // Drag-and-drop .tripwit import
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) await importFile(file);
+    e.target.value = "";
+  }
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     setDragOver(true);
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     setDragOver(false);
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && (file.name.endsWith(".tripwit") || file.name.endsWith(".json"))) {
-      await importFile(file);
-    } else {
-      setImportError("Drop a .tripwit file to import.");
-      setTimeout(() => setImportError(null), 3000);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, onImportTrip]);
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file && (file.name.endsWith(".tripwit") || file.name.endsWith(".json"))) {
+        await importFile(file);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userId, onImportTrip]
+  );
 
   const selectedTrip = trips.find((t) => t.id === selectedTripId);
 
   return (
     <aside
       className={cn(
-        "w-64 shrink-0 border-r border-slate-200 bg-white flex flex-col h-full transition-colors",
-        dragOver && "bg-blue-50 border-blue-300"
+        "w-64 shrink-0 flex flex-col h-full transition-colors select-none",
+        "bg-[#0c111d] border-r border-white/5"
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Header */}
-      <div className="px-3 py-3 border-b border-slate-100 flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-4 h-14 border-b border-white/5 shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
+          <span className="text-white text-sm">✈</span>
+        </div>
+        <span className="text-white font-semibold text-[15px] tracking-tight">TripWit</span>
+      </div>
+
+      {/* Section header + actions */}
+      <div className="flex items-center justify-between px-4 pt-5 pb-2 shrink-0">
+        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
           My Trips
         </span>
-        <div className="flex gap-0.5">
-          {/* Export selected trip */}
+        <div className="flex items-center gap-0.5">
           {selectedTrip && (
-            <button
-              onClick={() => downloadTripwit(selectedTrip)}
-              title="Export as .tripwit"
-              className="p-1.5 rounded-md hover:bg-slate-100 cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+            <IconBtn onClick={() => downloadTripwit(selectedTrip)} title="Export .tripwit">
+              <Download className="w-3.5 h-3.5" />
+            </IconBtn>
           )}
-          {/* Duplicate trip */}
           {selectedTrip && onDuplicateTrip && (
-            <button
-              onClick={() => onDuplicateTrip(selectedTrip)}
-              title="Duplicate trip"
-              className="p-1.5 rounded-md hover:bg-slate-100 cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
-            >
-              <Copy className="w-4 h-4" />
-            </button>
+            <IconBtn onClick={() => onDuplicateTrip(selectedTrip)} title="Duplicate trip">
+              <Copy className="w-3.5 h-3.5" />
+            </IconBtn>
           )}
-          {/* Import .tripwit */}
-          <label
-            title="Import .tripwit file"
-            className="p-1.5 rounded-md hover:bg-slate-100 cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            <input
-              type="file"
-              accept=".tripwit,.json"
-              className="hidden"
-              onChange={handleImport}
-            />
+          <label title="Import .tripwit" className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/8 transition-colors cursor-pointer">
+            <Upload className="w-3.5 h-3.5" />
+            <input type="file" accept=".tripwit,.json" className="hidden" onChange={handleImport} />
           </label>
           <button
             onClick={onCreateTrip}
-            title="New trip"
-            className="p-1.5 rounded-md hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition-colors"
+            title="New trip (⌘N)"
+            className="w-7 h-7 flex items-center justify-center rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
+      {/* Error message */}
       {importError && (
-        <div className="mx-3 mt-2 px-2 py-1.5 bg-red-50 text-red-600 text-xs rounded animate-in fade-in">
+        <div className="mx-3 mb-2 px-3 py-2 bg-red-500/15 text-red-400 text-xs rounded-lg border border-red-500/20">
           {importError}
         </div>
       )}
 
-      {/* Drag overlay */}
+      {/* Drag-over overlay */}
       {dragOver && (
-        <div className="mx-3 mt-2 px-4 py-6 border-2 border-dashed border-blue-400 rounded-xl bg-blue-50 text-center">
-          <Upload className="w-6 h-6 mx-auto mb-1 text-blue-500" />
-          <p className="text-xs font-medium text-blue-600">Drop .tripwit file here</p>
+        <div className="mx-3 mb-2 px-4 py-5 border border-dashed border-blue-500/50 rounded-xl bg-blue-500/10 text-center">
+          <Upload className="w-5 h-5 mx-auto mb-1 text-blue-400" />
+          <p className="text-xs text-blue-400 font-medium">Drop to import</p>
         </div>
       )}
 
       {/* Trip list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto sidebar-scroll px-2 pb-4">
         {trips.length === 0 && !dragOver && (
-          <div className="px-4 py-10 text-center">
-            <div className="text-4xl mb-3">🗺️</div>
-            <Plane className="w-6 h-6 mx-auto mb-2 text-slate-300" />
-            <p className="text-sm font-medium text-slate-500 mb-1">No trips yet</p>
-            <p className="text-xs text-slate-400 mb-4">
-              Create a new trip or drop a .tripwit file here to get started.
+          <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+            <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-3">
+              <span className="text-2xl">🗺️</span>
+            </div>
+            <p className="text-sm font-medium text-slate-300 mb-1">No trips yet</p>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+              Create your first trip or drop a .tripwit file here.
             </p>
             <button
               onClick={onCreateTrip}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-500 transition-colors"
             >
-              <Plus className="w-4 h-4" />
-              Create Trip
+              <Plus className="w-3.5 h-3.5" />
+              New Trip
             </button>
           </div>
         )}
-        {trips.map((trip) => (
-          <div
-            key={trip.id}
-            className={cn(
-              "group flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-slate-50 hover:bg-slate-50 transition-colors",
-              selectedTripId === trip.id && "bg-blue-50 hover:bg-blue-50 border-l-2 border-l-blue-500"
-            )}
-            onClick={() => {
-              setConfirmDelete(null);
-              onSelectTrip(trip.id);
-            }}
-          >
-            <div className="text-base mt-0.5 shrink-0">
-              {STATUS_ICONS[trip.statusRaw] ?? "📝"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div
-                className={cn(
-                  "text-sm font-medium truncate",
-                  selectedTripId === trip.id ? "text-blue-700" : "text-slate-800"
-                )}
-              >
-                {trip.name}
-              </div>
-              {trip.destination && (
-                <div className="text-xs text-slate-400 truncate flex items-center gap-1">
-                  <MapPin className="w-3 h-3 shrink-0" />
-                  {trip.destination}
-                </div>
+
+        {trips.map((trip) => {
+          const isSelected = selectedTripId === trip.id;
+          const stopCount = trip.days.reduce((c, d) => c + d.stops.length, 0);
+
+          return (
+            <div
+              key={trip.id}
+              className={cn(
+                "group relative rounded-xl px-3 py-2.5 cursor-pointer mb-1 transition-all",
+                isSelected
+                  ? "bg-white/8 border border-white/8"
+                  : "hover:bg-white/4 border border-transparent"
               )}
-              <div className="flex items-center gap-2 mt-1">
-                <span
-                  className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize",
-                    STATUS_COLORS[trip.statusRaw]
+              onClick={() => { setConfirmDelete(null); onSelectTrip(trip.id); }}
+            >
+              {/* Selected accent line */}
+              {isSelected && (
+                <div className="absolute left-0 top-2.5 bottom-2.5 w-0.5 bg-blue-500 rounded-r-full" />
+              )}
+
+              <div className="flex items-start gap-2.5">
+                {/* Status dot */}
+                <div className={cn("w-2 h-2 rounded-full mt-1.5 shrink-0", STATUS_DOT[trip.statusRaw] ?? "bg-slate-500")} />
+
+                <div className="flex-1 min-w-0">
+                  <div className={cn(
+                    "text-[13px] font-medium leading-snug truncate",
+                    isSelected ? "text-white" : "text-slate-300"
+                  )}>
+                    {trip.name}
+                  </div>
+                  {trip.destination && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-2.5 h-2.5 text-slate-500 shrink-0" />
+                      <span className="text-[11px] text-slate-500 truncate">{trip.destination}</span>
+                    </div>
                   )}
-                >
-                  {trip.statusRaw}
-                </span>
-                {trip.startDate && (
-                  <span className="text-[10px] text-slate-400">
-                    {formatTripDates(trip.startDate, trip.endDate)}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {trip.startDate && (
+                      <span className="text-[10px] text-slate-500">
+                        {formatTripDates(trip.startDate, trip.endDate)}
+                      </span>
+                    )}
+                    {stopCount > 0 && (
+                      <span className="text-[10px] text-slate-600">
+                        · {stopCount} stop{stopCount !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Delete */}
+                {confirmDelete === trip.id ? (
+                  <div className="flex flex-col gap-1 shrink-0 pt-0.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteTrip(trip.id); setConfirmDelete(null); }}
+                      className="text-[10px] text-red-400 hover:text-red-300 font-medium"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmDelete(null); }}
+                      className="text-[10px] text-slate-500 hover:text-slate-400"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(trip.id); }}
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-white/8 text-slate-500 hover:text-red-400 transition-all"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 )}
               </div>
-              {/* Trip stats */}
-              {(trip.days.length > 0 || trip.bookings.length > 0) && (
-                <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
-                  {trip.days.length > 0 && (
-                    <span>{trip.days.length} {trip.days.length === 1 ? "day" : "days"}</span>
-                  )}
-                  {trip.days.reduce((c, d) => c + d.stops.length, 0) > 0 && (
-                    <span>· {trip.days.reduce((c, d) => c + d.stops.length, 0)} stops</span>
-                  )}
-                </div>
-              )}
             </div>
-            {/* Delete */}
-            {confirmDelete === trip.id ? (
-              <div className="flex flex-col gap-0.5 shrink-0">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteTrip(trip.id);
-                    setConfirmDelete(null);
-                  }}
-                  className="text-[10px] text-red-600 font-medium hover:underline"
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmDelete(null);
-                  }}
-                  className="text-[10px] text-slate-400 hover:underline"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmDelete(trip.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {/* Bottom spacer */}
+      <div className="shrink-0 h-4" />
     </aside>
   );
 }

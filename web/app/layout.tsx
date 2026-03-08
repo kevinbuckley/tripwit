@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import CookieBanner from "@/components/layout/CookieBanner";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
@@ -23,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         {adsenseClientId && (
           <Script
@@ -34,7 +41,7 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body>
+      <body className="font-sans antialiased">
         <AuthProvider>{children}</AuthProvider>
         <CookieBanner />
       </body>

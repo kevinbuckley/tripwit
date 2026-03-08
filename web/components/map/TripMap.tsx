@@ -6,7 +6,7 @@ import L from "leaflet";
 import type { Stop } from "@/lib/types";
 import { CATEGORY_COLORS } from "@/lib/types";
 
-// Fix Leaflet default marker icon (webpack breaks the default URL resolution)
+// Fix Leaflet default marker icon
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -14,25 +14,26 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-function makeIcon(color: string) {
+function makeIcon(color: string, label: string, isSelected: boolean) {
   return L.divIcon({
     className: "",
     html: `<div style="
-      width:24px;height:24px;border-radius:50% 50% 50% 0;
-      background:${color};border:2px solid white;
-      box-shadow:0 1px 4px rgba(0,0,0,.4);
-      transform:rotate(-45deg);
-    "></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 24],
-    popupAnchor: [0, -26],
+      display:flex;align-items:center;justify-content:center;
+      width:${isSelected ? 32 : 28}px;height:${isSelected ? 32 : 28}px;
+      border-radius:50%;
+      background:${color};
+      border:${isSelected ? "3px" : "2px"} solid white;
+      box-shadow:0 ${isSelected ? "4px 12px" : "2px 6px"} rgba(0,0,0,${isSelected ? ".35" : ".22"});
+      color:white;font-size:11px;font-weight:700;font-family:system-ui,sans-serif;
+      transition:all .2s;
+    ">${label}</div>`,
+    iconSize: [isSelected ? 32 : 28, isSelected ? 32 : 28],
+    iconAnchor: [isSelected ? 16 : 14, isSelected ? 16 : 14],
+    popupAnchor: [0, isSelected ? -18 : -16],
   });
 }
 
-interface FlyToProps {
-  stops: Stop[];
-}
-
+interface FlyToProps { stops: Stop[]; }
 function FlyToStops({ stops }: FlyToProps) {
   const map = useMap();
   useEffect(() => {
@@ -42,7 +43,7 @@ function FlyToStops({ stops }: FlyToProps) {
       map.flyTo([located[0].latitude, located[0].longitude], 14, { animate: true, duration: 0.8 });
     } else {
       const bounds = L.latLngBounds(located.map((s) => [s.latitude, s.longitude]));
-      map.flyToBounds(bounds, { padding: [40, 40], animate: true, duration: 0.8 });
+      map.flyToBounds(bounds, { padding: [48, 48], animate: true, duration: 0.8 });
     }
   }, [stops, map]);
   return null;
@@ -66,24 +67,38 @@ export default function TripMap({ stops, selectedStopId, onSelectStop }: TripMap
       zoom={located.length > 0 ? 12 : 2}
       style={{ height: "100%", width: "100%" }}
       scrollWheelZoom={true}
+      zoomControl={false}
     >
+      {/* CartoDB Positron — clean, premium light basemap */}
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        subdomains="abcd"
+        maxZoom={19}
       />
       <FlyToStops stops={located} />
       {located.map((stop, i) => (
         <Marker
           key={stop.id}
           position={[stop.latitude, stop.longitude]}
-          icon={makeIcon(CATEGORY_COLORS[stop.categoryRaw])}
+          icon={makeIcon(
+            CATEGORY_COLORS[stop.categoryRaw] ?? "#64748b",
+            String(i + 1),
+            selectedStopId === stop.id
+          )}
           eventHandlers={{ click: () => onSelectStop?.(stop.id) }}
           zIndexOffset={selectedStopId === stop.id ? 1000 : 0}
         >
           <Popup>
-            <div className="text-sm">
-              <div className="font-semibold">{i + 1}. {stop.name}</div>
-              {stop.address && <div className="text-slate-500 text-xs mt-0.5">{stop.address}</div>}
+            <div style={{ fontFamily: "system-ui, sans-serif", minWidth: 140 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>
+                {i + 1}. {stop.name}
+              </div>
+              {stop.address && (
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2, lineHeight: 1.4 }}>
+                  {stop.address.split(",").slice(0, 3).join(",")}
+                </div>
+              )}
             </div>
           </Popup>
         </Marker>

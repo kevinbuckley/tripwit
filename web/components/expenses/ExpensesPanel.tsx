@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Pencil, DollarSign } from "lucide-react";
+import { Plus, Trash2, Pencil, TrendingUp } from "lucide-react";
 import type { Expense, Trip } from "@/lib/types";
 import ExpenseDialog from "./ExpenseDialog";
 
@@ -28,13 +28,18 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+const CATEGORY_COLORS: Record<string, string> = {
+  accommodation: "bg-purple-100 text-purple-700",
+  food: "bg-orange-100 text-orange-700",
+  transport: "bg-sky-100 text-sky-700",
+  activity: "bg-green-100 text-green-700",
+  shopping: "bg-pink-100 text-pink-700",
+  other: "bg-slate-100 text-slate-600",
+};
+
 function formatAmount(amount: number, currency: string) {
   try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 2,
-    }).format(amount);
+    return new Intl.NumberFormat(undefined, { style: "currency", currency, minimumFractionDigits: 2 }).format(amount);
   } catch {
     return `${currency} ${amount.toFixed(2)}`;
   }
@@ -48,12 +53,11 @@ export default function ExpensesPanel({ trip, onUpdateTrip }: ExpensesPanelProps
     return a.sortOrder - b.sortOrder;
   });
 
-  // Total in trip's budget currency (only same-currency expenses)
   const budgetCurrency = trip.budgetCurrencyCode || "USD";
-  const totalSpent = expenses
-    .filter((e) => e.currencyCode === budgetCurrency)
-    .reduce((sum, e) => sum + e.amount, 0);
+  const totalSpent = expenses.filter((e) => e.currencyCode === budgetCurrency).reduce((sum, e) => sum + e.amount, 0);
   const hasBudget = trip.budgetAmount > 0;
+  const budgetPct = hasBudget ? Math.min(100, (totalSpent / trip.budgetAmount) * 100) : 0;
+  const isOver = hasBudget && totalSpent > trip.budgetAmount;
 
   function saveExpense(expense: Expense) {
     const exists = trip.expenses.find((e) => e.id === expense.id);
@@ -70,37 +74,39 @@ export default function ExpensesPanel({ trip, onUpdateTrip }: ExpensesPanelProps
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Budget summary */}
+      {/* Budget summary card */}
       {(hasBudget || expenses.length > 0) && (
-        <div className="mx-5 mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-          <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-4 h-4 text-slate-500" />
-            <span className="text-xs font-semibold text-slate-600">Budget Summary</span>
-          </div>
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-2xl font-bold text-slate-800">
-                {formatAmount(totalSpent, budgetCurrency)}
+        <div className="mx-5 mt-5 rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="px-5 pt-4 pb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Budget Summary</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-3xl font-bold text-slate-900 tracking-tight">
+                  {formatAmount(totalSpent, budgetCurrency)}
+                </div>
+                {hasBudget && (
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    of {formatAmount(trip.budgetAmount, budgetCurrency)} budget
+                  </div>
+                )}
               </div>
               {hasBudget && (
-                <div className="text-xs text-slate-400">
-                  of {formatAmount(trip.budgetAmount, budgetCurrency)} budget
+                <div className={`text-sm font-semibold px-3 py-1.5 rounded-xl ${isOver ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"}`}>
+                  {isOver
+                    ? `${formatAmount(totalSpent - trip.budgetAmount, budgetCurrency)} over`
+                    : `${formatAmount(trip.budgetAmount - totalSpent, budgetCurrency)} left`}
                 </div>
               )}
             </div>
-            {hasBudget && (
-              <div className={`text-sm font-medium ${totalSpent > trip.budgetAmount ? "text-red-500" : "text-green-600"}`}>
-                {totalSpent > trip.budgetAmount
-                  ? `${formatAmount(totalSpent - trip.budgetAmount, budgetCurrency)} over`
-                  : `${formatAmount(trip.budgetAmount - totalSpent, budgetCurrency)} left`}
-              </div>
-            )}
           </div>
           {hasBudget && (
-            <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-slate-100">
               <div
-                className={`h-full rounded-full transition-all ${totalSpent > trip.budgetAmount ? "bg-red-500" : "bg-blue-500"}`}
-                style={{ width: `${Math.min(100, (totalSpent / trip.budgetAmount) * 100)}%` }}
+                className={`h-full transition-all duration-500 ${isOver ? "bg-red-500" : "bg-blue-500"}`}
+                style={{ width: `${budgetPct}%` }}
               />
             </div>
           )}
@@ -109,43 +115,45 @@ export default function ExpensesPanel({ trip, onUpdateTrip }: ExpensesPanelProps
 
       <div className="px-5 py-4 space-y-2">
         {expenses.length === 0 && (
-          <p className="text-sm text-slate-400 text-center py-8">
-            No expenses yet. Track what you spend on this trip.
-          </p>
+          <div className="text-center py-12">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-2xl">
+              💳
+            </div>
+            <p className="text-sm font-medium text-slate-600 mb-1">No expenses yet</p>
+            <p className="text-xs text-slate-400">Track what you spend on this trip.</p>
+          </div>
         )}
 
         {expenses.map((exp) => (
           <div
             key={exp.id}
-            className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white group"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-100 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] group hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-shadow"
           >
             <span className="text-xl">{CATEGORY_ICONS[exp.categoryRaw]}</span>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-slate-800 truncate">{exp.title}</div>
-              <div className="text-xs text-slate-400">
-                {CATEGORY_LABELS[exp.categoryRaw]}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${CATEGORY_COLORS[exp.categoryRaw]}`}>
+                  {CATEGORY_LABELS[exp.categoryRaw]}
+                </span>
                 {exp.dateIncurred && (
-                  <> · {new Date(exp.dateIncurred + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}</>
+                  <span className="text-[10px] text-slate-400">
+                    {new Date(exp.dateIncurred + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </span>
                 )}
               </div>
               {exp.notes && (
-                <div className="text-xs text-slate-400 italic truncate">{exp.notes}</div>
+                <div className="text-xs text-slate-400 italic truncate mt-0.5">{exp.notes}</div>
               )}
             </div>
-            <div className="text-sm font-semibold text-slate-700 shrink-0">
+            <div className="text-sm font-bold text-slate-800 shrink-0">
               {formatAmount(exp.amount, exp.currencyCode)}
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => setEditing(exp)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700"
-              >
+              <button onClick={() => setEditing(exp)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors">
                 <Pencil className="w-3.5 h-3.5" />
               </button>
-              <button
-                onClick={() => deleteExpense(exp.id)}
-                className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"
-              >
+              <button onClick={() => deleteExpense(exp.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
