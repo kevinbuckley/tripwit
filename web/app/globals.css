@@ -188,3 +188,35 @@ button {
     transform: translateY(0);
   }
 }
+
+/* ── Tab content fade ───────────────────────────────────────────────────── */
+.tab-content {
+  animation: tabFadeIn 0.14s ease;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Status segmented control shadow ────────────────────────────────────── */
+.status-pill-active {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Input transparent large (trip title) ───────────────────────────────── */
+input.trip-title:focus-visible {
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* ── Stop card visited opacity ───────────────────────────────────────────── */
+.stop-visited .stop-name {
+  opacity: 0.55;
+}

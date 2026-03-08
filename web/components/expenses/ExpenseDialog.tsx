@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, BedDouble, Utensils, Car, Ticket, ShoppingBag, MoreHorizontal, type LucideIcon } from "lucide-react";
 import type { Expense, ExpenseCategory } from "@/lib/types";
 import { newId, nowISO } from "@/lib/types";
 import { cn } from "@/components/ui/cn";
@@ -13,13 +13,14 @@ interface ExpenseDialogProps {
   onClose: () => void;
 }
 
-const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string; icon: string }[] = [
-  { value: "accommodation", label: "Stay", icon: "🏨" },
-  { value: "food", label: "Food", icon: "🍽️" },
-  { value: "transport", label: "Travel", icon: "✈️" },
-  { value: "activity", label: "Activity", icon: "🎟️" },
-  { value: "shopping", label: "Shopping", icon: "🛍️" },
-  { value: "other", label: "Other", icon: "📦" },
+// Icons match iOS SF Symbols: bed.double.fill / fork.knife / car.fill / ticket.fill / bag.fill / ellipsis.circle.fill
+const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string; icon: LucideIcon }[] = [
+  { value: "accommodation", label: "Stay",     icon: BedDouble },
+  { value: "food",          label: "Food",     icon: Utensils },
+  { value: "transport",     label: "Travel",   icon: Car },
+  { value: "activity",      label: "Activity", icon: Ticket },
+  { value: "shopping",      label: "Shopping", icon: ShoppingBag },
+  { value: "other",         label: "Other",    icon: MoreHorizontal },
 ];
 
 const COMMON_CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "MXN", "BRL"];
@@ -75,22 +76,25 @@ export default function ExpenseDialog({ expense, defaultCurrency = "USD", onSave
           <div>
             <Label>Category</Label>
             <div className="grid grid-cols-3 gap-1.5">
-              {EXPENSE_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => set("categoryRaw", cat.value)}
-                  className={cn(
-                    "flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all",
-                    form.categoryRaw === cat.value
-                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                      : "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300"
-                  )}
-                >
-                  <span className="text-lg">{cat.icon}</span>
-                  {cat.label}
-                </button>
-              ))}
+              {EXPENSE_CATEGORIES.map((cat) => {
+                const CatIcon = cat.icon;
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => set("categoryRaw", cat.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs font-medium transition-all",
+                      form.categoryRaw === cat.value
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    <CatIcon className="w-5 h-5" />
+                    {cat.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

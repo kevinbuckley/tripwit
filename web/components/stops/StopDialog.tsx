@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, MapPin, Star, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
+import { Search, X, MapPin, Star, Plus, Trash2, ExternalLink, Loader2, BedDouble, Utensils, Plane, Footprints, type LucideIcon } from "lucide-react";
 import type { Stop, StopCategory, StopTodo, StopLink } from "@/lib/types";
 import { CATEGORY_LABELS, newId } from "@/lib/types";
 import { searchPlaces, type NominatimResult } from "@/lib/nominatim";
@@ -22,13 +22,14 @@ const CATEGORIES: StopCategory[] = [
   "other",
 ];
 
-const CATEGORY_ICONS: Record<string, string> = {
-  accommodation: "🏨",
-  restaurant: "🍽️",
-  attraction: "🏛️",
-  transport: "✈️",
-  activity: "🎟️",
-  other: "📍",
+// Matches iOS SF Symbols: bed.double.fill / fork.knife / star.fill / airplane / figure.run / mappin
+const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
+  accommodation: BedDouble,
+  restaurant: Utensils,
+  attraction: Star,
+  transport: Plane,
+  activity: Footprints,
+  other: MapPin,
 };
 
 const CATEGORY_COLORS_BG: Record<string, string> = {
@@ -164,6 +165,7 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
   const isTransport = form.categoryRaw === "transport";
   const isAccommodation = form.categoryRaw === "accommodation";
   const hasLocation = form.latitude !== 0 || form.longitude !== 0;
+  const ActiveCategoryIcon = CATEGORY_ICON_MAP[form.categoryRaw] ?? MapPin;
 
   return (
     <div
@@ -174,8 +176,8 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-sm">
-              {CATEGORY_ICONS[form.categoryRaw]}
+            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center">
+              <ActiveCategoryIcon className="w-4 h-4 text-white" />
             </div>
             <h2 className="font-semibold text-slate-900 text-[15px]">
               {stop ? "Edit Stop" : "Add Stop"}
@@ -208,22 +210,25 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
           <div>
             <Label>Category</Label>
             <div className="flex flex-wrap gap-1.5">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => set("categoryRaw", cat)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all",
-                    form.categoryRaw === cat
-                      ? CATEGORY_COLORS_BG[cat] + " shadow-sm"
-                      : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
-                  )}
-                >
-                  <span>{CATEGORY_ICONS[cat]}</span>
-                  {CATEGORY_LABELS[cat]}
-                </button>
-              ))}
+              {CATEGORIES.map((cat) => {
+                const CatIcon = CATEGORY_ICON_MAP[cat] ?? MapPin;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => set("categoryRaw", cat)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all",
+                      form.categoryRaw === cat
+                        ? CATEGORY_COLORS_BG[cat] + " shadow-sm"
+                        : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    <CatIcon className="w-3.5 h-3.5" />
+                    {CATEGORY_LABELS[cat]}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Pencil, TrendingUp } from "lucide-react";
+import { Plus, Trash2, Pencil, TrendingUp, BedDouble, Utensils, Car, Ticket, ShoppingBag, MoreHorizontal, type LucideIcon } from "lucide-react";
 import type { Expense, Trip } from "@/lib/types";
 import ExpenseDialog from "./ExpenseDialog";
 
@@ -10,13 +10,14 @@ interface ExpensesPanelProps {
   onUpdateTrip: (changes: Partial<Trip>) => void;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  accommodation: "🏨",
-  food: "🍽️",
-  transport: "✈️",
-  activity: "🎟️",
-  shopping: "🛍️",
-  other: "📦",
+// Matches iOS SF Symbols: bed.double.fill / fork.knife / car.fill / ticket.fill / bag.fill / ellipsis.circle.fill
+const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
+  accommodation: BedDouble,
+  food: Utensils,
+  transport: Car,
+  activity: Ticket,
+  shopping: ShoppingBag,
+  other: MoreHorizontal,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -73,7 +74,7 @@ export default function ExpensesPanel({ trip, onUpdateTrip }: ExpensesPanelProps
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto tab-content">
       {/* Budget summary card */}
       {(hasBudget || expenses.length > 0) && (
         <div className="mx-5 mt-5 rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
@@ -129,7 +130,7 @@ export default function ExpensesPanel({ trip, onUpdateTrip }: ExpensesPanelProps
             key={exp.id}
             className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-100 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] group hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-shadow"
           >
-            <span className="text-xl">{CATEGORY_ICONS[exp.categoryRaw]}</span>
+            {(() => { const Icon = CATEGORY_ICON_MAP[exp.categoryRaw] ?? MoreHorizontal; return <Icon className="w-5 h-5 text-slate-400 shrink-0" />; })()}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-slate-800 truncate">{exp.title}</div>
               <div className="flex items-center gap-1.5 mt-0.5">

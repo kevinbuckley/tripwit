@@ -15,19 +15,23 @@ export default function Header({ showAds = false, saveStatus = "idle" }: HeaderP
   return (
     <header className="flex items-center gap-4 px-5 h-14 shrink-0 bg-white border-b border-slate-200/60 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
       {/* Save status — left side */}
-      <div className="w-24 shrink-0">
+      <div className="w-28 shrink-0">
         {user && saveStatus !== "idle" && (
-          <div className="flex items-center gap-1.5 text-xs">
+          <div className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full transition-all ${
+            saveStatus === "saved"
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              : "text-slate-400"
+          }`}>
             {saveStatus === "saving" && (
               <>
-                <Loader2 className="w-3 h-3 text-slate-400 animate-spin" />
-                <span className="text-slate-400">Saving…</span>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Saving…</span>
               </>
             )}
             {saveStatus === "saved" && (
               <>
-                <Check className="w-3 h-3 text-emerald-500" />
-                <span className="text-emerald-600 font-medium">Saved</span>
+                <Check className="w-3 h-3" />
+                <span className="font-medium">Saved</span>
               </>
             )}
           </div>
@@ -44,7 +48,7 @@ export default function Header({ showAds = false, saveStatus = "idle" }: HeaderP
       )}
 
       {/* Right spacer (user moved to sidebar) */}
-      <div className="w-24 shrink-0" />
+      <div className="w-28 shrink-0" />
     </header>
   );
 }

@@ -173,6 +173,8 @@ export default function TripsSidebar({
         {trips.map((trip) => {
           const isSelected = selectedTripId === trip.id;
           const stopCount = trip.days.reduce((c, d) => c + d.stops.length, 0);
+          const visitedCount = trip.days.reduce((c, d) => c + d.stops.filter((s) => s.isVisited).length, 0);
+          const progressPct = stopCount > 0 ? Math.round((visitedCount / stopCount) * 100) : 0;
 
           return (
             <div
@@ -215,6 +217,12 @@ export default function TripsSidebar({
                       </span>
                     )}
                   </div>
+                  {trip.statusRaw === "active" && stopCount > 0 && (
+                    <div className="mt-2 h-[2px] bg-white/8 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500/60 rounded-full transition-all duration-500"
+                        style={{ width: `${progressPct}%` }} />
+                    </div>
+                  )}
                 </div>
 
                 {confirmDelete === trip.id ? (

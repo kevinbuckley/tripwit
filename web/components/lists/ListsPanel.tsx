@@ -83,7 +83,7 @@ export default function ListsPanel({ trip, onUpdateTrip }: ListsPanelProps) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 tab-content">
       {lists.length === 0 && !showNewList && (
         <div className="text-center py-12">
           <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-2xl">

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   Plus, Trash2, ChevronDown, ChevronUp, MapPin, Share2, Check,
   ExternalLink, Star, DollarSign, FileText, Calendar, GripVertical, Pencil,
+  Clock, Plane, BedDouble, Utensils, Footprints, type LucideIcon,
 } from "lucide-react";
 import type { Trip, Day, Stop } from "@/lib/types";
 import { CATEGORY_LABELS, CATEGORY_COLORS, newId, nowISO } from "@/lib/types";
@@ -25,6 +26,16 @@ interface TripDetailProps {
 }
 
 const CURRENCIES = ["USD","EUR","GBP","JPY","CAD","AUD","CHF","MXN","BRL","CNY","KRW","THB","INR","SGD","NZD"];
+
+// Matches iOS SF Symbols: bed.double.fill / fork.knife / star.fill / airplane / figure.run / mappin
+const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
+  accommodation: BedDouble,
+  restaurant: Utensils,
+  attraction: Star,
+  transport: Plane,
+  activity: Footprints,
+  other: MapPin,
+};
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   planning: { label: "📝 Planning", className: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -165,7 +176,6 @@ export default function TripDetail({
   const sortedDays = [...trip.days].sort((a, b) => a.dayNumber - b.dayNumber);
   const totalStops = trip.days.reduce((c, d) => c + d.stops.length, 0);
   const visitedStops = trip.days.reduce((c, d) => c + d.stops.filter((s) => s.isVisited).length, 0);
-  const statusCfg = STATUS_CONFIG[trip.statusRaw] ?? STATUS_CONFIG.planning;
 
   const TABS: { key: Tab; label: string; count?: number }[] = [
     { key: "days", label: "Days", count: trip.days.length },
@@ -183,15 +193,18 @@ export default function TripDetail({
           value={trip.name}
           onChange={(e) => updateField("name", e.target.value)}
           placeholder="Trip name"
-          className="w-full text-[22px] font-bold text-slate-900 placeholder-slate-300 border-0 outline-none bg-transparent leading-tight"
+          className="trip-title w-full text-[22px] font-bold text-slate-900 placeholder-slate-300 border-0 outline-none bg-transparent leading-tight"
         />
-        <input
-          type="text"
-          value={trip.destination}
-          onChange={(e) => updateField("destination", e.target.value)}
-          placeholder="Destination"
-          className="w-full text-sm text-slate-400 placeholder-slate-300 border-0 outline-none bg-transparent"
-        />
+        <div className="flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <input
+            type="text"
+            value={trip.destination}
+            onChange={(e) => updateField("destination", e.target.value)}
+            placeholder="Add destination…"
+            className="flex-1 text-sm text-slate-400 placeholder-slate-300 border-0 outline-none bg-transparent"
+          />
+        </div>
 
         {/* Controls row */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -217,14 +230,22 @@ export default function TripDetail({
             </button>
           )}
 
-          <select value={trip.statusRaw}
-            onChange={(e) => updateField("statusRaw", e.target.value as Trip["statusRaw"])}
-            className={cn("text-xs px-2.5 py-1 rounded-lg border font-medium focus:outline-none", statusCfg.className)}
-          >
-            <option value="planning">📝 Planning</option>
-            <option value="active">🧭 Active</option>
-            <option value="completed">✅ Done</option>
-          </select>
+          <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 gap-0.5 shrink-0">
+            {(["planning", "active", "completed"] as const).map((s) => (
+              <button key={s} onClick={() => updateField("statusRaw", s)}
+                className={cn(
+                  "px-2.5 py-[3px] text-[11px] font-semibold rounded-md transition-all whitespace-nowrap",
+                  trip.statusRaw === s
+                    ? s === "planning" ? "bg-white text-blue-700 shadow-sm"
+                    : s === "active"   ? "bg-white text-emerald-700 shadow-sm"
+                    :                    "bg-white text-slate-500 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {STATUS_CONFIG[s].label}
+              </button>
+            ))}
+          </div>
 
           <button onClick={toggleShare}
             className={cn("flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors",
@@ -321,7 +342,7 @@ export default function TripDetail({
 
       {/* ── Days tab ─────────────────────────────────────────────────────────── */}
       {tab === "days" && (
-        <div className="flex-1 overflow-y-auto bg-white border-x border-b border-slate-100 shadow-card rounded-b-xl mx-4">
+        <div className="flex-1 overflow-y-auto bg-white border-x border-b border-slate-100 shadow-card rounded-b-xl mx-4 tab-content">
           {sortedDays.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-4">
@@ -388,7 +409,7 @@ export default function TripDetail({
                           {day.location || `Day ${day.dayNumber}`}
                         </span>
                       )}
-                      <span className="text-xs text-slate-400">{formatDayDate(day.date)}</span>
+                      <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium shrink-0">{formatDayDate(day.date)}</span>
                       {!isExpanded && day.stops.length > 0 && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
                           {day.stops.length} stop{day.stops.length !== 1 ? "s" : ""}
@@ -441,12 +462,15 @@ export default function TripDetail({
                           "group flex items-stretch rounded-xl border cursor-pointer transition-all overflow-hidden",
                           selectedStopId === stop.id
                             ? "border-blue-300 bg-blue-50/60 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]"
+                            : stop.isVisited
+                            ? "border-emerald-100 bg-emerald-50/25 hover:border-emerald-200"
                             : "border-slate-100 bg-white shadow-card hover:shadow-card-hover hover:border-slate-200",
                           dragState?.stopId === stop.id && "opacity-40"
                         )}
                       >
                         {/* Category accent bar */}
-                        <div className="w-1 shrink-0 rounded-l-xl" style={{ backgroundColor: CATEGORY_COLORS[stop.categoryRaw] }} />
+                        <div className="w-1 shrink-0 rounded-l-xl transition-all"
+                          style={{ backgroundColor: stop.isVisited ? `${CATEGORY_COLORS[stop.categoryRaw]}55` : CATEGORY_COLORS[stop.categoryRaw] }} />
 
                         {/* Drag handle */}
                         <div className="flex items-center px-1.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
@@ -467,10 +491,16 @@ export default function TripDetail({
                             </div>
 
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
-                                style={{ backgroundColor: `${CATEGORY_COLORS[stop.categoryRaw]}18`, color: CATEGORY_COLORS[stop.categoryRaw] }}>
-                                {CATEGORY_LABELS[stop.categoryRaw]}
-                              </span>
+                              {(() => {
+                                const CatIcon = CATEGORY_ICON_MAP[stop.categoryRaw] ?? MapPin;
+                                return (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full"
+                                    style={{ backgroundColor: `${CATEGORY_COLORS[stop.categoryRaw]}18`, color: CATEGORY_COLORS[stop.categoryRaw] }}>
+                                    <CatIcon className="w-2.5 h-2.5 shrink-0" />
+                                    {CATEGORY_LABELS[stop.categoryRaw]}
+                                  </span>
+                                );
+                              })()}
                               {stop.address && (
                                 <span className="text-[11px] text-slate-400">{stop.address.split(",")[0]}</span>
                               )}
@@ -478,14 +508,16 @@ export default function TripDetail({
 
                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                               {stop.arrivalTime && (
-                                <span className="text-[11px] text-slate-500 flex items-center gap-0.5">
-                                  🕐 {new Date(stop.arrivalTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                                  <Clock className="w-3 h-3 shrink-0" />
+                                  {new Date(stop.arrivalTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                   {stop.departureTime && ` – ${new Date(stop.departureTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
                                 </span>
                               )}
                               {stop.flightNumber && (
-                                <span className="text-[11px] text-blue-600 flex items-center gap-0.5">
-                                  ✈️ {[stop.airline, stop.flightNumber].filter(Boolean).join(" ")}
+                                <span className="text-[11px] text-blue-600 flex items-center gap-1">
+                                  <Plane className="w-3 h-3 shrink-0" />
+                                  {[stop.airline, stop.flightNumber].filter(Boolean).join(" ")}
                                   {stop.departureAirport && stop.arrivalAirport && ` ${stop.departureAirport}→${stop.arrivalAirport}`}
                                 </span>
                               )}
@@ -499,8 +531,9 @@ export default function TripDetail({
                                 </span>
                               )}
                               {stop.todos.length > 0 && (
-                                <span className="text-[11px] text-slate-400">
-                                  ✅ {stop.todos.filter((t) => t.isCompleted).length}/{stop.todos.length}
+                                <span className="text-[11px] text-slate-400 flex items-center gap-0.5">
+                                  <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                  {stop.todos.filter((t) => t.isCompleted).length}/{stop.todos.length}
                                 </span>
                               )}
                               {stop.website && (
@@ -553,9 +586,12 @@ export default function TripDetail({
           {/* Add day */}
           {sortedDays.length > 0 && (
             <button onClick={addDay}
-              className="flex items-center gap-2 px-4 py-3.5 w-full text-sm text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors border-t border-slate-100"
+              className="flex items-center gap-2 px-4 py-3.5 w-full text-sm text-slate-400 hover:text-blue-500 hover:bg-blue-50/40 transition-all border-t border-slate-100 group"
             >
-              <Plus className="w-4 h-4" /> Add day
+              <div className="w-5 h-5 rounded-full border border-dashed border-slate-300 group-hover:border-blue-400 flex items-center justify-center transition-colors shrink-0">
+                <Plus className="w-3 h-3" />
+              </div>
+              Add day
             </button>
           )}
         </div>

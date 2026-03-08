@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Plane, BedDouble, Car, ClipboardList, type LucideIcon } from "lucide-react";
 import type { Booking, Trip } from "@/lib/types";
 import BookingDialog from "./BookingDialog";
 
@@ -10,11 +10,12 @@ interface BookingsPanelProps {
   onUpdateTrip: (changes: Partial<Trip>) => void;
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  flight: "✈️",
-  hotel: "🏨",
-  car_rental: "🚗",
-  other: "📋",
+// Matches iOS SF Symbols: airplane / bed.double.fill / car.fill / list.clipboard
+const TYPE_ICON_MAP: Record<string, LucideIcon> = {
+  flight: Plane,
+  hotel: BedDouble,
+  car_rental: Car,
+  other: ClipboardList,
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -50,7 +51,7 @@ export default function BookingsPanel({ trip, onUpdateTrip }: BookingsPanelProps
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto tab-content">
       <div className="px-5 py-4 space-y-3">
         {bookings.length === 0 && (
           <div className="text-center py-12">
@@ -70,8 +71,8 @@ export default function BookingsPanel({ trip, onUpdateTrip }: BookingsPanelProps
             <div className="flex items-start gap-3 p-4">
               {/* Icon + type badge */}
               <div className="shrink-0">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl border ${TYPE_COLORS[b.typeRaw]}`}>
-                  {TYPE_ICONS[b.typeRaw]}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${TYPE_COLORS[b.typeRaw]}`}>
+                  {(() => { const Icon = TYPE_ICON_MAP[b.typeRaw] ?? ClipboardList; return <Icon className="w-5 h-5" />; })()}
                 </div>
               </div>
 

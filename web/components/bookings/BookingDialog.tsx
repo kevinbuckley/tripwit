@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Plane, BedDouble, Car, ClipboardList, type LucideIcon } from "lucide-react";
 import type { Booking, BookingType } from "@/lib/types";
 import { newId } from "@/lib/types";
 import { cn } from "@/components/ui/cn";
@@ -12,11 +12,12 @@ interface BookingDialogProps {
   onClose: () => void;
 }
 
-const BOOKING_TYPES: { value: BookingType; label: string; icon: string }[] = [
-  { value: "flight", label: "Flight", icon: "✈️" },
-  { value: "hotel", label: "Hotel", icon: "🏨" },
-  { value: "car_rental", label: "Car rental", icon: "🚗" },
-  { value: "other", label: "Other", icon: "📋" },
+// Matches iOS SF Symbols: airplane / bed.double.fill / car.fill / list.clipboard
+const BOOKING_TYPES: { value: BookingType; label: string; icon: LucideIcon }[] = [
+  { value: "flight",     label: "Flight",     icon: Plane },
+  { value: "hotel",      label: "Hotel",      icon: BedDouble },
+  { value: "car_rental", label: "Car rental", icon: Car },
+  { value: "other",      label: "Other",      icon: ClipboardList },
 ];
 
 function emptyBooking(): Booking {
@@ -84,22 +85,25 @@ export default function BookingDialog({ booking, onSave, onClose }: BookingDialo
             <div>
               <Label>Type</Label>
               <div className="grid grid-cols-4 gap-1.5">
-                {BOOKING_TYPES.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => set("typeRaw", t.value)}
-                    className={cn(
-                      "flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-medium border transition-all",
-                      form.typeRaw === t.value
-                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                        : "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300"
-                    )}
-                  >
-                    <span className="text-base">{t.icon}</span>
-                    {t.label}
-                  </button>
-                ))}
+                {BOOKING_TYPES.map((t) => {
+                  const TypeIcon = t.icon;
+                  return (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => set("typeRaw", t.value)}
+                      className={cn(
+                        "flex flex-col items-center gap-1.5 py-2.5 rounded-xl text-xs font-medium border transition-all",
+                        form.typeRaw === t.value
+                          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      <TypeIcon className="w-5 h-5" />
+                      {t.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -131,7 +135,7 @@ export default function BookingDialog({ booking, onSave, onClose }: BookingDialo
             {/* Flight details */}
             {isFlight && (
               <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 space-y-3">
-                <p className="text-xs font-semibold text-sky-700">✈️ Flight Details</p>
+                <p className="text-xs font-semibold text-sky-700 flex items-center gap-1"><Plane className="w-3.5 h-3.5" /> Flight Details</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Airline</Label>
@@ -164,7 +168,7 @@ export default function BookingDialog({ booking, onSave, onClose }: BookingDialo
             {/* Hotel details */}
             {isHotel && (
               <div className="rounded-xl border border-purple-100 bg-purple-50/60 p-4 space-y-3">
-                <p className="text-xs font-semibold text-purple-700">🏨 Hotel Details</p>
+                <p className="text-xs font-semibold text-purple-700 flex items-center gap-1"><BedDouble className="w-3.5 h-3.5" /> Hotel Details</p>
                 <div>
                   <Label>Hotel name</Label>
                   <Input type="text" value={form.hotelName ?? ""} onChange={(e) => set("hotelName", e.target.value || undefined)} placeholder="e.g. Le Marais Hotel" className="bg-white" />

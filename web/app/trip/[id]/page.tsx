@@ -7,6 +7,16 @@ import type { Trip, Stop, Booking } from "@/lib/types";
 import { CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/types";
 import type { Metadata } from "next";
 import AdUnit from "@/components/ads/AdUnit";
+import { BedDouble, Utensils, Star, Plane, Footprints, MapPin, type LucideIcon } from "lucide-react";
+
+const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
+  accommodation: BedDouble,
+  restaurant: Utensils,
+  attraction: Star,
+  transport: Plane,
+  activity: Footprints,
+  other: MapPin,
+};
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -315,15 +325,21 @@ export default async function PublicTripPage({ params }: Props) {
                             </div>
 
                             <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                              <span
-                                className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
-                                style={{
-                                  backgroundColor: `${CATEGORY_COLORS[stop.categoryRaw]}18`,
-                                  color: CATEGORY_COLORS[stop.categoryRaw],
-                                }}
-                              >
-                                {CATEGORY_LABELS[stop.categoryRaw]}
-                              </span>
+                              {(() => {
+                                const CatIcon = CATEGORY_ICON_MAP[stop.categoryRaw] ?? MapPin;
+                                return (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                                    style={{
+                                      backgroundColor: `${CATEGORY_COLORS[stop.categoryRaw]}18`,
+                                      color: CATEGORY_COLORS[stop.categoryRaw],
+                                    }}
+                                  >
+                                    <CatIcon className="w-2.5 h-2.5 shrink-0" />
+                                    {CATEGORY_LABELS[stop.categoryRaw]}
+                                  </span>
+                                );
+                              })()}
                               {stop.arrivalTime && (
                                 <span>
                                   {new Date(stop.arrivalTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
