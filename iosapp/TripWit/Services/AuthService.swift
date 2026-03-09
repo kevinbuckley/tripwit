@@ -90,6 +90,18 @@ final class AuthService {
         userEmail = nil
     }
 
+    // MARK: - Delete Account
+
+    /// Deletes all user data from Supabase, signs out from Supabase and Google.
+    /// Required by App Store Guideline 5.1.1(v) — apps with account creation must offer deletion.
+    func deleteAccount(dataService: SupabaseDataServiceProtocol?) async throws {
+        if let dataService, let uid = userId {
+            try await dataService.deleteAllTrips(userId: uid)
+            log.info("Deleted all Supabase data for user \(uid)")
+        }
+        await signOut()
+    }
+
     // MARK: - Session Restore
 
     private func restoreSession() async {

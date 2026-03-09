@@ -14,6 +14,7 @@
         .date { font-size: 13px; color: #86868b; margin-bottom: 24px; }
         .app-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
         .app-icon { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #007AFF, #34C759); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; }
+        .note { background: #f5f5f7; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
     </style>
 </head>
 <body>
@@ -21,50 +22,76 @@
         <div class="app-icon">✈</div>
         <h1>TripWit — Privacy Policy</h1>
     </div>
-    <p class="date">Effective date: February 22, 2026</p>
+    <p class="date">Effective date: March 8, 2026</p>
 
-    <p>TripWit is a personal travel planning app built for families and individuals. Your privacy matters to us. This policy explains what data the app accesses and how it's handled.</p>
+    <p>TripWit is a personal travel planning app. Your privacy matters to us. This policy explains what data TripWit accesses, how it is used, and how you can control it.</p>
 
-    <h2>Data We Do Not Collect</h2>
-    <p>TripWit does <strong>not</strong> collect, store, or transmit any personal data to our servers. There is no analytics, no tracking, no advertising, and no user accounts.</p>
+    <div class="note">
+        <strong>Summary:</strong> TripWit works fully offline with no account required. Cloud sync is entirely optional and only activates when you choose to sign in with Google.
+    </div>
+
+    <h2>No Account Required</h2>
+    <p>TripWit works without any account. All your trips are stored locally on your device using Apple's Core Data framework and optionally synced across your Apple devices via iCloud (controlled by your device settings). You do not need to sign in to use any core feature of the app.</p>
+
+    <h2>Optional Google Sign-In &amp; Cloud Sync</h2>
+    <p>TripWit offers an optional "Sign in with Google" feature that enables cross-platform sync between the iOS app and the TripWit web app at <a href="https://tripwit.app">tripwit.app</a>. This feature is opt-in and does the following:</p>
     <ul>
-        <li>No data is sent to us or any third party</li>
-        <li>No analytics or crash reporting SDKs are included</li>
-        <li>No advertising frameworks are used</li>
-        <li>No user accounts or sign-in is required</li>
+        <li><strong>Authentication:</strong> Your Google account is used to verify your identity via Google Sign-In. We receive your email address from Google and use it to identify your account. We do not receive your Google password.</li>
+        <li><strong>Cloud storage:</strong> When signed in, your trip data (names, destinations, itineraries, stops, bookings, expenses, and lists) is synced to and stored on Supabase, a third-party cloud database service hosted in the United States. This data is associated with your Google account's email address.</li>
+        <li><strong>Location data in trips:</strong> GPS coordinates attached to stops you have added to your trips are included in the synced data.</li>
+        <li><strong>No tracking:</strong> Synced data is used only to provide the sync feature. It is not used for advertising, analytics, or shared with any party other than Supabase (our infrastructure provider).</li>
     </ul>
+    <p>If you never sign in with Google, no data ever leaves your device (other than via Apple's iCloud, which is governed by Apple's own privacy policy).</p>
 
-    <h2>Data Stored on Your Device</h2>
-    <p>All trip data (trips, itineraries, stops, bookings, expenses, lists, and comments) is stored on your device using Apple's Core Data framework. TripWit does not sync your data to any cloud service.</p>
+    <h2>Account Deletion</h2>
+    <p>If you have signed in with Google, you can delete your account at any time from <strong>Settings → Account → Delete Account</strong>. This will permanently delete all your synced trip data from our servers and sign you out. Trips stored locally on your device are not affected.</p>
 
     <h2>Location Data</h2>
-    <p>TripWit requests access to your location only when you use the "I'm Here" feature to add a stop at your current position. Location data is used solely to:</p>
+    <p>TripWit requests access to your device location only when you use the "I'm Here" button to add a stop at your current position, or when using nearby suggestions. Location data is used to:</p>
     <ul>
         <li>Determine your current position for adding stops</li>
         <li>Calculate travel times between stops using Apple Maps</li>
-        <li>Show your trips on a map</li>
+        <li>Show your position relative to trip stops on the map</li>
     </ul>
-    <p>Your location is never transmitted to any server. It is processed entirely on your device.</p>
+    <p>Your device's live location is never stored or transmitted to any server. If you have added GPS coordinates to a stop and you are signed in with Google, those stop coordinates are included in the synced trip data as described above.</p>
 
     <h2>Photo Library</h2>
-    <p>TripWit can access your photo library to match photos to trip stops based on GPS location and time. Photos are matched and displayed entirely on your device. No photos are uploaded or shared.</p>
+    <p>TripWit can access your photo library to match photos to trip stops based on GPS metadata and the date your photo was taken. All photo matching happens entirely on your device. No photos are uploaded or transmitted anywhere.</p>
 
     <h2>Calendar</h2>
-    <p>TripWit can optionally add your trip days to your device calendar. This requires your permission and only writes events — it does not read or modify your existing calendar entries.</p>
+    <p>TripWit can optionally add your trip days to your device calendar. This requires your permission and only writes events to the calendar you choose — it does not read or modify your existing calendar entries.</p>
+
+    <h2>Health Data</h2>
+    <p>TripWit can optionally read your step count from Apple Health to display daily activity totals alongside your itinerary. Health data is read-only, displayed locally, and never transmitted to any server.</p>
 
     <h2>Weather Data</h2>
     <p>TripWit fetches weather forecasts from the Open-Meteo API using your trip destination's coordinates. Only geographic coordinates are sent — no personal information. Open-Meteo is a free, open-source weather API. Their privacy policy is available at <a href="https://open-meteo.com/en/terms">open-meteo.com/en/terms</a>.</p>
 
     <h2>AI Features</h2>
-    <p>On supported devices, TripWit can use Apple's on-device intelligence to suggest places to visit. All AI processing happens entirely on your device. No data is sent to any cloud AI service.</p>
+    <p>On supported devices, TripWit can use Apple's on-device intelligence to suggest places to visit. All AI processing happens entirely on your device. No data is sent to any cloud AI service by TripWit.</p>
+
+    <h2>Third-Party Services</h2>
+    <p>When you use optional sign-in and sync, TripWit uses the following third-party services:</p>
+    <ul>
+        <li><strong>Google Sign-In</strong> — for authentication. Governed by <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</li>
+        <li><strong>Supabase</strong> — for cloud data storage. Governed by <a href="https://supabase.com/privacy">Supabase's Privacy Policy</a>. Data is stored in the United States.</li>
+    </ul>
+
+    <h2>Data We Do Not Collect</h2>
+    <ul>
+        <li>No advertising or tracking SDKs</li>
+        <li>No crash reporting or analytics services</li>
+        <li>We do not sell or share your data with any third party for advertising purposes</li>
+        <li>We do not track you across apps or websites</li>
+    </ul>
 
     <h2>Children's Privacy</h2>
-    <p>TripWit does not knowingly collect any information from children. The app does not require any personal information to function.</p>
+    <p>TripWit does not knowingly collect personal information from children under 13. The core app requires no personal information. If a child uses the optional Google Sign-In feature, a parent or guardian should supervise the process.</p>
 
     <h2>Changes to This Policy</h2>
-    <p>If we update this privacy policy, the revised version will be posted on this page with an updated effective date.</p>
+    <p>If we update this privacy policy, the revised version will be posted on this page with an updated effective date. Continued use of the app after changes constitutes acceptance of the revised policy.</p>
 
     <h2>Contact</h2>
-    <p>If you have questions about this privacy policy, contact us at <a href="mailto:kevin.buckley@outlook.com">kevin.buckley@outlook.com</a>.</p>
+    <p>If you have questions about this privacy policy or wish to request deletion of your data, contact us at <a href="mailto:kevin.buckley@outlook.com">kevin.buckley@outlook.com</a>.</p>
 </body>
 </html>

@@ -9,6 +9,7 @@ protocol SupabaseDataServiceProtocol: Sendable {
     func fetchAllTrips(userId: String) async throws -> [SupabaseTripRow]
     func upsertTrip(_ row: SupabaseTripRow) async throws
     func deleteTrip(id: String) async throws
+    func deleteAllTrips(userId: String) async throws
 }
 
 // MARK: - Supabase Data Service
@@ -40,6 +41,13 @@ actor SupabaseDataService: SupabaseDataServiceProtocol {
         try await client.from("trips")
             .delete()
             .eq("id", value: id)
+            .execute()
+    }
+
+    func deleteAllTrips(userId: String) async throws {
+        try await client.from("trips")
+            .delete()
+            .eq("user_id", value: userId)
             .execute()
     }
 }
@@ -196,8 +204,12 @@ extension SupabaseDataService {
 
     static func tripEntityToRow(_ trip: TripEntity, userId: String) -> SupabaseTripRow {
         let now = iso.string(from: Date())
+        // Always use lowercase IDs so iOS-created trips are compatible with
+        // web-created trips (crypto.randomUUID() is lowercase). This ensures
+        // the Supabase TEXT primary key matches regardless of which platform
+        // created the trip, preventing duplicate rows on upsert.
         return SupabaseTripRow(
-            id: trip.id?.uuidString ?? UUID().uuidString,
+            id: trip.id?.uuidString.lowercased() ?? UUID().uuidString.lowercased(),
             userId: userId,
             isPublic: trip.isPublic,
             name: trip.wrappedName,

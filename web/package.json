@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "test": "playwright test",
-    "test:ui": "playwright test --ui"
+    "test:ui": "playwright test --ui",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",
@@ -39,11 +41,13 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.0.1",
     "eslint": "^9",
     "eslint-config-next": "^15.3.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

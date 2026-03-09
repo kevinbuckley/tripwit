@@ -9,6 +9,9 @@ struct SettingsView: View {
     @FetchRequest(sortDescriptors: []) private var allTrips: FetchedResults<TripEntity>
 
     @State private var showingDeleteConfirmation = false
+    @State private var showingDeleteAccountConfirmation = false
+    @State private var showingDeleteAccountError = false
+    @State private var deleteAccountErrorMessage = ""
     @State private var showingSampleDataLoaded = false
     @AppStorage("photoMatchRadiusMiles") private var photoMatchRadiusMiles: Double = 1.0
 
@@ -173,6 +176,27 @@ struct SettingsView: View {
         } message: {
             Text("Example trips have been added to help you explore the app.")
         }
+        .alert("Delete Account?", isPresented: $showingDeleteAccountConfirmation) {
+            Button("Delete Account", role: .destructive) {
+                Task {
+                    let dataService: SupabaseDataServiceProtocol? = authService.supabase.map { SupabaseDataService(client: $0) }
+                    do {
+                        try await authService.deleteAccount(dataService: dataService)
+                    } catch {
+                        deleteAccountErrorMessage = error.localizedDescription
+                        showingDeleteAccountError = true
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will permanently delete all your synced trip data and sign you out. Local trips on this device will remain. This cannot be undone.")
+        }
+        .alert("Delete Account Failed", isPresented: $showingDeleteAccountError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(deleteAccountErrorMessage)
+        }
     }
 
     // MARK: - Account Section
@@ -223,6 +247,13 @@ struct SettingsView: View {
                     Task { await authService.signOut() }
                 } label: {
                     Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                        .foregroundStyle(.red)
+                }
+
+                Button(role: .destructive) {
+                    showingDeleteAccountConfirmation = true
+                } label: {
+                    Label("Delete Account", systemImage: "person.crop.circle.badge.minus")
                         .foregroundStyle(.red)
                 }
             } else {

@@ -61,6 +61,7 @@
 		7FE854E84459E57E3364C3F1 /* NearbyAISuggestSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C08995903B5D11C594285BE /* NearbyAISuggestSheet.swift */; };
 		803F8E120A2DD05BF65484C5 /* LocateStopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA19F821877A0CD6B3C5B38 /* LocateStopSheet.swift */; };
 		820A79B414B2C2C13CF10425 /* TripWitWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654930A0211E94AF3F916D3E /* TripWitWidgetBundle.swift */; };
+		82FD112935101B983D6FEB61 /* SyncServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349BA35ABE6A4ABF01BAD449 /* SyncServiceTests.swift */; };
 		88E85411103ACAFAA696BF48 /* QuickActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0F0C32F8E3E90FB643E677 /* QuickActionService.swift */; };
 		8BA441D2E013D4FB282BC47A /* TripListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3500488F3CE7E4DAD0B489C5 /* TripListView.swift */; };
 		9040D5E4E465758E3186916D /* StopTodoEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F934C50FEEEABD297C8E4C0B /* StopTodoEntity.swift */; };
@@ -168,6 +169,7 @@
 		2E39081E568FF66EB6E4FA38 /* TripWitControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripWitControl.swift; sourceTree = "<group>"; };
 		2F08BA542E3AC1315B797717 /* AITripPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITripPlanner.swift; sourceTree = "<group>"; };
 		2F1313E4A6CA0532C89CCD58 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
+		349BA35ABE6A4ABF01BAD449 /* SyncServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncServiceTests.swift; sourceTree = "<group>"; };
 		3500488F3CE7E4DAD0B489C5 /* TripListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripListView.swift; sourceTree = "<group>"; };
 		37A75DD34EC45535866604DB /* TripShareService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripShareService.swift; sourceTree = "<group>"; };
 		3B14F34E615B25E34A5C2753 /* EditTripSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTripSheet.swift; sourceTree = "<group>"; };
@@ -471,6 +473,7 @@
 		E2984A4618584B480CCFAC31 /* TripWitTests */ = {
 			isa = PBXGroup;
 			children = (
+				349BA35ABE6A4ABF01BAD449 /* SyncServiceTests.swift */,
 				FA06B84BF7A129A1E6B19273 /* TripWitTests.swift */,
 			);
 			path = TripWitTests;
@@ -610,6 +613,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				82FD112935101B983D6FEB61 /* SyncServiceTests.swift in Sources */,
 				CC637CA0104D8714DA958D2D /* TripWitTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -824,6 +828,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = TripWitWidget/TripWitWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 96;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				INFOPLIST_FILE = TripWitWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TripWit;
@@ -832,6 +837,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner.widget;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -920,7 +926,7 @@
 				CODE_SIGN_ENTITLEMENTS = TripWit/TripWit.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 92;
+				CURRENT_PROJECT_VERSION = 96;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TripWit/Info.plist;
@@ -958,7 +964,7 @@
 				CODE_SIGN_ENTITLEMENTS = TripWit/TripWit.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 92;
+				CURRENT_PROJECT_VERSION = 96;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TripWit/Info.plist;
@@ -993,6 +999,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = TripWitWidget/TripWitWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 96;
 				DEVELOPMENT_TEAM = A6VYGLF4DB;
 				INFOPLIST_FILE = TripWitWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TripWit;
@@ -1001,6 +1008,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kevinbuckley.travelplanner.widget;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;

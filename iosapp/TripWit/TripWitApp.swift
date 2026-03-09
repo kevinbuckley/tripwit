@@ -32,6 +32,8 @@ struct TripWitApp: App {
 
     init() {
         QuickActionService.registerShortcuts()
+        // Background tasks must be registered before app finishes launching.
+        BackgroundTaskManager.registerTasks(context: PersistenceController.shared.viewContext)
     }
 
     var body: some Scene {
@@ -62,9 +64,15 @@ struct TripWitApp: App {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active, let svc = syncService, svc.shouldAutoSync,
-                   let userId = authService.userId {
-                    Task { await svc.sync(userId: userId) }
+                if phase == .active {
+                    // Reschedule background tasks each time the app becomes active.
+                    BackgroundTaskManager.scheduleAppRefresh()
+                    BackgroundTaskManager.scheduleProcessing()
+
+                    if let svc = syncService, svc.shouldAutoSync,
+                       let userId = authService.userId {
+                        Task { await svc.sync(userId: userId) }
+                    }
                 }
             }
         }

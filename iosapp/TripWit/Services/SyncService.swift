@@ -107,21 +107,24 @@ final class SyncService {
         do {
             // 1. Fetch remote
             let remoteRows = try await dataService.fetchAllTrips(userId: userId)
-            let remoteById = Dictionary(remoteRows.map { ($0.id, $0) }, uniquingKeysWith: { _, b in b })
+            // Normalize IDs to lowercase — web uses crypto.randomUUID() (lowercase)
+            // while Swift UUID().uuidString is uppercase. Lowercasing both sides
+            // ensures they match, preventing duplicate imports on every sync.
+            let remoteById = Dictionary(remoteRows.map { ($0.id.lowercased(), $0) }, uniquingKeysWith: { _, b in b })
 
             // 2. Fetch local
             let localTrips = fetchLocalTrips()
             let localById = Dictionary(
                 localTrips.compactMap { trip -> (String, TripEntity)? in
-                    guard let id = trip.id?.uuidString else { return nil }
+                    guard let id = trip.id?.uuidString.lowercased() else { return nil }
                     return (id, trip)
                 },
                 uniquingKeysWith: { _, b in b }
             )
 
-            // 3. Load tracking sets
-            let knownRemoteIds = loadStringSet(key: Self.knownRemoteIdsKey)
-            var deletedLocalIds = loadStringSet(key: Self.deletedLocalIdsKey)
+            // 3. Load tracking sets (normalize stored values to lowercase for consistency)
+            let knownRemoteIds = Set(loadStringSet(key: Self.knownRemoteIdsKey).map { $0.lowercased() })
+            var deletedLocalIds = Set(loadStringSet(key: Self.deletedLocalIdsKey).map { $0.lowercased() })
 
             // 4a. Local-only trips → upload (unless deleted remotely)
             for (localId, localTrip) in localById where remoteById[localId] == nil {
@@ -141,8 +144,9 @@ final class SyncService {
             for (remoteId, remoteRow) in remoteById where localById[remoteId] == nil {
                 if deletedLocalIds.contains(remoteId) {
                     // Deleted locally → propagate delete to remote
+                    // Use remoteRow.id (original case) so the Supabase eq() filter matches.
                     log.info("Trip \(remoteId) deleted locally, deleting from Supabase")
-                    try await dataService.deleteTrip(id: remoteId)
+                    try await dataService.deleteTrip(id: remoteRow.id)
                     deletedLocalIds.remove(remoteId)
                 } else {
                     // New remote trip → import
@@ -219,7 +223,7 @@ final class SyncService {
 
     func recordLocalDelete(tripId: String) {
         var deleted = loadStringSet(key: Self.deletedLocalIdsKey)
-        deleted.insert(tripId)
+        deleted.insert(tripId.lowercased())
         saveStringSet(deleted, key: Self.deletedLocalIdsKey)
     }
 
