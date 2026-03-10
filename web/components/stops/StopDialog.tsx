@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search, X, MapPin, Star, Plus, Trash2, ExternalLink, Loader2, BedDouble, Utensils, Plane, Footprints, Clock, type LucideIcon } from "lucide-react";
 import type { Stop, StopCategory, StopTodo, StopLink } from "@/lib/types";
 import { CATEGORY_LABELS, newId } from "@/lib/types";
-import { searchPlaces, type NominatimResult } from "@/lib/nominatim";
+import { searchPlaces, type NominatimResult, type LocationBias } from "@/lib/nominatim";
 import { cn } from "@/components/ui/cn";
 
 // ── DateTime helpers ─────────────────────────────────────────────────────────
@@ -56,6 +56,7 @@ const timeSelectClass = "bg-slate-50 border border-slate-200 rounded-xl px-2.5 p
 
 interface StopDialogProps {
   stop?: Stop | null;
+  locationBias?: LocationBias;
   onSave: (stop: Stop) => void;
   onClose: () => void;
 }
@@ -133,7 +134,7 @@ const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
   />
 );
 
-export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
+export default function StopDialog({ stop, locationBias, onSave, onClose }: StopDialogProps) {
   const [form, setForm] = useState<Stop>(() => stop ?? emptyStop());
   const [searchQuery, setSearchQuery] = useState(stop?.address ?? stop?.name ?? "");
   const [results, setResults] = useState<NominatimResult[]>([]);
@@ -153,7 +154,7 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await searchPlaces(searchQuery);
+        const res = await searchPlaces(searchQuery, locationBias);
         setResults(res);
       } catch {
         setResults([]);
@@ -162,7 +163,7 @@ export default function StopDialog({ stop, onSave, onClose }: StopDialogProps) {
       }
     }, 600);
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
-  }, [searchQuery]);
+  }, [searchQuery, locationBias]);
 
   // Close on Escape
   useEffect(() => {

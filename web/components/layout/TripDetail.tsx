@@ -268,6 +268,23 @@ export default function TripDetail({
     }
   }
 
+  /** Best-effort location bias for place search in StopDialog.
+   *  Priority: day's own pin → stop in that day → any stop in the trip. */
+  function getLocationBias(dayId: string): { lat: number; lon: number } | undefined {
+    const day = trip.days.find((d) => d.id === dayId);
+    if (!day) return undefined;
+    if (day.locationLatitude !== 0 || day.locationLongitude !== 0) {
+      return { lat: day.locationLatitude, lon: day.locationLongitude };
+    }
+    const stopInDay = day.stops.find((s) => s.latitude !== 0 || s.longitude !== 0);
+    if (stopInDay) return { lat: stopInDay.latitude, lon: stopInDay.longitude };
+    for (const d of trip.days) {
+      const s = d.stops.find((s) => s.latitude !== 0 || s.longitude !== 0);
+      if (s) return { lat: s.latitude, lon: s.longitude };
+    }
+    return undefined;
+  }
+
   const sortedDays = [...trip.days].sort((a, b) => a.dayNumber - b.dayNumber);
   const totalStops = trip.days.reduce((c, d) => c + d.stops.length, 0);
   const visitedStops = trip.days.reduce((c, d) => c + d.stops.filter((s) => s.isVisited).length, 0);
@@ -798,6 +815,7 @@ export default function TripDetail({
       {editingStop && (
         <StopDialog
           stop={editingStop.stop}
+          locationBias={getLocationBias(editingStop.dayId)}
           onSave={(stop) => saveStop(editingStop.dayId, stop)}
           onClose={() => setEditingStop(null)}
         />
