@@ -9,7 +9,7 @@ import MapPanel from "@/components/layout/MapPanel";
 import { getTrips, createTrip, updateTrip, deleteTrip, insertTrip } from "@/lib/db";
 import type { Trip, Stop } from "@/lib/types";
 import { newId, nowISO } from "@/lib/types";
-import { Map, ChevronLeft, Check, Loader2 } from "lucide-react";
+import { Map, ChevronLeft, Check, Loader2, Maximize2, Minimize2 } from "lucide-react";
 
 type MobilePanel = "sidebar" | "detail";
 
@@ -22,7 +22,7 @@ export default function AppPage() {
   const [tripsLoading, setTripsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [mapCollapsed, setMapCollapsed] = useState(false);
+  const [mapState, setMapState] = useState<"normal" | "collapsed" | "maximized">("normal");
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("sidebar");
 
   useEffect(() => {
@@ -384,8 +384,8 @@ export default function AppPage() {
         <Header showAds={true} saveStatus={saveStatus} />
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Center: Trip detail or empty state */}
-          {selectedTrip ? (
+          {/* Center: Trip detail or empty state — hidden when map is maximized */}
+          {mapState !== "maximized" && (selectedTrip ? (
             <TripDetail
               trip={selectedTrip}
               showAds={true}
@@ -415,26 +415,37 @@ export default function AppPage() {
                 </button>
               )}
             </div>
-          )}
+          ))}
 
-          {/* Right: Map panel (collapsible, hidden on mobile) */}
-          <div className="hidden md:flex">
-            {!mapCollapsed ? (
-              <div className="w-96 shrink-0 border-l border-slate-200 flex flex-col bg-slate-100">
+          {/* Right: Map panel (collapsible / maximizable, hidden on mobile) */}
+          <div className={`hidden md:flex${mapState === "maximized" ? " flex-1" : ""}`}>
+            {mapState !== "collapsed" ? (
+              <div className={`${mapState === "maximized" ? "flex-1 w-full" : "w-96 shrink-0"} border-l border-slate-200 flex flex-col bg-slate-100`}>
                 {/* Map header bar */}
                 <div className="flex items-center justify-between px-3 h-10 border-b border-slate-200 bg-white shrink-0">
                   <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
                     <Map className="w-3 h-3" />
                     Map
                   </div>
-                  <button
-                    onClick={() => setMapCollapsed(true)}
-                    title="Hide map"
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-xs font-medium flex items-center gap-1"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                    Hide
-                  </button>
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      onClick={() => setMapState(mapState === "maximized" ? "normal" : "maximized")}
+                      title={mapState === "maximized" ? "Restore map" : "Maximize map"}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      {mapState === "maximized"
+                        ? <Minimize2 className="w-3.5 h-3.5" />
+                        : <Maximize2 className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => setMapState("collapsed")}
+                      title="Hide map"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-xs font-medium flex items-center gap-1"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      Hide
+                    </button>
+                  </div>
                 </div>
                 <div className="flex-1 relative">
                   <MapPanel stops={mapStops} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} />
@@ -442,7 +453,7 @@ export default function AppPage() {
               </div>
             ) : (
               <button
-                onClick={() => setMapCollapsed(false)}
+                onClick={() => setMapState("normal")}
                 className="shrink-0 w-9 border-l border-slate-200 flex flex-col items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 transition-colors group"
                 title="Show map"
               >

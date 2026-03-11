@@ -33,6 +33,19 @@ function makeIcon(color: string, label: string, isSelected: boolean) {
   });
 }
 
+/** Watches the map container with ResizeObserver and calls invalidateSize so
+ *  Leaflet re-renders correctly whenever the panel is resized (e.g. maximize). */
+function AutoInvalidate() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => { map.invalidateSize(); });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
+
 interface FlyToProps { stops: Stop[]; }
 function FlyToStops({ stops }: FlyToProps) {
   const map = useMap();
@@ -76,6 +89,7 @@ export default function TripMap({ stops, selectedStopId, onSelectStop }: TripMap
         subdomains="abcd"
         maxZoom={19}
       />
+      <AutoInvalidate />
       <FlyToStops stops={located} />
       {located.map((stop, i) => (
         <Marker
