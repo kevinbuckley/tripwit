@@ -217,7 +217,7 @@ export default function AppPage() {
             </div>
             <p className="text-xs text-slate-600 mb-3">Free forever · No credit card required</p>
             <a
-              href="https://apps.apple.com/app/tripwit/id6670162803"
+              href="https://apps.apple.com/us/app/tripwit/id6759219752"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs font-medium text-slate-400 hover:text-slate-200 hover:border-white/20 hover:bg-white/8 transition-all"

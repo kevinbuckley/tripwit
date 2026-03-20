@@ -274,7 +274,7 @@ export default function TripsSidebar({
 
       {/* ── iPhone app promo ──────────────────────────── */}
       <a
-        href="https://apps.apple.com/app/tripwit/id6670162803"
+        href="https://apps.apple.com/us/app/tripwit/id6759219752"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-2.5 px-4 py-2.5 border-t border-white/5 group shrink-0"
