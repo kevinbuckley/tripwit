@@ -405,12 +405,12 @@ export default function TripDetail({
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
             <input type="date" value={trip.startDate?.slice(0,10) ?? ""}
-              onChange={(e) => updateField("startDate", e.target.value)}
+              onChange={(e) => updateField("startDate", e.target.value ? e.target.value + "T00:00:00.000Z" : "")}
               className="border border-slate-200 rounded-lg px-2 py-1 text-xs bg-white focus:border-blue-400"
             />
             <span className="text-slate-300">→</span>
             <input type="date" value={trip.endDate?.slice(0,10) ?? ""}
-              onChange={(e) => updateField("endDate", e.target.value)}
+              onChange={(e) => updateField("endDate", e.target.value ? e.target.value + "T00:00:00.000Z" : "")}
               className="border border-slate-200 rounded-lg px-2 py-1 text-xs bg-white focus:border-blue-400"
             />
           </div>

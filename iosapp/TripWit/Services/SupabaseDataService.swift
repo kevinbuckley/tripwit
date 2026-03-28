@@ -201,6 +201,15 @@ struct SupabaseExpenseJSON: Codable, Sendable {
 extension SupabaseDataService {
 
     private static let iso = ISO8601DateFormatter()
+    /// Parses full ISO 8601 strings AND date-only strings (YYYY-MM-DD) written
+    /// by the web app's <input type="date"> which omits the time component.
+    private static func parseDate(_ str: String) -> Date? {
+        if let d = iso.date(from: str) { return d }
+        // Fallback: date-only (YYYY-MM-DD) — treat as midnight UTC
+        let dateOnly = ISO8601DateFormatter()
+        dateOnly.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+        return dateOnly.date(from: str)
+    }
 
     static func tripEntityToRow(_ trip: TripEntity, userId: String) -> SupabaseTripRow {
         let now = iso.string(from: Date())
@@ -342,8 +351,8 @@ extension SupabaseDataService {
             in: context,
             name: row.name,
             destination: row.destination,
-            startDate: iso.date(from: row.startDate) ?? Date(),
-            endDate: iso.date(from: row.endDate) ?? Date(),
+            startDate: parseDate(row.startDate) ?? Date(),
+            endDate: parseDate(row.endDate) ?? Date(),
             notes: row.notes
         )
         // Set the UUID to match the Supabase row ID
@@ -360,7 +369,7 @@ extension SupabaseDataService {
         for dayJ in row.days {
             let day = DayEntity.create(
                 in: context,
-                date: iso.date(from: dayJ.date) ?? Date(),
+                date: parseDate(dayJ.date) ?? Date(),
                 dayNumber: dayJ.dayNumber,
                 notes: dayJ.notes,
                 location: dayJ.location,
@@ -500,8 +509,8 @@ extension SupabaseDataService {
         trip.hasCustomDates = row.hasCustomDates
         trip.budgetAmount = row.budgetAmount
         trip.budgetCurrencyCode = row.budgetCurrencyCode
-        trip.startDate = iso.date(from: row.startDate)
-        trip.endDate = iso.date(from: row.endDate)
+        trip.startDate = parseDate(row.startDate)
+        trip.endDate = parseDate(row.endDate)
         trip.isPublic = row.isPublic
         trip.updatedAt = iso.date(from: row.updatedAt)
         trip.supabaseSyncedAt = Date()
@@ -510,7 +519,7 @@ extension SupabaseDataService {
         for dayJ in row.days {
             let day = DayEntity.create(
                 in: context,
-                date: iso.date(from: dayJ.date) ?? Date(),
+                date: parseDate(dayJ.date) ?? Date(),
                 dayNumber: dayJ.dayNumber,
                 notes: dayJ.notes,
                 location: dayJ.location,
