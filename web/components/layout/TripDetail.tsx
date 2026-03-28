@@ -98,6 +98,50 @@ function addressCity(address: string | undefined): string {
   return city || parts[0] || "";
 }
 
+/** Returns YYYY-MM-DD for a day (own date or derived from trip start) */
+function effectiveDayDateStr(day: Day, tripStartDate: string | null | undefined): string | null {
+  if (day.date && /^\d{4}-\d{2}-\d{2}$/.test(day.date.slice(0, 10))) return day.date.slice(0, 10);
+  if (tripStartDate) {
+    try {
+      const d = new Date(tripStartDate.slice(0, 10) + "T12:00:00");
+      if (!isNaN(d.getTime())) {
+        d.setDate(d.getDate() + (day.dayNumber - 1));
+        return d.toISOString().slice(0, 10);
+      }
+    } catch { /* fall through */ }
+  }
+  return null;
+}
+
+/** Finds an accommodation from a prior day whose stay spans the given day */
+function findActiveHotel(
+  currentDay: Day,
+  allDays: Day[],
+  tripStartDate: string | null | undefined
+): { stop: Stop; nightsLeft: number } | null {
+  const curDateStr = effectiveDayDateStr(currentDay, tripStartDate);
+  if (!curDateStr) return null;
+  const curTs = new Date(curDateStr + "T12:00:00").getTime();
+
+  for (const other of allDays) {
+    if (other.id === currentDay.id) continue;
+    const otherDateStr = effectiveDayDateStr(other, tripStartDate);
+    if (!otherDateStr) continue;
+    const otherTs = new Date(otherDateStr + "T12:00:00").getTime();
+    if (otherTs >= curTs) continue; // only look at earlier days
+
+    for (const stop of other.stops) {
+      if (stop.categoryRaw !== "accommodation" || !stop.checkOutDate) continue;
+      const checkOutTs = new Date(stop.checkOutDate.slice(0, 10) + "T12:00:00").getTime();
+      if (curTs > otherTs && curTs < checkOutTs) {
+        const nightsLeft = Math.round((checkOutTs - curTs) / 86400000);
+        return { stop, nightsLeft };
+      }
+    }
+  }
+  return null;
+}
+
 export default function TripDetail({
   trip, showAds = false, onUpdateTrip, onSelectStop, selectedStopId,
 }: TripDetailProps) {
@@ -535,6 +579,7 @@ export default function TripDetail({
             const isExpanded = expandedDays.has(day.id);
             const sortedStops = [...day.stops].sort((a, b) => a.sortOrder - b.sortOrder);
             const displayDate = getEffectiveDate(day, trip.startDate);
+            const activeHotel = findActiveHotel(day, sortedDays, trip.startDate);
 
             // Mini category icons for collapsed preview
             const stopCategories = sortedStops.map((s) => s.categoryRaw);
@@ -702,6 +747,18 @@ export default function TripDetail({
                 {/* ── Stops ─────────────────────────────────────────────────── */}
                 {isExpanded && (
                   <div className="py-2 px-3 space-y-1.5 day-stops-enter">
+                    {/* Active hotel banner from a prior day */}
+                    {activeHotel && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-50 border border-violet-100 text-[11px] text-violet-700">
+                        <BedDouble className="w-3 h-3 shrink-0 text-violet-500" />
+                        <span className="font-medium truncate">Staying at {activeHotel.stop.name}</span>
+                        {activeHotel.nightsLeft > 0 && (
+                          <span className="ml-auto shrink-0 text-violet-400">
+                            {activeHotel.nightsLeft} night{activeHotel.nightsLeft !== 1 ? "s" : ""} left
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {sortedStops.length === 0 && (
                       <p className="text-xs text-slate-300 text-center py-2 italic">No stops added yet</p>
                     )}
@@ -709,6 +766,17 @@ export default function TripDetail({
                       const next = sortedStops[stopIdx + 1];
                       const hasCoords = stop.latitude !== 0 || stop.longitude !== 0;
                       const nextHasCoords = next && (next.latitude !== 0 || next.longitude !== 0);
+                      // Distance from active hotel to first stop of this day
+                      const hotelDistRow = stopIdx === 0 && activeHotel &&
+                        (activeHotel.stop.latitude !== 0 || activeHotel.stop.longitude !== 0) && hasCoords ? (
+                        <div key="dist-hotel-first" className="flex items-center gap-2 px-3 py-0.5 text-[10px] text-violet-400">
+                          <div className="flex-1 h-px bg-violet-100" />
+                          <span className="tabular-nums font-medium shrink-0">
+                            {formatDistance(haversineKm(activeHotel.stop.latitude, activeHotel.stop.longitude, stop.latitude, stop.longitude))} from hotel
+                          </span>
+                          <div className="flex-1 h-px bg-violet-100" />
+                        </div>
+                      ) : null;
                       const distRow = (hasCoords && nextHasCoords) ? (
                         <div key={`dist-${stop.id}`} className="flex items-center gap-2 px-3 py-0.5 text-[10px] text-slate-400">
                           <div className="flex-1 h-px bg-slate-100" />
@@ -718,7 +786,7 @@ export default function TripDetail({
                           <div className="flex-1 h-px bg-slate-100" />
                         </div>
                       ) : null;
-                      return [
+                      return [...(hotelDistRow ? [hotelDistRow] : []),
                       <div
                         key={stop.id}
                         draggable
