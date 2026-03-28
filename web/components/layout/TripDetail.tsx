@@ -158,6 +158,7 @@ export default function TripDetail({
   const [editingDayLocation, setEditingDayLocation] = useState<string | null>(null);
   const [editingDayDescription, setEditingDayDescription] = useState<string | null>(null);
   const [dragState, setDragState] = useState<{ dayId: string; stopId: string } | null>(null);
+  const [dragOverDayId, setDragOverDayId] = useState<string | null>(null);
   const [daysLimitWarning, setDaysLimitWarning] = useState(false);
   const [undoItem, setUndoItem] = useState<UndoItem | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -310,20 +311,70 @@ export default function TripDetail({
   }
 
   function handleDragStart(dayId: string, stopId: string) { setDragState({ dayId, stopId }); }
-  function handleDragOver(e: React.DragEvent, dayId: string, targetStopId: string) {
+  function handleDragOver(e: React.DragEvent, targetDayId: string, targetStopId: string) {
     e.preventDefault();
-    if (!dragState || dragState.dayId !== dayId || dragState.stopId === targetStopId) return;
-    const day = trip.days.find((d) => d.id === dayId);
-    if (!day) return;
-    const stops = [...day.stops];
-    const fromIdx = stops.findIndex((s) => s.id === dragState.stopId);
-    const toIdx = stops.findIndex((s) => s.id === targetStopId);
-    if (fromIdx === -1 || toIdx === -1) return;
-    const [moved] = stops.splice(fromIdx, 1);
-    stops.splice(toIdx, 0, moved);
-    updateDay(dayId, { stops: stops.map((s, i) => ({ ...s, sortOrder: i })) });
+    if (!dragState || dragState.stopId === targetStopId) return;
+    const sourceDayId = dragState.dayId;
+    if (sourceDayId === targetDayId) {
+      // Same-day reorder
+      const day = trip.days.find((d) => d.id === targetDayId);
+      if (!day) return;
+      const stops = [...day.stops];
+      const fromIdx = stops.findIndex((s) => s.id === dragState.stopId);
+      const toIdx = stops.findIndex((s) => s.id === targetStopId);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const [moved] = stops.splice(fromIdx, 1);
+      stops.splice(toIdx, 0, moved);
+      updateDay(targetDayId, { stops: stops.map((s, i) => ({ ...s, sortOrder: i })) });
+    } else {
+      // Cross-day move — insert before targetStop in the target day
+      const sourceDay = trip.days.find((d) => d.id === sourceDayId);
+      const targetDay = trip.days.find((d) => d.id === targetDayId);
+      if (!sourceDay || !targetDay) return;
+      const sourceStops = [...sourceDay.stops];
+      const targetStops = [...targetDay.stops];
+      const fromIdx = sourceStops.findIndex((s) => s.id === dragState.stopId);
+      const toIdx = targetStops.findIndex((s) => s.id === targetStopId);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const [moved] = sourceStops.splice(fromIdx, 1);
+      targetStops.splice(toIdx, 0, moved);
+      onUpdateTrip({
+        days: trip.days.map((d) => {
+          if (d.id === sourceDayId) return { ...d, stops: sourceStops.map((s, i) => ({ ...s, sortOrder: i })) };
+          if (d.id === targetDayId) return { ...d, stops: targetStops.map((s, i) => ({ ...s, sortOrder: i })) };
+          return d;
+        }),
+      });
+      setDragState({ dayId: targetDayId, stopId: dragState.stopId });
+    }
   }
-  function handleDragEnd() { setDragState(null); }
+  function handleDayDragOver(e: React.DragEvent, targetDayId: string) {
+    if (!dragState) return;
+    e.preventDefault();
+    setDragOverDayId(targetDayId);
+  }
+  function handleDayDrop(e: React.DragEvent, targetDayId: string) {
+    e.preventDefault();
+    setDragOverDayId(null);
+    if (!dragState || dragState.dayId === targetDayId) return;
+    const sourceDay = trip.days.find((d) => d.id === dragState.dayId);
+    const targetDay = trip.days.find((d) => d.id === targetDayId);
+    if (!sourceDay || !targetDay) return;
+    const sourceStops = [...sourceDay.stops];
+    const fromIdx = sourceStops.findIndex((s) => s.id === dragState.stopId);
+    if (fromIdx === -1) return;
+    const [moved] = sourceStops.splice(fromIdx, 1);
+    const targetStops = [...targetDay.stops, moved];
+    onUpdateTrip({
+      days: trip.days.map((d) => {
+        if (d.id === dragState.dayId) return { ...d, stops: sourceStops.map((s, i) => ({ ...s, sortOrder: i })) };
+        if (d.id === targetDayId) return { ...d, stops: targetStops.map((s, i) => ({ ...s, sortOrder: i })) };
+        return d;
+      }),
+    });
+    setDragState(null);
+  }
+  function handleDragEnd() { setDragState(null); setDragOverDayId(null); }
 
   async function toggleShare() {
     const newPublic = !trip.isPublic;
@@ -599,9 +650,13 @@ export default function TripDetail({
                 <div
                   className={cn(
                     "day-row flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-slate-50/80 group border-b border-slate-100 transition-colors",
-                    isExpanded && "bg-slate-50/50"
+                    isExpanded && "bg-slate-50/50",
+                    dragOverDayId === day.id && dragState?.dayId !== day.id && "bg-blue-50/60 border-blue-200"
                   )}
                   onClick={() => toggleDay(day.id)}
+                  onDragOver={(e) => handleDayDragOver(e, day.id)}
+                  onDragLeave={() => setDragOverDayId(null)}
+                  onDrop={(e) => handleDayDrop(e, day.id)}
                 >
                   {/* Day number circle */}
                   <div className={cn(
@@ -748,7 +803,12 @@ export default function TripDetail({
 
                 {/* ── Stops ─────────────────────────────────────────────────── */}
                 {isExpanded && (
-                  <div className="py-2 px-3 space-y-1.5 day-stops-enter">
+                  <div
+                    className="py-2 px-3 space-y-1.5 day-stops-enter"
+                    onDragOver={(e) => handleDayDragOver(e, day.id)}
+                    onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverDayId(null); }}
+                    onDrop={(e) => handleDayDrop(e, day.id)}
+                  >
                     {/* Active hotel banner from a prior day */}
                     {activeHotel && (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-50 border border-violet-100 text-[11px] text-violet-700">
