@@ -134,7 +134,7 @@ function findActiveHotel(
     for (const stop of other.stops) {
       if (stop.categoryRaw !== "accommodation" || !stop.checkOutDate) continue;
       const checkOutTs = new Date(stop.checkOutDate.slice(0, 10) + "T12:00:00").getTime();
-      if (curTs > otherTs && curTs < checkOutTs) {
+      if (curTs > otherTs && curTs <= checkOutTs) {
         const nightsLeft = Math.round((checkOutTs - curTs) / 86400000);
         return { stop, nightsLeft };
       }
@@ -872,13 +872,6 @@ export default function TripDetail({
                             </div>
 
                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">
-                              {stop.arrivalTime && (
-                                <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                                  <Clock className="w-3 h-3 shrink-0" />
-                                  {new Date(stop.arrivalTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                  {stop.departureTime && ` – ${new Date(stop.departureTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
-                                </span>
-                              )}
                               {stop.flightNumber && (
                                 <span className="text-[11px] text-blue-600 flex items-center gap-1">
                                   <Plane className="w-3 h-3 shrink-0" />
