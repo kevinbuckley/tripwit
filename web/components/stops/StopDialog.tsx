@@ -322,6 +322,14 @@ export default function StopDialog({ stop, locationBias, onSave, onClose }: Stop
               <p className="text-[11px] mt-1.5 flex items-center gap-1.5 text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1.5 font-medium">
                 <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
                 Location pinned · {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}
+                <a
+                  href={`https://www.google.com/maps?q=${form.latitude},${form.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto text-emerald-600 hover:text-emerald-700 underline underline-offset-2 shrink-0"
+                >
+                  Open in Maps ↗
+                </a>
               </p>
             )}
           </div>

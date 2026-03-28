@@ -783,6 +783,18 @@ export default function TripDetail({
                                 const city = addressCity(stop.address);
                                 return city ? <span className="text-[11px] text-slate-400 truncate max-w-[140px]">{city}</span> : null;
                               })()}
+                              {(stop.latitude !== 0 || stop.longitude !== 0) && (
+                                <a
+                                  href={`https://www.google.com/maps?q=${stop.latitude},${stop.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-0.5 text-[11px] text-blue-500 hover:text-blue-700 hover:underline underline-offset-2 transition-colors shrink-0"
+                                >
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                  Maps
+                                </a>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">

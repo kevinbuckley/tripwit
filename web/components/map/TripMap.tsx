@@ -113,6 +113,14 @@ export default function TripMap({ stops, selectedStopId, onSelectStop }: TripMap
                   {stop.address.split(",").slice(0, 3).join(",")}
                 </div>
               )}
+              <a
+                href={`https://www.google.com/maps?q=${stop.latitude},${stop.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 11, color: "#3b82f6", marginTop: 4, display: "inline-block" }}
+              >
+                Open in Google Maps ↗
+              </a>
             </div>
           </Popup>
         </Marker>

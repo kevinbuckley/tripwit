@@ -7,7 +7,7 @@ import TripsSidebar from "@/components/layout/TripsSidebar";
 import TripDetail from "@/components/layout/TripDetail";
 import MapPanel from "@/components/layout/MapPanel";
 import { getTrips, createTrip, updateTrip, deleteTrip, insertTrip } from "@/lib/db";
-import type { Trip, Stop } from "@/lib/types";
+import type { Trip, Day, Stop } from "@/lib/types";
 import { newId, nowISO } from "@/lib/types";
 import { Map, ChevronLeft, Check, Loader2, Maximize2, Minimize2 } from "lucide-react";
 
@@ -38,6 +38,7 @@ export default function AppPage() {
   }, [userId]);
 
   const selectedTrip = trips.find((t) => t.id === selectedTripId) ?? null;
+  const mapDays: Day[] = selectedTrip?.days ?? [];
   const mapStops: Stop[] = selectedTrip
     ? selectedTrip.days
         .flatMap((d) => d.stops)
@@ -460,7 +461,7 @@ export default function AppPage() {
                   </div>
                 </div>
                 <div className="flex-1 relative">
-                  <MapPanel stops={mapStops} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} />
+                  <MapPanel days={mapDays} stops={mapStops} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} />
                 </div>
               </div>
             ) : (
