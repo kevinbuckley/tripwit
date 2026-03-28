@@ -795,7 +795,7 @@ export default function TripDetail({
                         onDragStart={() => handleDragStart(day.id, stop.id)}
                         onDragOver={(e) => handleDragOver(e, day.id, stop.id)}
                         onDragEnd={handleDragEnd}
-                        onClick={() => onSelectStop?.(stop.id)}
+                        onClick={() => { onSelectStop?.(stop.id); setEditingStop({ dayId: day.id, stop }); }}
                         className={cn(
                           "group flex items-stretch rounded-xl border cursor-pointer transition-all overflow-hidden",
                           dragState?.stopId === stop.id
