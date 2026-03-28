@@ -24,6 +24,7 @@ interface TripDetailProps {
   onUpdateTrip: (changes: Partial<Trip>) => void;
   onSelectStop?: (stopId: string | null) => void;
   selectedStopId?: string | null;
+  onExpandedDaysChange?: (expandedDayIds: Set<string>) => void;
 }
 
 const CURRENCIES = ["USD","EUR","GBP","JPY","CAD","AUD","CHF","MXN","BRL","CNY","KRW","THB","INR","SGD","NZD"];
@@ -143,13 +144,14 @@ function findActiveHotel(
 }
 
 export default function TripDetail({
-  trip, showAds = false, onUpdateTrip, onSelectStop, selectedStopId,
+  trip, showAds = false, onUpdateTrip, onSelectStop, selectedStopId, onExpandedDaysChange,
 }: TripDetailProps) {
   const [tab, setTab] = useState<Tab>("days");
   const [editingStop, setEditingStop] = useState<{ dayId: string; stop: Stop | null } | null>(null);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() =>
     new Set(trip.days[0] ? [trip.days[0].id] : [])
   );
+  useEffect(() => { onExpandedDaysChange?.(expandedDays); }, [expandedDays, onExpandedDaysChange]);
   const [copied, setCopied] = useState(false);
   const [showNotes, setShowNotes] = useState(!!trip.notes);
   const [showBudget, setShowBudget] = useState(trip.budgetAmount > 0);

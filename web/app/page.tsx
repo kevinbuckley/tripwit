@@ -38,9 +38,11 @@ export default function AppPage() {
   }, [userId]);
 
   const selectedTrip = trips.find((t) => t.id === selectedTripId) ?? null;
+  const [expandedDayIds, setExpandedDayIds] = useState<Set<string>>(new Set());
   const mapDays: Day[] = selectedTrip?.days ?? [];
   const mapStops: Stop[] = selectedTrip
     ? selectedTrip.days
+        .filter((d) => expandedDayIds.size === 0 || expandedDayIds.has(d.id))
         .flatMap((d) => d.stops)
         .sort((a, b) => a.sortOrder - b.sortOrder)
     : [];
@@ -49,6 +51,7 @@ export default function AppPage() {
     setSelectedTripId(id);
     setSelectedStopId(null);
     setMobilePanel("detail");
+    setExpandedDayIds(new Set());
   }, []);
 
   const handleCreateTrip = useCallback(async () => {
@@ -362,6 +365,7 @@ export default function AppPage() {
                 onUpdateTrip={handleUpdateTrip}
                 onSelectStop={setSelectedStopId}
                 selectedStopId={selectedStopId}
+                onExpandedDaysChange={setExpandedDayIds}
               />
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center px-8 bg-slate-50 h-full">
