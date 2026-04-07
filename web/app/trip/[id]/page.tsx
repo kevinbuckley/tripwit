@@ -7,7 +7,7 @@ import type { Trip, Stop, Booking } from "@/lib/types";
 import { CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/types";
 import type { Metadata } from "next";
 import AdUnit from "@/components/ads/AdUnit";
-import { BedDouble, Utensils, Star, Plane, Footprints, MapPin, type LucideIcon } from "lucide-react";
+import { BedDouble, Utensils, Star, Plane, Footprints, MapPin, Ticket, ShoppingBag, type LucideIcon } from "lucide-react";
 
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   accommodation: BedDouble,
@@ -15,6 +15,8 @@ const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   attraction: Star,
   transport: Plane,
   activity: Footprints,
+  entertainment: Ticket,
+  shopping: ShoppingBag,
   other: MapPin,
 };
 

@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import {
   Plus, Trash2, ChevronDown, ChevronUp, MapPin, Share2, Check,
   ExternalLink, Star, DollarSign, FileText, Calendar, GripVertical, Pencil,
-  Clock, Plane, BedDouble, Utensils, Footprints, RotateCcw,
-  ChevronsUpDown, Bookmark, List, type LucideIcon,
+  Plane, BedDouble, Utensils, Footprints, RotateCcw,
+  ChevronsUpDown, Bookmark, List, Ticket, ShoppingBag, Coffee,
+  Search, X, Loader2, type LucideIcon,
 } from "lucide-react";
 import type { Trip, Day, Stop } from "@/lib/types";
 import { CATEGORY_LABELS, CATEGORY_COLORS, newId, nowISO } from "@/lib/types";
 import { cn } from "@/components/ui/cn";
+import { searchPlaces, type NominatimResult } from "@/lib/nominatim";
 import StopDialog from "@/components/stops/StopDialog";
 import BookingsPanel from "@/components/bookings/BookingsPanel";
 import ExpensesPanel from "@/components/expenses/ExpensesPanel";
@@ -36,6 +38,8 @@ const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   attraction: Star,
   transport: Plane,
   activity: Footprints,
+  entertainment: Ticket,
+  shopping: ShoppingBag,
   other: MapPin,
 };
 
@@ -162,6 +166,11 @@ export default function TripDetail({
   const [daysLimitWarning, setDaysLimitWarning] = useState(false);
   const [undoItem, setUndoItem] = useState<UndoItem | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [findSpotContext, setFindSpotContext] = useState<{
+    dayId: string;
+    insertAfterIdx: number;
+    midpoint: { lat: number; lon: number };
+  } | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -840,11 +849,23 @@ export default function TripDetail({
                         </div>
                       ) : null;
                       const distRow = (hasCoords && nextHasCoords) ? (
-                        <div key={`dist-${stop.id}`} className="flex items-center gap-2 px-3 py-0.5 text-[10px] text-slate-400">
+                        <div key={`dist-${stop.id}`} className="flex items-center gap-2 px-3 py-0.5 text-[10px] text-slate-400 group/dist">
                           <div className="flex-1 h-px bg-slate-100" />
                           <span className="tabular-nums font-medium shrink-0">
                             {formatDistance(haversineKm(stop.latitude, stop.longitude, next.latitude, next.longitude))}
                           </span>
+                          <button
+                            onClick={() => {
+                              const midLat = (stop.latitude + next.latitude) / 2;
+                              const midLon = (stop.longitude + next.longitude) / 2;
+                              setFindSpotContext({ dayId: day.id, insertAfterIdx: stopIdx, midpoint: { lat: midLat, lon: midLon } });
+                            }}
+                            className="opacity-0 group-hover/dist:opacity-100 transition-opacity flex items-center gap-0.5 text-[10px] text-blue-400 hover:text-blue-600 font-medium shrink-0"
+                            title="Find a spot for lunch, coffee, or drinks"
+                          >
+                            <Coffee className="w-2.5 h-2.5" />
+                            Find a spot
+                          </button>
                           <div className="flex-1 h-px bg-slate-100" />
                         </div>
                       ) : null;
@@ -894,6 +915,16 @@ export default function TripDetail({
                               {stop.isVisited && (
                                 <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">
                                   <Check className="w-2.5 h-2.5" /> Visited
+                                </span>
+                              )}
+                              {stop.bookingStatus === "need_to_book" && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full shrink-0">
+                                  Need to Book
+                                </span>
+                              )}
+                              {stop.bookingStatus === "booked" && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">
+                                  <Check className="w-2.5 h-2.5" /> Booked
                                 </span>
                               )}
                             </div>
@@ -994,14 +1025,47 @@ export default function TripDetail({
                     })}
 
                     {/* Add stop — dashed card style */}
-                    <button onClick={() => setEditingStop({ dayId: day.id, stop: null })}
-                      className="group flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-blue-500 transition-all border border-dashed border-transparent hover:border-blue-200 hover:bg-blue-50/30 mt-0.5"
-                    >
-                      <div className="w-5 h-5 rounded-full border border-slate-300 group-hover:border-blue-400 group-hover:bg-blue-50 flex items-center justify-center transition-all shrink-0">
-                        <Plus className="w-3 h-3" />
-                      </div>
-                      Add stop
-                    </button>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <button onClick={() => setEditingStop({ dayId: day.id, stop: null })}
+                        className="group flex items-center gap-2 flex-1 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-blue-500 transition-all border border-dashed border-transparent hover:border-blue-200 hover:bg-blue-50/30"
+                      >
+                        <div className="w-5 h-5 rounded-full border border-slate-300 group-hover:border-blue-400 group-hover:bg-blue-50 flex items-center justify-center transition-all shrink-0">
+                          <Plus className="w-3 h-3" />
+                        </div>
+                        Add stop
+                      </button>
+                      {(() => {
+                        const hotel = activeHotel?.stop ?? day.stops.find((s) => s.categoryRaw === "accommodation");
+                        if (!hotel) return null;
+                        return (
+                          <button
+                            onClick={() => {
+                              const backStop: Stop = {
+                                id: newId(),
+                                name: `Back to ${hotel.name}`,
+                                categoryRaw: "accommodation",
+                                sortOrder: day.stops.length,
+                                notes: "",
+                                latitude: hotel.latitude,
+                                longitude: hotel.longitude,
+                                address: hotel.address,
+                                isVisited: false,
+                                rating: 0,
+                                todos: [],
+                                links: [],
+                                comments: [],
+                              };
+                              saveStop(day.id, backStop);
+                            }}
+                            className="group flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-purple-500 transition-all border border-dashed border-transparent hover:border-purple-200 hover:bg-purple-50/30 shrink-0"
+                            title={`Add "Back to ${hotel.name}"`}
+                          >
+                            <BedDouble className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Back to Hotel</span>
+                          </button>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1052,6 +1116,159 @@ export default function TripDetail({
           onClose={() => setEditingStop(null)}
         />
       )}
+
+      {findSpotContext && (
+        <FindSpotDialog
+          midpoint={findSpotContext.midpoint}
+          onSelect={(result) => {
+            const day = trip.days.find((d) => d.id === findSpotContext.dayId);
+            if (!day) { setFindSpotContext(null); return; }
+            const newStop: Stop = {
+              id: newId(),
+              name: result.display_name.split(",")[0].trim(),
+              categoryRaw: "restaurant",
+              sortOrder: 0,
+              notes: "",
+              latitude: parseFloat(result.lat),
+              longitude: parseFloat(result.lon),
+              address: result.display_name,
+              isVisited: false,
+              rating: 0,
+              todos: [],
+              links: [],
+              comments: [],
+            };
+            // Insert after the specified index
+            const stops = [...day.stops];
+            stops.splice(findSpotContext.insertAfterIdx + 1, 0, newStop);
+            updateDay(findSpotContext.dayId, { stops: stops.map((s, i) => ({ ...s, sortOrder: i })) });
+            setFindSpotContext(null);
+          }}
+          onClose={() => setFindSpotContext(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Find a Spot dialog ────────────────────────────────────────────────────
+function FindSpotDialog({
+  midpoint,
+  onSelect,
+  onClose,
+}: {
+  midpoint: { lat: number; lon: number };
+  onSelect: (result: NominatimResult) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<NominatimResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const SUGGESTIONS = ["lunch", "coffee", "drinks", "dessert", "brunch"];
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  function doSearch(q: string) {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!q.trim()) { setResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await searchPlaces(q, midpoint);
+        setResults(res);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 600);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="modal-enter bg-white rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.35)] w-full max-w-md flex flex-col max-h-[70vh]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-amber-500 flex items-center justify-center">
+              <Coffee className="w-3.5 h-3.5 text-white" />
+            </div>
+            <h2 className="font-semibold text-slate-900 text-sm">Find a spot</h2>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3 flex-1 overflow-y-auto">
+          {/* Quick suggestion chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => { setQuery(s); doSearch(s); }}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors",
+                  query === s
+                    ? "bg-amber-50 border-amber-200 text-amber-700"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:border-amber-200 hover:text-amber-700"
+                )}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* Search input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); doSearch(e.target.value); }}
+              placeholder="Search for a place…"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-3 focus:ring-blue-100 transition-all"
+            />
+            {searching && <Loader2 className="absolute right-3 top-2.5 w-3.5 h-3.5 text-slate-400 animate-spin" />}
+          </div>
+
+          {/* Results */}
+          {results.length > 0 && (
+            <ul className="border border-slate-200 rounded-xl shadow-sm overflow-hidden bg-white text-sm divide-y divide-slate-50">
+              {results.slice(0, 6).map((r) => (
+                <li key={r.place_id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(r)}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 flex items-start gap-2.5 transition-colors"
+                  >
+                    <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-400" />
+                    <span className="text-xs text-slate-700 leading-snug">{r.display_name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {query && !searching && results.length === 0 && (
+            <p className="text-xs text-slate-400 text-center py-2">No results found</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

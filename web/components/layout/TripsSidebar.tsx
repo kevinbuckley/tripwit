@@ -1,13 +1,30 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Plus, Trash2, Upload, Download, Copy, MapPin, LogOut, Smartphone } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Plus, Trash2, Upload, Download, Copy, MapPin, LogOut, Smartphone, CalendarDays, Sparkles, Camera } from "lucide-react";
 import Image from "next/image";
 import type { Trip } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { cn } from "@/components/ui/cn";
 import { parseTripwitFile } from "@/lib/tripwit-parser";
 import { downloadTripwit } from "@/lib/tripwit-exporter";
+
+type TripTab = "upcoming" | "wishlist" | "memories";
+
+function categorizeTripTab(trip: Trip): TripTab {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+
+  // If no meaningful dates, it's a wishlist trip
+  if (!trip.hasCustomDates || !trip.startDate || !trip.endDate) return "wishlist";
+
+  const endStr = trip.endDate.slice(0, 10);
+  // Past trips → memories
+  if (endStr < todayStr) return "memories";
+
+  // Future or current trips → upcoming
+  return "upcoming";
+}
 
 interface TripsSidebarProps {
   trips: Trip[];
@@ -61,9 +78,27 @@ const IconBtn = ({ onClick, title, children }: { onClick?: () => void; title: st
 export default function TripsSidebar({
   trips, selectedTripId, userId, user, onSelectTrip, onCreateTrip, onDeleteTrip, onImportTrip, onDuplicateTrip, onSignOut,
 }: TripsSidebarProps) {
+  const [activeTab, setActiveTab] = useState<TripTab>("upcoming");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  // Auto-switch tab when the selected trip is in a different category
+  useEffect(() => {
+    if (!selectedTripId) return;
+    const selected = trips.find((t) => t.id === selectedTripId);
+    if (!selected) return;
+    const tab = categorizeTripTab(selected);
+    setActiveTab(tab);
+  }, [selectedTripId, trips]);
+
+  const tabCounts = { upcoming: 0, wishlist: 0, memories: 0 };
+  const filteredTrips: Trip[] = [];
+  for (const t of trips) {
+    const tab = categorizeTripTab(t);
+    tabCounts[tab]++;
+    if (tab === activeTab) filteredTrips.push(t);
+  }
 
   async function importFile(file: File) {
     try {
@@ -150,6 +185,37 @@ export default function TripsSidebar({
         </div>
       </div>
 
+      {/* ── Trip category tabs ─────────────────────── */}
+      <div className="flex items-center gap-0.5 px-3 pb-2 shrink-0">
+        {([
+          { key: "upcoming" as const, label: "Upcoming", icon: CalendarDays },
+          { key: "wishlist" as const, label: "Wishlist", icon: Sparkles },
+          { key: "memories" as const, label: "Memories", icon: Camera },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={cn(
+              "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all",
+              activeTab === t.key
+                ? "bg-white/10 text-white"
+                : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+            )}
+          >
+            <t.icon className="w-3 h-3" />
+            {t.label}
+            {tabCounts[t.key] > 0 && (
+              <span className={cn(
+                "text-[9px] font-bold px-1.5 py-0.5 rounded-full tabular-nums",
+                activeTab === t.key ? "bg-white/15 text-white" : "bg-white/8 text-slate-500"
+              )}>
+                {tabCounts[t.key]}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {importError && (
         <div className="mx-3 mb-2 px-3 py-2 bg-red-500/15 text-red-400 text-xs rounded-xl border border-red-500/20">
           {importError}
@@ -184,7 +250,15 @@ export default function TripsSidebar({
           </div>
         )}
 
-        {trips.map((trip) => {
+        {trips.length > 0 && filteredTrips.length === 0 && !dragOver && (
+          <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+            <p className="text-xs text-slate-500">
+              No {activeTab === "upcoming" ? "upcoming" : activeTab === "wishlist" ? "wishlist" : "past"} trips
+            </p>
+          </div>
+        )}
+
+        {filteredTrips.map((trip) => {
           const isSelected = selectedTripId === trip.id;
           const stopCount = trip.days.reduce((c, d) => c + d.stops.length, 0);
           const visitedCount = trip.days.reduce((c, d) => c + d.stops.filter((s) => s.isVisited).length, 0);

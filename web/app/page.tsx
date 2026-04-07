@@ -14,7 +14,7 @@ import { Map, ChevronLeft, Check, Loader2, Maximize2, Minimize2 } from "lucide-r
 type MobilePanel = "sidebar" | "detail";
 
 export default function AppPage() {
-  const { user, loading, signIn, signInWithApple, signOut } = useAuth();
+  const { user, loading, signIn, signOut } = useAuth();
 
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);

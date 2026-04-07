@@ -7,8 +7,11 @@ export type StopCategory =
   | "attraction"
   | "transport"
   | "activity"
+  | "entertainment"
+  | "shopping"
   | "other";
 export type BookingType = "flight" | "hotel" | "car_rental" | "other";
+export type StopBookingStatus = "none" | "need_to_book" | "booked";
 export type ExpenseCategory =
   | "accommodation"
   | "food"
@@ -104,6 +107,7 @@ export interface Stop {
   departureTime?: string;
   isVisited: boolean;
   visitedAt?: string;
+  bookingStatus?: StopBookingStatus; // default "none"
   rating: number; // 0–5
   // Booking fields (accommodation / transport)
   confirmationCode?: string;
@@ -170,6 +174,8 @@ export const CATEGORY_LABELS: Record<StopCategory, string> = {
   attraction: "Attraction",
   transport: "Transport",
   activity: "Activity",
+  entertainment: "Entertainment",
+  shopping: "Shopping",
   other: "Other",
 };
 
@@ -179,5 +185,7 @@ export const CATEGORY_COLORS: Record<StopCategory, string> = {
   attraction: "#eab308",   // yellow
   transport: "#3b82f6",    // blue
   activity: "#22c55e",     // green
+  entertainment: "#ec4899", // pink
+  shopping: "#f43f5e",     // rose
   other: "#6b7280",        // gray
 };

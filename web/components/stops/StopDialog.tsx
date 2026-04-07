@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, MapPin, Star, Plus, Trash2, ExternalLink, Loader2, BedDouble, Utensils, Plane, Footprints, Clock, type LucideIcon } from "lucide-react";
-import type { Stop, StopCategory, StopTodo, StopLink } from "@/lib/types";
+import { Search, X, MapPin, Star, Plus, Trash2, ExternalLink, Loader2, BedDouble, Utensils, Plane, Footprints, Clock, Ticket, ShoppingBag, type LucideIcon } from "lucide-react";
+import type { Stop, StopCategory, StopBookingStatus, StopTodo, StopLink } from "@/lib/types";
 import { CATEGORY_LABELS, newId } from "@/lib/types";
 import { searchPlaces, type NominatimResult, type LocationBias } from "@/lib/nominatim";
 import { cn } from "@/components/ui/cn";
@@ -67,6 +67,8 @@ const CATEGORIES: StopCategory[] = [
   "attraction",
   "transport",
   "activity",
+  "entertainment",
+  "shopping",
   "other",
 ];
 
@@ -77,6 +79,8 @@ const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   attraction: Star,
   transport: Plane,
   activity: Footprints,
+  entertainment: Ticket,
+  shopping: ShoppingBag,
   other: MapPin,
 };
 
@@ -86,6 +90,8 @@ const CATEGORY_COLORS_BG: Record<string, string> = {
   attraction: "bg-yellow-50 border-yellow-200 text-yellow-700",
   transport: "bg-blue-50 border-blue-200 text-blue-700",
   activity: "bg-green-50 border-green-200 text-green-700",
+  entertainment: "bg-pink-50 border-pink-200 text-pink-700",
+  shopping: "bg-rose-50 border-rose-200 text-rose-700",
   other: "bg-slate-50 border-slate-200 text-slate-600",
 };
 
@@ -280,6 +286,35 @@ export default function StopDialog({ stop, locationBias, onSave, onClose }: Stop
                   >
                     <CatIcon className={cn("w-4 h-4", isActive ? "" : "text-slate-400")} />
                     {CATEGORY_LABELS[cat]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Booking status */}
+          <div>
+            <Label>Booking Status</Label>
+            <div className="flex gap-1.5">
+              {([
+                { value: "none", label: "Not needed", className: "bg-white text-slate-500 border-slate-200 hover:border-slate-300" },
+                { value: "need_to_book", label: "Need to Book", className: "bg-amber-50 border-amber-200 text-amber-700" },
+                { value: "booked", label: "Booked", className: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+              ] as const).map((opt) => {
+                const isActive = (form.bookingStatus ?? "none") === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => set("bookingStatus", opt.value as StopBookingStatus)}
+                    className={cn(
+                      "px-3 py-2 rounded-xl text-xs font-semibold border transition-all active:scale-95",
+                      isActive
+                        ? opt.className + " shadow-sm scale-[1.03]"
+                        : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700 hover:shadow-sm"
+                    )}
+                  >
+                    {opt.label}
                   </button>
                 );
               })}
