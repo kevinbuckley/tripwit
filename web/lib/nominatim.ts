@@ -23,8 +23,16 @@ export interface LocationBias {
  * Search Nominatim (OSM). Rate-limited to 1 req/s per ToS.
  * When `bias` is provided, results are soft-biased toward that location
  * (viewbox hint, bounded=0 so results outside the box still appear).
+ *
+ * Options:
+ *  - bounded: if true, only return results within the viewbox (default false)
+ *  - radiusKm: viewbox radius in km (default ~500km / delta=5)
  */
-export async function searchPlaces(query: string, bias?: LocationBias): Promise<NominatimResult[]> {
+export async function searchPlaces(
+  query: string,
+  bias?: LocationBias,
+  options?: { bounded?: boolean; radiusKm?: number },
+): Promise<NominatimResult[]> {
   if (!query.trim()) return [];
 
   // Enforce 1 req/s
@@ -42,8 +50,8 @@ export async function searchPlaces(query: string, bias?: LocationBias): Promise<
   url.searchParams.set("addressdetails", "1");
 
   if (bias) {
-    // ~500 km soft bias box around the trip's location
-    const delta = 5;
+    // Convert radiusKm to degrees (~111 km per degree)
+    const delta = options?.radiusKm ? options.radiusKm / 111 : 5;
     const viewbox = [
       (bias.lon - delta).toFixed(4),
       (bias.lat + delta).toFixed(4),
@@ -51,7 +59,7 @@ export async function searchPlaces(query: string, bias?: LocationBias): Promise<
       (bias.lat - delta).toFixed(4),
     ].join(",");
     url.searchParams.set("viewbox", viewbox);
-    url.searchParams.set("bounded", "0"); // prefer, don't restrict
+    url.searchParams.set("bounded", options?.bounded ? "1" : "0");
   }
 
   const res = await fetch(url.toString(), {

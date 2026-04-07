@@ -1185,7 +1185,7 @@ function FindSpotDialog({
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await searchPlaces(q, midpoint);
+        const res = await searchPlaces(q, midpoint, { bounded: true, radiusKm: 2 });
         setResults(res);
       } catch {
         setResults([]);
