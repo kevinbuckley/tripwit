@@ -66,9 +66,10 @@ interface TripMapProps {
   stops: Stop[];
   selectedStopId?: string | null;
   onSelectStop?: (id: string) => void;
+  onHideStop?: (id: string) => void;
 }
 
-export default function TripMap({ stops, selectedStopId, onSelectStop }: TripMapProps) {
+export default function TripMap({ stops, selectedStopId, onSelectStop, onHideStop }: TripMapProps) {
   const located = stops.filter((s) => s.latitude !== 0 || s.longitude !== 0);
   const center: [number, number] = located.length > 0
     ? [located[0].latitude, located[0].longitude]
@@ -113,14 +114,30 @@ export default function TripMap({ stops, selectedStopId, onSelectStop }: TripMap
                   {stop.address.split(",").slice(0, 3).join(",")}
                 </div>
               )}
-              <a
-                href={`https://www.google.com/maps?q=${stop.latitude},${stop.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ fontSize: 11, color: "#3b82f6", marginTop: 4, display: "inline-block" }}
-              >
-                Open in Google Maps ↗
-              </a>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                <a
+                  href={`https://www.google.com/maps?q=${stop.latitude},${stop.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 11, color: "#3b82f6" }}
+                >
+                  Google Maps ↗
+                </a>
+                {onHideStop && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onHideStop(stop.id); }}
+                    style={{
+                      fontSize: 11, color: "#94a3b8", background: "none", border: "none",
+                      cursor: "pointer", padding: 0, display: "inline-flex", alignItems: "center", gap: 2,
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#94a3b8"; }}
+                    title="Hide this stop from the map"
+                  >
+                    ✕ Hide
+                  </button>
+                )}
+              </div>
             </div>
           </Popup>
         </Marker>
